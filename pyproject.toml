@@ -1,0 +1,58 @@
+[project]
+name = "xtalmet"
+version = "0.1.0"
+description = "Python package containing a variety of distance functions for crystals, as well as evaluation metrics for crystal generation."
+readme = "README.md"
+authors = [
+    { name = "Masahiro Negishi", email = "m.negishi25@imperial.ac.uk" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "pymatgen>=2025.5.28",
+    "torch>=2.7.0",
+    "matminer>=0.9.3",
+    "average-minimum-distance>=1.5.3",
+    "smact>=3.1.0",
+    "mace-torch>=0.3.13",
+    "huggingface_hub"
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "colorama",
+    "seaborn",
+    "ipykernel",
+    "sphinx",
+    "sphinx-rtd-theme",
+]
+
+[build-system]
+requires = ["uv_build>=0.8.22,<0.9.0"]
+build-backend = "uv_build"
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "F", # flake8
+    "E", # pycodestyle
+    "W", # pycodestyle
+    "UP", # pyupgrade
+    "B", # flake8-bugbear
+    "SIM", # flake8-simplify
+    "I", # isort
+    "D", # pydocstyle
+]
+ignore = ["E101", "E501", "W191", "E111", "E114", "E117", "D206", "D300"]
+fixable = ["ALL"]
+pycodestyle.max-doc-length = 88
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "tab"
+docstring-code-format = true
