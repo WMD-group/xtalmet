@@ -1,2 +1,9 @@
 # virtual environments
 .venv/
+
+# cache files
+__pycache__/
+.pytest_cache/
+
+# files pushed to Hugging Face
+dev/hf/
