@@ -2189,6 +2189,18 @@ wheels = [
 ]
 
 [[package]]
+name = "sphinx-github-style"
+version = "1.2.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "sphinx" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/02/27/f0d375d18c45ba795826070e03dd32c13575f3ec4fb7273654e33c12fb08/sphinx-github-style-1.2.2.tar.gz", hash = "sha256:aad6231fcc0a4f59df82531eb3a82dda8a461a94d9e304895c34ac1158d7347c", size = 11963, upload-time = "2024-05-15T05:02:28.25Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4f/43/a1aa363d38363f66a668a286691006c11866a6cb5cc75d7325a17395f337/sphinx_github_style-1.2.2-py3-none-any.whl", hash = "sha256:8f6fd1a2c1a5878428a010050549c8353354a1ca9650f6bb01049c649935677d", size = 12324, upload-time = "2024-05-15T05:02:26.833Z" },
+]
+
+[[package]]
 name = "sphinx-rtd-theme"
 version = "3.0.2"
 source = { registry = "https://pypi.org/simple" }
@@ -2501,6 +2513,7 @@ dev = [
     { name = "pytest" },
     { name = "seaborn" },
     { name = "sphinx" },
+    { name = "sphinx-github-style" },
     { name = "sphinx-rtd-theme" },
 ]
 
@@ -2522,5 +2535,6 @@ dev = [
     { name = "pytest" },
     { name = "seaborn" },
     { name = "sphinx" },
+    { name = "sphinx-github-style" },
     { name = "sphinx-rtd-theme" },
 ]

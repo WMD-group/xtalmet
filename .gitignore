@@ -13,3 +13,6 @@ dev/raw/
 
 # experimental results of the NeurIPS2025 workshop paper
 examples/workshop/results/
+
+# documentation build files
+docs/build/

@@ -25,6 +25,7 @@ dev = [
     "ipykernel",
     "sphinx",
     "sphinx-rtd-theme",
+    "sphinx-github-style",
 ]
 
 [build-system]
