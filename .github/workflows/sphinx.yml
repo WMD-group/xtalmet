@@ -20,11 +20,12 @@ jobs:
         pip install -r docs/requirements.txt
     - name: Build HTML
       run: |
+        apt-get update -y
+        apt-get install -y git
+        git config --global --add safe.directory /github/workspace
         cd docs
         sphinx-apidoc -o source/api/ -f -T --remove-old -e -M -t source/_templates/apidoc/module.rst.jinja ../src/xtalmet/
         make html
-      with:
-        pre-build-command: "apt-get update -y && apt-get install -y git && git config --global --add safe.directory /github/workspace" 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
