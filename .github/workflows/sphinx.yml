@@ -9,8 +9,6 @@ jobs:
       contents: write
     steps:
     - uses: actions/checkout@v4
-      with:
-        persist-credentials: false
     - uses: actions/setup-python@v5
       with:
         python-version: '3.12'
@@ -20,8 +18,8 @@ jobs:
         pip install -r docs/requirements.txt
     - name: Build HTML
       run: |
-        apt-get update -y
-        apt-get install -y git
+        sudo apt-get update -y
+        sudo apt-get install -y git
         git config --global --add safe.directory /github/workspace
         cd docs
         sphinx-apidoc -o source/api/ -f -T --remove-old -e -M -t source/_templates/apidoc/module.rst.jinja ../src/xtalmet/
