@@ -27,6 +27,7 @@ extensions = [
 	"sphinx.ext.autosummary",
 	"sphinx.ext.napoleon",
 	"sphinx_github_style",
+	"sphinx.ext.githubpages",
 ]
 autosummary_generate = True
 autoclass_content = "both"
