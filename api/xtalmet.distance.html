@@ -50,7 +50,15 @@
 <li class="toctree-l1 current"><a class="reference internal" href="xtalmet.html">API</a><ul class="current">
 <li class="toctree-l2 current"><a class="reference internal" href="xtalmet.html#submodules">Submodules</a><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="xtalmet.crystal.html">xtalmet.crystal module</a></li>
-<li class="toctree-l3 current"><a class="current reference internal" href="#">xtalmet.distance module</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">xtalmet.distance module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#xtalmet.distance.d_amd"><code class="docutils literal notranslate"><span class="pre">d_amd()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#xtalmet.distance.d_comp"><code class="docutils literal notranslate"><span class="pre">d_comp()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#xtalmet.distance.d_magpie"><code class="docutils literal notranslate"><span class="pre">d_magpie()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#xtalmet.distance.d_pdd"><code class="docutils literal notranslate"><span class="pre">d_pdd()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#xtalmet.distance.d_smat"><code class="docutils literal notranslate"><span class="pre">d_smat()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#xtalmet.distance.d_wyckoff"><code class="docutils literal notranslate"><span class="pre">d_wyckoff()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="xtalmet.evaluator.html">xtalmet.evaluator module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="xtalmet.screen.html">xtalmet.screen module</a></li>
 </ul>
@@ -83,8 +91,202 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="xtalmet-distance-module">
-<h1>xtalmet.distance module<a class="headerlink" href="#xtalmet-distance-module" title="Link to this heading"></a></h1>
+  <section id="module-xtalmet.distance">
+<span id="xtalmet-distance-module"></span><h1>xtalmet.distance module<a class="headerlink" href="#module-xtalmet.distance" title="Link to this heading"></a></h1>
+<p>This module offers a range of distance functions for crystals.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="xtalmet.distance.d_amd">
+<span class="sig-prename descclassname"><span class="pre">xtalmet.distance.</span></span><span class="sig-name descname"><span class="pre">d_amd</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xtal_1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Structure</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="xtalmet.crystal.html#xtalmet.crystal.Crystal" title="xtalmet.crystal.Crystal"><span class="pre">Crystal</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">[</span></span><span class="pre">float32</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float64</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xtal_2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Structure</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="xtalmet.crystal.html#xtalmet.crystal.Crystal" title="xtalmet.crystal.Crystal"><span class="pre">Crystal</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">[</span></span><span class="pre">float32</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float64</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#xtalmet.distance.d_amd" title="Link to this definition"></a></dt>
+<dd><p>Compute the continuous distance using the average minimum distance (AMD).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xtal_1</strong> (<em>Structure</em><em> | </em><a class="reference internal" href="xtalmet.crystal.html#xtalmet.crystal.Crystal" title="xtalmet.crystal.Crystal"><em>Crystal</em></a><em> | </em><em>np.ndarray</em><em>[</em><em>np.float32</em><em> | </em><em>np.float64</em><em>]</em>) – pymatgen
+Structure or Crystal or its embedding.</p></li>
+<li><p><strong>xtal_2</strong> (<em>Structure</em><em> | </em><a class="reference internal" href="xtalmet.crystal.html#xtalmet.crystal.Crystal" title="xtalmet.crystal.Crystal"><em>Crystal</em></a><em> | </em><em>np.ndarray</em><em>[</em><em>np.float32</em><em> | </em><em>np.float64</em><em>]</em>) – pymatgen
+Structure or Crystal or its embedding.</p></li>
+<li><p><strong>**kwargs</strong> – Additional arguments for amd.AMD and amd.AMD_cdist. It should contain
+two keys: “emb” and “dist”. The value of “emb” is a dict of arguments for
+amd.AMD, and the value of “dist” is a dict of arguments for amd.AMD_cdist.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>AMD distance.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span>
+<span class="gp">... </span>    <span class="s2">&quot;emb&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">},</span>
+<span class="gp">... </span>    <span class="s2">&quot;dist&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;metric&quot;</span><span class="p">:</span> <span class="s2">&quot;chebyshev&quot;</span><span class="p">,</span> <span class="s2">&quot;low_memory&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
+<span class="gp">... </span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d_amd</span><span class="p">(</span><span class="n">xtal_1</span><span class="p">,</span> <span class="n">xtal_2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<span class="go">0.123456789</span>
+</pre></div>
+</div>
+<p class="rubric">References</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt>Widdson et al., (2022). Average Minimum Distances of periodic point sets -</dt><dd><p>foundational invariants for mapping periodic crystals. MATCH
+Communications in Mathematical and in Computer Chemistry, 87(3), 529-559,
+<a class="reference external" href="https://doi.org/10.46793/match.87-3.529W">https://doi.org/10.46793/match.87-3.529W</a></p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="xtalmet.distance.d_comp">
+<span class="sig-prename descclassname"><span class="pre">xtalmet.distance.</span></span><span class="sig-name descname"><span class="pre">d_comp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xtal_1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Structure</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="xtalmet.crystal.html#xtalmet.crystal.Crystal" title="xtalmet.crystal.Crystal"><span class="pre">Crystal</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xtal_2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Structure</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="xtalmet.crystal.html#xtalmet.crystal.Crystal" title="xtalmet.crystal.Crystal"><span class="pre">Crystal</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#xtalmet.distance.d_comp" title="Link to this definition"></a></dt>
+<dd><p>Compute the binary distance based on the match of compositions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xtal_1</strong> (<em>Structure</em><em> | </em><a class="reference internal" href="xtalmet.crystal.html#xtalmet.crystal.Crystal" title="xtalmet.crystal.Crystal"><em>Crystal</em></a><em> | </em><em>tuple</em><em>[</em><em>tuple</em><em>[</em><em>str</em><em>, </em><em>int</em><em>]</em><em>]</em>) – pymatgen Structure or
+Crystal or its embedding.</p></li>
+<li><p><strong>xtal_2</strong> (<em>Structure</em><em> | </em><a class="reference internal" href="xtalmet.crystal.html#xtalmet.crystal.Crystal" title="xtalmet.crystal.Crystal"><em>Crystal</em></a><em> | </em><em>tuple</em><em>[</em><em>tuple</em><em>[</em><em>str</em><em>, </em><em>int</em><em>]</em><em>]</em>) – pymatgen Structure or
+Crystal or its embedding.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Composition distance (0.0 or 1.0).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="xtalmet.distance.d_magpie">
+<span class="sig-prename descclassname"><span class="pre">xtalmet.distance.</span></span><span class="sig-name descname"><span class="pre">d_magpie</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xtal_1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Structure</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="xtalmet.crystal.html#xtalmet.crystal.Crystal" title="xtalmet.crystal.Crystal"><span class="pre">Crystal</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xtal_2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Structure</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="xtalmet.crystal.html#xtalmet.crystal.Crystal" title="xtalmet.crystal.Crystal"><span class="pre">Crystal</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#xtalmet.distance.d_magpie" title="Link to this definition"></a></dt>
+<dd><p>Compute the continuous distance using compositional Magpie fingerprints.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xtal_1</strong> (<em>Structure</em><em> | </em><a class="reference internal" href="xtalmet.crystal.html#xtalmet.crystal.Crystal" title="xtalmet.crystal.Crystal"><em>Crystal</em></a><em> | </em><em>list</em><em>[</em><em>float</em><em>]</em>) – pymatgen Structure or Crystal or its</p></li>
+<li><p><strong>embedding.</strong></p></li>
+<li><p><strong>xtal_2</strong> (<em>Structure</em><em> | </em><a class="reference internal" href="xtalmet.crystal.html#xtalmet.crystal.Crystal" title="xtalmet.crystal.Crystal"><em>Crystal</em></a><em> | </em><em>list</em><em>[</em><em>float</em><em>]</em>) – pymatgen Structure or Crystal or its
+embedding.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Magpie distance.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt>Ward et al., (2016). A general-purpose machine learning framework for</dt><dd><p>predicting properties of inorganic materials. npj Computational Materials,
+2(1), 1-7. <a class="reference external" href="https://doi.org/10.1038/npjcompumats.2016.28">https://doi.org/10.1038/npjcompumats.2016.28</a></p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="xtalmet.distance.d_pdd">
+<span class="sig-prename descclassname"><span class="pre">xtalmet.distance.</span></span><span class="sig-name descname"><span class="pre">d_pdd</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xtal_1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Structure</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="xtalmet.crystal.html#xtalmet.crystal.Crystal" title="xtalmet.crystal.Crystal"><span class="pre">Crystal</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">[</span></span><span class="pre">float32</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float64</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xtal_2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Structure</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="xtalmet.crystal.html#xtalmet.crystal.Crystal" title="xtalmet.crystal.Crystal"><span class="pre">Crystal</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">[</span></span><span class="pre">float32</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float64</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Exception</span></span></span><a class="headerlink" href="#xtalmet.distance.d_pdd" title="Link to this definition"></a></dt>
+<dd><p>Compute the continuous distance using the pointwise distance distribution (PDD).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xtal_1</strong> (<em>Structure</em><em> | </em><a class="reference internal" href="xtalmet.crystal.html#xtalmet.crystal.Crystal" title="xtalmet.crystal.Crystal"><em>Crystal</em></a><em> | </em><em>np.ndarray</em><em>[</em><em>np.float32</em><em> | </em><em>np.float64</em><em>]</em>) – pymatgen
+Structure or Crystal or its embedding.</p></li>
+<li><p><strong>xtal_2</strong> (<em>Structure</em><em> | </em><a class="reference internal" href="xtalmet.crystal.html#xtalmet.crystal.Crystal" title="xtalmet.crystal.Crystal"><em>Crystal</em></a><em> | </em><em>np.ndarray</em><em>[</em><em>np.float32</em><em> | </em><em>np.float64</em><em>]</em>) – pymatgen
+Structure or Crystal or its embedding.</p></li>
+<li><p><strong>**kwargs</strong> – Additional arguments for amd.PDD and amd.PDD_cdist. It can contain
+two keys: “emb” and “dist”. The value of “emb” is a dict of arguments for
+amd.PDD, and the value of “dist” is a dict of arguments for amd.PDD_cdist.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>PDD distance.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span>
+<span class="gp">... </span>    <span class="s2">&quot;emb&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">},</span>
+<span class="gp">... </span>    <span class="s2">&quot;dist&quot;</span><span class="p">:</span> <span class="p">{</span>
+<span class="gp">... </span>        <span class="s2">&quot;metric&quot;</span><span class="p">:</span> <span class="s2">&quot;chebyshev&quot;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;backend&quot;</span><span class="p">:</span> <span class="s2">&quot;multiprocessing&quot;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;n_jobs&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;verbose&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">},</span>
+<span class="gp">... </span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d_pdd</span><span class="p">(</span><span class="n">xtal_1</span><span class="p">,</span> <span class="n">xtal_2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<span class="go">0.123456789</span>
+</pre></div>
+</div>
+<p class="rubric">References</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt>Widdowson et al., (2022). Resolving the data ambiguity for periodic</dt><dd><p>crystals. Advances in Neural Information Processing Systems, 35,
+24625–24638. <a class="reference external" href="https://openreview.net/forum?id=4wrB7Mo9_OQ">https://openreview.net/forum?id=4wrB7Mo9_OQ</a></p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="xtalmet.distance.d_smat">
+<span class="sig-prename descclassname"><span class="pre">xtalmet.distance.</span></span><span class="sig-name descname"><span class="pre">d_smat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xtal_1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Structure</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="xtalmet.crystal.html#xtalmet.crystal.Crystal" title="xtalmet.crystal.Crystal"><span class="pre">Crystal</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">xtal_2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Structure</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="xtalmet.crystal.html#xtalmet.crystal.Crystal" title="xtalmet.crystal.Crystal"><span class="pre">Crystal</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#xtalmet.distance.d_smat" title="Link to this definition"></a></dt>
+<dd><p>Compute the binary distance based on pymatgen’s StructureMatcher.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xtal_1</strong> (<em>Structure</em><em> | </em><a class="reference internal" href="xtalmet.crystal.html#xtalmet.crystal.Crystal" title="xtalmet.crystal.Crystal"><em>Crystal</em></a>) – pymatgen Structure or Crystal.</p></li>
+<li><p><strong>xtal_2</strong> (<em>Structure</em><em> | </em><a class="reference internal" href="xtalmet.crystal.html#xtalmet.crystal.Crystal" title="xtalmet.crystal.Crystal"><em>Crystal</em></a>) – pymatgen Structure or Crystal.</p></li>
+<li><p><strong>**kwargs</strong> – Additional arguments for StructureMatcher, e.g., ltol, stol,
+angle_tol.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>StructureMatcher-based distance (0.0 or 1.0).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>d_smat does not allow pre-computation of embeddings.</p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="xtalmet.distance.d_wyckoff">
+<span class="sig-prename descclassname"><span class="pre">xtalmet.distance.</span></span><span class="sig-name descname"><span class="pre">d_wyckoff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xtal_1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Structure</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="xtalmet.crystal.html#xtalmet.crystal.Crystal" title="xtalmet.crystal.Crystal"><span class="pre">Crystal</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xtal_2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Structure</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="xtalmet.crystal.html#xtalmet.crystal.Crystal" title="xtalmet.crystal.Crystal"><span class="pre">Crystal</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Exception</span></span></span><a class="headerlink" href="#xtalmet.distance.d_wyckoff" title="Link to this definition"></a></dt>
+<dd><p>Compute the binary distance based on the match of Wyckoff representations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xtal_1</strong> (<em>Structure</em><em> | </em><a class="reference internal" href="xtalmet.crystal.html#xtalmet.crystal.Crystal" title="xtalmet.crystal.Crystal"><em>Crystal</em></a><em> | </em><em>tuple</em><em>[</em><em>int</em><em>, </em><em>tuple</em><em>[</em><em>str</em><em>]</em><em>]</em>) – pymatgen Structure or
+Crystal or its embedding.</p></li>
+<li><p><strong>xtal_2</strong> (<em>Structure</em><em> | </em><a class="reference internal" href="xtalmet.crystal.html#xtalmet.crystal.Crystal" title="xtalmet.crystal.Crystal"><em>Crystal</em></a><em> | </em><em>tuple</em><em>[</em><em>int</em><em>, </em><em>tuple</em><em>[</em><em>str</em><em>]</em><em>]</em>) – pymatgen Structure or
+Crystal or its embedding.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Wyckoff distance (0.0 or 1.0).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 
 
