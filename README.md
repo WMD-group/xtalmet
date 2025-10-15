@@ -14,6 +14,8 @@ It also enables you to evaluate a set of crystals using uniqueness and novelty m
 - Documentation: https://wmd-group.github.io/xtalmet/
 - Examples: https://github.com/WMD-group/xtalmet/examples
 
+> **Note**: This package is under active development.
+
 ## Motivation
 A central challenge in materials science is the efficient discovery of functional crystals from the vast chemical space. 
 Recently, the inverse design of crystals using advanced machine learning generative models has emerged as a promising approach due to their ability to rapidly generate numerous candidates. 
