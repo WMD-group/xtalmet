@@ -1,0 +1,285 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>xtalmet.evaluator module &mdash; xtalmet 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=0745d1ac" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/github_style.css?v=1093691d" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="xtalmet.screen module" href="xtalmet.screen.html" />
+    <link rel="prev" title="xtalmet.distance module" href="xtalmet.distance.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            xtalmet
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="xtalmet.html">API</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="xtalmet.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="xtalmet.crystal.html">xtalmet.crystal module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="xtalmet.distance.html">xtalmet.distance module</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">xtalmet.evaluator module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#xtalmet.evaluator.Evaluator"><code class="docutils literal notranslate"><span class="pre">Evaluator</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="xtalmet.screen.html">xtalmet.screen module</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">xtalmet</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="xtalmet.html">xtalmet package</a></li>
+      <li class="breadcrumb-item active">xtalmet.evaluator module</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-xtalmet.evaluator">
+<span id="xtalmet-evaluator-module"></span><h1>xtalmet.evaluator module<a class="headerlink" href="#module-xtalmet.evaluator" title="Link to this heading"></a></h1>
+<p>This module contains the Evaluator class for uniqueness and novelty calculation.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="xtalmet.evaluator.Evaluator">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">xtalmet.evaluator.</span></span><span class="sig-name descname"><span class="pre">Evaluator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gen_xtals</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="xtalmet.crystal.html#xtalmet.crystal.Crystal" title="xtalmet.crystal.Crystal"><span class="pre">Crystal</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Structure</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#xtalmet.evaluator.Evaluator" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Class for storing and evaluating a set of crystals.</p>
+<p>Initialize the Evaluator.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>gen_xtals</strong> (<em>list</em><em>[</em><a class="reference internal" href="xtalmet.crystal.html#xtalmet.crystal.Crystal" title="xtalmet.crystal.Crystal"><em>Crystal</em></a><em> | </em><em>Structure</em><em>]</em>) – Generated crystal structures.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="xtalmet.evaluator.Evaluator.novelty">
+<span class="sig-name descname"><span class="pre">novelty</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">train_xtals</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="xtalmet.crystal.html#xtalmet.crystal.Crystal" title="xtalmet.crystal.Crystal"><span class="pre">Crystal</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Structure</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'mp20'</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'smat'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'comp'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'wyckoff'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'magpie'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'pdd'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'amd'</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">screen</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="pre">None</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'smact'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'ehull'</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dir_intermediate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#xtalmet.evaluator.Evaluator.novelty" title="Link to this definition"></a></dt>
+<dd><p>Evaluate the novelty of a set of crystals.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>train_xtals</strong> (<em>list</em><em>[</em><a class="reference internal" href="xtalmet.crystal.html#xtalmet.crystal.Crystal" title="xtalmet.crystal.Crystal"><em>Crystal</em></a><em> | </em><em>Structure</em><em>] </em><em>| </em><em>Literal</em><em>[</em><em>&quot;mp20&quot;</em><em>]</em>) – List of training
+crystal structures or dataset name. If a dataset name is given, the
+embeddings of its training data will be downloaded from Hugging Face.
+The embeddings were computed using the _embed method above with no
+additional kwargs.</p></li>
+<li><p><strong>distance</strong> (<em>Literal</em>) – Distance used for novelty evaluation.</p></li>
+<li><p><strong>screen</strong> (<em>Literal</em>) – Method to screen the generated crystals.</p></li>
+<li><p><strong>dir_intermediate</strong> (<em>str</em><em> | </em><em>None</em>) – Directory to search for pre-computed
+embeddings, distance matrix, and screening results for faster
+computation. If pre-computed files do not exist in the directory, they
+will be saved to the directory for future use. If set to None, no files
+will be loaded or saved. It is recommended that you set this argument.
+This is especially important when evaluating a large number of generated
+crystals or when d_smat is used as the distance metric.</p></li>
+<li><p><strong>return_time</strong> (<em>bool</em>) – Whether to return the time taken for each step.</p></li>
+<li><p><strong>**kwargs</strong> – Additional keyword arguments for specific distance metrics and
+thermodynamic screening. It can contain three keys: “args_emb”,
+“args_mtx”, and “args_screen”. The value of “args_emb” is a dict of
+arguments for the calculation of embeddings, the value of “args_mtx” is
+a dict of arguments for the calculation of distance matrix using the
+embeddings, and the value of “args_screen” is a dict of arguments for
+the screening function.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">evaluator</span><span class="o">.</span><span class="n">novelty</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">train_xtals</span><span class="o">=</span><span class="s2">&quot;mp20&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">distance</span><span class="o">=</span><span class="s2">&quot;smat&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">screen</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">dir_intermediate</span><span class="o">=</span><span class="s2">&quot;./intermediate&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">return_time</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">(</span>
+<span class="gp">... </span>    <span class="mf">0.9892</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">{</span>
+<span class="gp">... </span>        <span class="s2">&quot;nov_emb_gen&quot;</span><span class="p">:</span> <span class="mf">1.693</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;nov_emb_train&quot;</span><span class="p">:</span> <span class="mf">5.790</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;nov_d_mtx&quot;</span><span class="p">:</span> <span class="mf">42784.921</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;nov_metric&quot;</span><span class="p">:</span> <span class="mf">0.628</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;nov_total&quot;</span><span class="p">:</span> <span class="mf">42793.032</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">},</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">evaluator</span><span class="o">.</span><span class="n">novelty</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">train_xtals</span><span class="o">=</span><span class="n">list_of_train_xtals</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">distance</span><span class="o">=</span><span class="s2">&quot;amd&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">screen</span><span class="o">=</span><span class="s2">&quot;ehull&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">dir_intermediate</span><span class="o">=</span><span class="s2">&quot;./intermediate&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">return_time</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">kwargs</span><span class="o">=</span><span class="p">{</span>
+<span class="gp">... </span>        <span class="s2">&quot;args_emb&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mi">200</span><span class="p">},</span>
+<span class="gp">... </span>        <span class="s2">&quot;args_mtx&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;metric&quot;</span><span class="p">:</span> <span class="s2">&quot;chebyshev&quot;</span><span class="p">,</span> <span class="s2">&quot;low_memory&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
+<span class="gp">... </span>        <span class="s2">&quot;args_screen&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;diagram&quot;</span><span class="p">:</span> <span class="s2">&quot;mp_250618&quot;</span><span class="p">},</span>
+<span class="gp">... </span>    <span class="p">},</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="mf">0.0075</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><dl class="simple">
+<dt>Novelty value or a tuple containing the novelty value</dt><dd><p>and a dictionary of time taken for each step.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>float | tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="xtalmet.evaluator.Evaluator.uniqueness">
+<span class="sig-name descname"><span class="pre">uniqueness</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">distance</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'smat'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'comp'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'wyckoff'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'magpie'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'pdd'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'amd'</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">screen</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="pre">None</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'smact'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'ehull'</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dir_intermediate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#xtalmet.evaluator.Evaluator.uniqueness" title="Link to this definition"></a></dt>
+<dd><p>Evaluate the uniqueness of a set of crystals.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>distance</strong> (<em>Literal</em>) – Distance function used for uniqueness evaluation.</p></li>
+<li><p><strong>screen</strong> (<em>Literal</em>) – Method to screen the crystals.</p></li>
+<li><p><strong>dir_intermediate</strong> (<em>str</em><em> | </em><em>None</em>) – Directory to search for pre-computed
+embeddings, distance matrix, and screening results for faster
+computation. If pre-computed files do not exist in the directory, they
+will be saved to the directory for future use. If set to None, no files
+will be loaded or saved. It is recommended that you set this argument.
+This is especially important when evaluating a large number of generated
+crystals or when d_smat is used as the distance metric.</p></li>
+<li><p><strong>return_time</strong> (<em>bool</em>) – Whether to return the time taken for each step.</p></li>
+<li><p><strong>**kwargs</strong> – Additional keyword arguments for specific distance metrics and
+thermodynamic screening. It can contain three keys: “args_emb”,
+“args_mtx”, and “args_screen”. The value of “args_emb” is a dict of
+arguments for the calculation of embeddings, the value of “args_mtx” is
+a dict of arguments for the calculation of distance matrix using the
+embeddings, and the value of “args_screen” is a dict of arguments for
+the screening function.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">evaluator</span><span class="o">.</span><span class="n">uniqueness</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">distance</span><span class="o">=</span><span class="s2">&quot;smat&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">screen</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">dir_intermediate</span><span class="o">=</span><span class="s2">&quot;./intermediate&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">return_time</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">(</span>
+<span class="gp">... </span>    <span class="mf">0.9945</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">{</span>
+<span class="gp">... </span>        <span class="s2">&quot;uni_emb&quot;</span><span class="p">:</span> <span class="mf">0.003</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;uni_d_mtx&quot;</span><span class="p">:</span> <span class="mf">16953.978</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;uni_metric&quot;</span><span class="p">:</span> <span class="mf">0.152</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;uni_total&quot;</span><span class="p">:</span> <span class="mf">16954.133</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">},</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">evaluator</span><span class="o">.</span><span class="n">uniqueness</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">distance</span><span class="o">=</span><span class="s2">&quot;amd&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">screen</span><span class="o">=</span><span class="s2">&quot;ehull&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">dir_intermediate</span><span class="o">=</span><span class="s2">&quot;./intermediate&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">return_time</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">kwargs</span><span class="o">=</span><span class="p">{</span>
+<span class="gp">... </span>        <span class="s2">&quot;args_emb&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mi">200</span><span class="p">},</span>
+<span class="gp">... </span>        <span class="s2">&quot;args_mtx&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;metric&quot;</span><span class="p">:</span> <span class="s2">&quot;chebyshev&quot;</span><span class="p">,</span> <span class="s2">&quot;low_memory&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
+<span class="gp">... </span>        <span class="s2">&quot;args_screen&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;diagram&quot;</span><span class="p">:</span> <span class="s2">&quot;mp_250618&quot;</span><span class="p">},</span>
+<span class="gp">... </span>    <span class="p">},</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="mf">0.0016</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Uniqueness value or (uniqueness value, a dictionary of time
+taken for each step).</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>float | tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="xtalmet.distance.html" class="btn btn-neutral float-left" title="xtalmet.distance module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="xtalmet.screen.html" class="btn btn-neutral float-right" title="xtalmet.screen module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Masahiro Negishi.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
