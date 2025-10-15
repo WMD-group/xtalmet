@@ -16,6 +16,11 @@ dependencies = [
     "mace-torch>=0.3.13",
     "huggingface_hub"
 ]
+license = { file = "LICENSE" }
+
+[project.urls]
+Repository = "https://github.com/WMD-group/xtalmet/"
+Documentation = "https://wmd-group.github.io/xtalmets/"
 
 [dependency-groups]
 dev = [
