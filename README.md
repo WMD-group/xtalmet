@@ -14,7 +14,7 @@ It also enables you to evaluate a set of crystals using uniqueness and novelty m
 - Documentation: https://wmd-group.github.io/xtalmet/
 - Examples: https://github.com/WMD-group/xtalmet/examples
 
-> **Note**: This package is under active development.
+> **Note**: This package is under active development. Please ensure that the version of the package you are using matches the version of the documentation you are referring to.
 
 ## Motivation
 A central challenge in materials science is the efficient discovery of functional crystals from the vast chemical space. 
