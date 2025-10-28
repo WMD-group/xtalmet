@@ -46,3 +46,4 @@ for version, details in docs.items():
 
 # finally we clean up
 subprocess.run("rm -rf _build_tag", shell=True)
+subprocess.run("git checkout main", shell=True)
