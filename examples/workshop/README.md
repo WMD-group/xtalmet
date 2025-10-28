@@ -4,7 +4,7 @@ Below, we outline the steps to reproduce the experimental results in our paper, 
 1. **Set up the environment**
 
     ```bash
-    git clone https://github.com/WMD-group/xtalmet.git
+    git clone https://github.com/WMD-group/xtalmet.git -b v0.1.1
     cd xtalmet
     uv sync
     ```
