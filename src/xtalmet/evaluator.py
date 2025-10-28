@@ -448,6 +448,7 @@ class Evaluator:
 				repo_id="masahiro-negishi/xtalmet",
 				filename=f"mp20/train/train_{distance}.pkl.gz",
 				repo_type="dataset",
+				revision="v0.1.1",
 			)
 			with gzip.open(path, "rb") as f:
 				embs_train = pickle.load(f)

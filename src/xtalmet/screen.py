@@ -96,6 +96,7 @@ def screen_ehull(
 				repo_id="masahiro-negishi/xtalmet",
 				filename="phase-diagram/ppd-mp_all_entries_uncorrected_250618.pkl.gz",
 				repo_type="dataset",
+				revision="v0.1.1",
 			)
 			with gzip.open(path, "rb") as f:
 				ppd_mp = pickle.load(f)
