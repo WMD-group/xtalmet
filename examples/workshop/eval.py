@@ -41,6 +41,7 @@ def eval(
 		repo_id="masahiro-negishi/xtalmet",
 		filename=f"mp20/model/{model}.pkl.gz",
 		repo_type="dataset",
+		revision="v0.1.1",
 	)
 	with gzip.open(path, "rb") as f:
 		gen_xtals = pickle.load(f)
