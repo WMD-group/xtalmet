@@ -62,6 +62,7 @@ if build_all_docs is not None:
 		"current_version": current_version,
 		"versions": [],
 	}
+	html_context["versions"].append(["latest", pages_root])
 
 	# and loop over all other versions from our yaml file
 	# to set versions and languages

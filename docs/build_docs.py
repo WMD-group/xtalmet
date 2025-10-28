@@ -12,6 +12,7 @@ def build_doc(version, tag):
 	subprocess.run("git checkout " + tag, shell=True)
 	subprocess.run("git checkout main -- source/conf.py", shell=True)
 	subprocess.run("git checkout main -- source/versions.yaml", shell=True)
+	subprocess.run("git checkout main -- source/_templates/", shell=True)
 	subprocess.run(
 		"sphinx-apidoc -o source/api/ -f -T --remove-old -e -M -t source/_templates/apidoc/module.rst.jinja ../src/xtalmet/",
 		shell=True,
