@@ -139,7 +139,7 @@ def screen_ehull(
 				) as f:
 					pickle.dump(ppd_mp, f)
 		# compute energy above hull for each generated crystal
-		calculator = mace_mp(model="medium-mpa-0")
+		calculator = mace_mp(model="medium-mpa-0", default_dtype="float64")
 		screened = np.zeros(len(xtals), dtype=bool)
 		e_above_hulls = np.zeros(len(xtals), dtype=float)
 		for idx, xtal in enumerate(xtals):
