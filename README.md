@@ -38,21 +38,21 @@ Two primary features of xtalmet are the calculation of distances between crystal
 For the former usage, suppose you have two crystals `xtal_1` and `xtal_2` (`pymatgen.core.Structure`) whose distance you want to measure.
 You can do so with one line of code:
 ```python
-from xtalmet.distance import d_amd
-distance = d_amd(xtal_1, xtal_2)
+from xtalmet.distance import distance
+d = distance("amd", xtal_1, xtal_2)
 ```
-Here, d_amd is a type of continuous distance based on structural fingerprints.
-For a complete list of available distances, please refer to the [documentation](https://wmd-group.github.io/xtalmet/api/xtalmet.distance.html).
+Here, "amd" is a type of continuous distance based on structural fingerprints.
+For a complete list of available distances, please refer to our [tutorial notebook](https://github.com/WMD-group/xtalmet/blob/main/examples/tutorial.ipynb).
 
 For the uniqueness/novelty evaluation, imagine that you want to assess a set of crystals `gen_xtals` (`list[pymatgen.core.Structure]`) generated from a model trained on the MP20 dataset.
 This can be done with just a few lines of code:
 ```python
 from xtalmet.evaluator import Evaluator
 evaluator = Evaluator(gen_xtals)
-uniqueness = evaluator.uniqueness(distance="d_amd")
-novelty = evaluator.novelty(train_xtals="mp20", distance="d_amd")
+uniqueness = evaluator.uniqueness(distance="amd")
+novelty = evaluator.novelty(train_xtals="mp20", distance="amd")
 ```
-A more detailed tutorial notebook is provided in the [examples directory](https://github.com/WMD-group/xtalmet/tree/main/examples).
+A more detailed tutorial notebook is provided [here](https://github.com/WMD-group/xtalmet/blob/main/examples/tutorial.ipynb).
 
 ## Acknowledgements
 Although we have argued that the progress on evaluation metrics is slower than that on generative models, we are not the sole contributors to this field. 

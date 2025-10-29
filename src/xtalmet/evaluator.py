@@ -80,6 +80,8 @@ class Evaluator:
 		Args:
 			distance (str): Distance function used for uniqueness evaluation. Currently
 				supported distances are shown in SUPPORTED_DISTANCES in constants.py.
+				For more detailed information about each distance metric, please refer
+				to the `tutorial notebook`_.
 			screen (str | None): Method to screen the crystals. Currently supported
 				methods are shown in SUPPORTED_SCREENS in constants.py.
 			dir_intermediate_gen (str | None): Directory to search for pre-computed
@@ -130,6 +132,8 @@ class Evaluator:
 		Returns:
 			float | tuple: Uniqueness value or (uniqueness value, a dictionary of time
 			taken for each step).
+
+		.. _tutorial notebook: https://github.com/WMD-group/xtalmet/blob/main/examples/tutorial.ipynb
 		"""
 		if distance not in SUPPORTED_DISTANCES:
 			raise ValueError(f"Unsupported distance: {distance}.")
@@ -236,7 +240,9 @@ class Evaluator:
 				The embeddings were computed using the _compute_embeddings function in
 				distance.py with no additional kwargs.
 			distance (str): Distance used for novelty evaluation. Currently supported
-				distances are shown in SUPPORTED_DISTANCES in constants.py.
+				distances are shown in SUPPORTED_DISTANCES in constants.py. For more
+				detailed information about each distance metric, please refer to the
+				`tutorial notebook`_.
 			screen (str | None): Method to screen the generated crystals. Currently
 				supported methods are shown in SUPPORTED_SCREENS in constants.py.
 			dir_intermediate_gen (str | None): Directory to search for pre-computed
@@ -298,6 +304,8 @@ class Evaluator:
 		Returns:
 			float | tuple: Novelty value or a tuple containing the novelty value
 				and a dictionary of time taken for each step.
+
+		.. _tutorial notebook: https://github.com/WMD-group/xtalmet/blob/main/examples/tutorial.ipynb
 		"""
 		if isinstance(train_xtals, str) and train_xtals not in ["mp20"]:
 			raise ValueError(f"Unsupported dataset name: {train_xtals}.")

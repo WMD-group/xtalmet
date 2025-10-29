@@ -357,7 +357,9 @@ def distance(
 	"""Compute the distance between two crystals.
 
 	Args:
-		distance (str): The distance metric to use.
+		distance (str): The distance metric to use. Currently supported metrics are
+			listed in SUPPORTED_DISTANCES in constants.py. For more detailed information
+			about each distance metric, please refer to the `tutorial notebook`_.
 		xtal_1 (Structure | Crystal | TYPE_EMB_ALL): pymatgen Structure or
 			Crystal or an embedding.
 		xtal_2 (Structure | Crystal | TYPE_EMB_ALL): pymatgen Structure or
@@ -375,6 +377,8 @@ def distance(
 		float |  tuple[np.ndarray, TYPE_EMB_ALL, TYPE_EMB_ALL,
 			dict[str, float]]: Distance between crystals. If verbose is True, also
 			returns the embeddings and the computing time.
+
+	.. _tutorial notebook: https://github.com/WMD-group/xtalmet/blob/main/examples/tutorial.ipynb
 	"""
 	# conversions from Structure to Crystal
 	xtal_1 = Crystal.from_Structure(xtal_1) if isinstance(xtal_1, Structure) else xtal_1
@@ -434,7 +438,9 @@ def distance_matrix(
 	If xtals_2 is None, compute the distance matrix within xtals_1.
 
 	Args:
-		distance (str): The distance metric to use.
+		distance (str): The distance metric to use. Currently supported metrics are
+			listed in SUPPORTED_DISTANCES in constants.py. For more detailed information
+			about each distance metric, please refer to the `tutorial notebook`_.
 		xtals_1 (list[Structure | Crystal | TYPE_EMB_ALL]): A list of pymatgen
 			Structures or Crystals or embeddings.
 		xtals_2 (list[Structure | Crystal | TYPE_EMB_ALL] | None): A list of
@@ -452,6 +458,8 @@ def distance_matrix(
 			tuple[np.ndarray, list[TYPE_EMB_ALL], list[TYPE_EMB_ALL],
 			dict[str, float]]: Distance matrix, the embeddings of xtals_1 (and xtals_2
 			if xtals_2 is not None) and the computing time.
+
+	.. _tutorial notebook: https://github.com/WMD-group/xtalmet/blob/main/examples/tutorial.ipynb
 	"""
 	given_two_sets = xtals_2 is not None
 	times = {}
