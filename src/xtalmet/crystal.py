@@ -14,7 +14,15 @@ from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.util.typing import CompositionLike
 
-from .constants import DIST_WO_EMB, TYPE_EMB_ALL
+from .constants import (
+	DIST_WO_EMB,
+	TYPE_EMB_ALL,
+	TYPE_EMB_AMD,
+	TYPE_EMB_COMP,
+	TYPE_EMB_MAGPIE,
+	TYPE_EMB_PDD,
+	TYPE_EMB_WYCKOFF,
+)
 
 
 class Crystal(Structure):
@@ -123,13 +131,13 @@ class Crystal(Structure):
 			properties=structure.properties,
 		)
 
-	def _get_emb_d_comp(self) -> tuple[tuple[str, int]]:
+	def _get_emb_d_comp(self) -> TYPE_EMB_COMP:
 		"""Get the composition of the crystal as a tuple of (element, count).
 
 		Embedding for d_comp.
 
 		Returns:
-			tuple: A tuple containing elements and their counts (divided by gcd).
+			TYPE_EMB_COMP: A tuple of elements and their counts (divided by gcd).
 		"""
 		composition_unnorm = [
 			(elem, int(count))
@@ -139,14 +147,17 @@ class Crystal(Structure):
 		composition = tuple((elem, count // gcd) for elem, count in composition_unnorm)
 		return composition
 
-	def _get_emb_d_wyckoff(self) -> tuple[int, tuple[str]] | Exception:
+	def _get_emb_d_wyckoff(self) -> TYPE_EMB_WYCKOFF:
 		"""Get the Wyckoff representation of the crystal.
 
 		Embedding for d_wyckoff.
 
 		Returns:
-			tuple | Exception: A tuple containing the space group number and a tuple of
-			Wyckoff letters, or an Exception from SpacegroupAnalyzer.
+			TYPE_EMB_WYCKOFF: A tuple containing the space group number and a tuple of
+			Wyckoff letters.
+
+		Raises:
+			Exception: an exception from SpacegroupAnalyzer.
 		"""
 		sga = SpacegroupAnalyzer(self)
 		sym = sga.get_symmetrized_structure()
@@ -156,13 +167,13 @@ class Crystal(Structure):
 		)  # Don't use sym.wyckoff_letters
 		return sg, tuple(wyckoff_letters)
 
-	def _get_emb_d_magpie(self) -> list[float]:
+	def _get_emb_d_magpie(self) -> TYPE_EMB_MAGPIE:
 		"""Get the magpie embedding of the crystal.
 
 		Embedding for d_magpie. Not influenced by oxidation states.
 
 		Returns:
-			list[float]: Magpie feature vector of the crystal.
+			TYPE_EMB_MAGPIE: Magpie feature vector of the crystal.
 
 		References:
 			- Ward et al., (2016). A general-purpose machine learning framework for
@@ -174,9 +185,7 @@ class Crystal(Structure):
 		feature = self.featurizer.featurize(self.composition)
 		return [float(x) for x in feature]
 
-	def _get_emb_d_pdd(
-		self, k: int = 100, **kwargs
-	) -> np.ndarray[np.float32 | np.float64] | Exception:
+	def _get_emb_d_pdd(self, k: int = 100, **kwargs) -> TYPE_EMB_PDD:
 		"""Get the pointwise distance distribution (PDD) of the crystal.
 
 		Embedding for d_ppd.
@@ -186,8 +195,10 @@ class Crystal(Structure):
 			**kwargs: Additional arguments for amd.PDD, except k.
 
 		Returns:
-			np.ndarray[np.float32 | np.float64] | Exception: PDD or an Exception
-			from periodicset_from_pymatgen_structure
+			TYPE_EMB_PDD: PDD.
+
+		Raises:
+			Exception: an exception from periodicset_from_pymatgen_structure.
 
 		References:
 			- Widdowson et al., (2022). Resolving the data ambiguity for periodic
@@ -204,9 +215,7 @@ class Crystal(Structure):
 
 		return amd.PDD(periodicset_from_pymatgen_structure(self), k, **kwargs)
 
-	def _get_emb_d_amd(
-		self, k: int = 100
-	) -> np.ndarray[np.float32 | np.float64] | Exception:
+	def _get_emb_d_amd(self, k: int = 100) -> TYPE_EMB_AMD:
 		"""Get the average minimum distance (AMD) of the crystal.
 
 		Embedding for d_amd.
@@ -215,8 +224,10 @@ class Crystal(Structure):
 			k (int): Number of nearest neighbors to consider. Also the embedding length.
 
 		Returns:
-			np.ndarray[np.float32 | np.float64] | Exception: AMD or an Exception
-			from periodicset_from_pymatgen_structure
+			TYPE_EMB_AMD: AMD.
+
+		Raises:
+			Exception: an exception from periodicset_from_pymatgen_structure.
 
 		References:
 			- Widdson et al., (2022). Average Minimum Distances of periodic point sets -
