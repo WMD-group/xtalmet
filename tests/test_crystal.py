@@ -61,22 +61,22 @@ class TestCrystal:
 					assert all(site1.frac_coords == site2.frac_coords)
 					assert site1.properties == site2.properties
 
-	def test_get_composition_tuple(self, prepare_Structure: Structure):
-		"""Test get_composition_tuple."""
+	def test_get_emb_d_comp(self, prepare_Structure: Structure):
+		"""Test _get_emb_d_comp."""
 		structure = prepare_Structure
 		crystal = Crystal.from_Structure(structure)
-		composition_tuple = crystal.get_composition_tuple()
+		composition_tuple = crystal._get_emb_d_comp()
 		assert isinstance(composition_tuple, tuple)
 		assert all(
 			isinstance(item, tuple) and len(item) == 2 for item in composition_tuple
 		)
 
-	def test_get_wyckoff(self, prepare_Structure: Structure):
-		"""Test get_wyckoff."""
+	def test_get_emb_d_wyckoff(self, prepare_Structure: Structure):
+		"""Test _get_emb_d_wyckoff."""
 		structure = prepare_Structure
 		crystal = Crystal.from_Structure(structure)
 		try:
-			wyckoff = crystal.get_wyckoff()
+			wyckoff = crystal._get_emb_d_wyckoff()
 			assert isinstance(wyckoff, tuple)
 			assert isinstance(wyckoff[0], int)
 			assert isinstance(wyckoff[1], tuple)
@@ -85,11 +85,11 @@ class TestCrystal:
 			# If an exception is raised, ensure it's a known issue.
 			assert isinstance(e, SymmetryUndeterminedError)
 
-	def test_get_magpie(self, prepare_Structure: Structure):
-		"""Test get_magpie."""
+	def test_get_emb_d_magpie(self, prepare_Structure: Structure):
+		"""Test _get_emb_d_magpie."""
 		structure = prepare_Structure
 		crystal = Crystal.from_Structure(structure)
-		magpie = crystal.get_magpie()
+		magpie = crystal._get_emb_d_magpie()
 		assert isinstance(magpie, list)
 		assert all(isinstance(item, float) for item in magpie)
 
@@ -101,12 +101,12 @@ class TestCrystal:
 			{"k": 200, "return_row_data": True},
 		],
 	)
-	def test_get_PDD(self, prepare_Structure: Structure, kwargs: dict):
-		"""Test get_PDD."""
+	def test__get_emb_d_pdd(self, prepare_Structure: Structure, kwargs: dict):
+		"""Test _get_emb_d_pdd."""
 		structure = prepare_Structure
 		crystal = Crystal.from_Structure(structure)
 		try:
-			pdd = crystal.get_PDD(**kwargs)
+			pdd = crystal._get_emb_d_pdd(**kwargs)
 			assert isinstance(pdd, np.ndarray)
 			assert pdd.ndim == 2
 			if "k" in kwargs:
@@ -124,12 +124,12 @@ class TestCrystal:
 			{"k": 200},
 		],
 	)
-	def test_get_AMD(self, prepare_Structure: Structure, kwargs: dict):
-		"""Test get_AMD."""
+	def test_get_emb_d_amd(self, prepare_Structure: Structure, kwargs: dict):
+		"""Test _get_emb_d_amd."""
 		structure = prepare_Structure
 		crystal = Crystal.from_Structure(structure)
 		try:
-			amd = crystal.get_AMD(**kwargs)
+			amd = crystal._get_emb_d_amd(**kwargs)
 			assert isinstance(amd, np.ndarray)
 			assert amd.ndim == 1
 			if "k" in kwargs:
@@ -139,6 +139,28 @@ class TestCrystal:
 		except Exception as e:
 			# If an exception is raised, ensure it's a known issue.
 			assert isinstance(e, SymmetryUndeterminedError)
+
+	@pytest.mark.parametrize(
+		"distance, kwargs",
+		[
+			("smat", {}),
+			("comp", {}),
+			("wyckoff", {}),
+			("magpie", {}),
+			("pdd", {}),
+			("pdd", {"k": 150}),
+			("amd", {}),
+			("amd", {"k": 150}),
+		],
+	)
+	def test_get_embedding(
+		self, prepare_Structure: Structure, distance: str, kwargs: dict
+	):
+		"""Test get_embedding."""
+		structure = prepare_Structure
+		crystal = Crystal.from_Structure(structure)
+		embedding = crystal.get_embedding(distance, **kwargs)
+		assert embedding is not None
 
 	def test_get_composition_pymatgen(self, prepare_Structure: Structure):
 		"""Test get_composition_pymatgen."""

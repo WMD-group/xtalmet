@@ -14,6 +14,8 @@ from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.util.typing import CompositionLike
 
+from .constants import DIST_WO_EMB, TYPE_EMB_ALL
+
 
 class Crystal(Structure):
 	"""Container for a single crystal structure."""
@@ -121,7 +123,7 @@ class Crystal(Structure):
 			properties=structure.properties,
 		)
 
-	def get_composition_tuple(self) -> tuple[tuple[str, int]]:
+	def _get_emb_d_comp(self) -> tuple[tuple[str, int]]:
 		"""Get the composition of the crystal as a tuple of (element, count).
 
 		Embedding for d_comp.
@@ -137,7 +139,7 @@ class Crystal(Structure):
 		composition = tuple((elem, count // gcd) for elem, count in composition_unnorm)
 		return composition
 
-	def get_wyckoff(self) -> tuple[int, tuple[str]] | Exception:
+	def _get_emb_d_wyckoff(self) -> tuple[int, tuple[str]] | Exception:
 		"""Get the Wyckoff representation of the crystal.
 
 		Embedding for d_wyckoff.
@@ -154,7 +156,7 @@ class Crystal(Structure):
 		)  # Don't use sym.wyckoff_letters
 		return sg, tuple(wyckoff_letters)
 
-	def get_magpie(self) -> list[float]:
+	def _get_emb_d_magpie(self) -> list[float]:
 		"""Get the magpie embedding of the crystal.
 
 		Embedding for d_magpie. Not influenced by oxidation states.
@@ -172,7 +174,7 @@ class Crystal(Structure):
 		feature = self.featurizer.featurize(self.composition)
 		return [float(x) for x in feature]
 
-	def get_PDD(
+	def _get_emb_d_pdd(
 		self, k: int = 100, **kwargs
 	) -> np.ndarray[np.float32 | np.float64] | Exception:
 		"""Get the pointwise distance distribution (PDD) of the crystal.
@@ -202,7 +204,9 @@ class Crystal(Structure):
 
 		return amd.PDD(periodicset_from_pymatgen_structure(self), k, **kwargs)
 
-	def get_AMD(self, k: int = 100) -> np.ndarray[np.float32 | np.float64] | Exception:
+	def _get_emb_d_amd(
+		self, k: int = 100
+	) -> np.ndarray[np.float32 | np.float64] | Exception:
 		"""Get the average minimum distance (AMD) of the crystal.
 
 		Embedding for d_amd.
@@ -221,6 +225,38 @@ class Crystal(Structure):
 			  https://doi.org/10.46793/match.87-3.529W
 		"""
 		return amd.AMD(periodicset_from_pymatgen_structure(self), k)
+
+	def get_embedding(self, distance: str, **kwargs) -> TYPE_EMB_ALL:
+		"""Get the embedding of the crystal based on the specified distance metric.
+
+		Args:
+			distance (str): The distance metric to use.
+			**kwargs: Additional arguments for embedding methods if needed.
+
+		Returns:
+			TYPE_EMB_ALL: The embedding corresponding to the specified distance
+			metric.
+
+		Raises:
+			ValueError: If an unsupported distance metric is provided.
+
+		Note:
+			For "smat" distance, the embedding is the Crystal object itself.
+		"""
+		if distance == "comp":
+			return self._get_emb_d_comp()
+		elif distance == "wyckoff":
+			return self._get_emb_d_wyckoff()
+		elif distance == "magpie":
+			return self._get_emb_d_magpie()
+		elif distance == "pdd":
+			return self._get_emb_d_pdd(**kwargs)
+		elif distance == "amd":
+			return self._get_emb_d_amd(**kwargs)
+		elif distance in DIST_WO_EMB:
+			return self
+		else:
+			raise ValueError(f"Unsupported distance metric: {distance}")
 
 	def get_composition_pymatgen(self) -> Composition:
 		"""Get the pymatgen composition of the crystal.
