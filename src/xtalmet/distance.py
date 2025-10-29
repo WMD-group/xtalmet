@@ -374,9 +374,12 @@ def distance(
 
 
 	Returns:
-		float |  tuple[np.ndarray, TYPE_EMB_ALL, TYPE_EMB_ALL,
-			dict[str, float]]: Distance between crystals. If verbose is True, also
-			returns the embeddings and the computing time.
+		float |  tuple[np.ndarray, TYPE_EMB_ALL, TYPE_EMB_ALL, dict[str, float]]:
+			Distance between crystals. If verbose is True, also returns the embeddings
+			and the computing time.
+
+	Raises:
+		ValueError: If an unsupported distance metric is provided.
 
 	.. _tutorial notebook: https://github.com/WMD-group/xtalmet/blob/main/examples/tutorial.ipynb
 	"""
@@ -454,10 +457,12 @@ def distance_matrix(
 			using the embeddings.
 
 	Returns:
-		np.ndarray | tuple[np.ndarray, list[TYPE_EMB_ALL], dict[str, float]] |
-			tuple[np.ndarray, list[TYPE_EMB_ALL], list[TYPE_EMB_ALL],
-			dict[str, float]]: Distance matrix, the embeddings of xtals_1 (and xtals_2
-			if xtals_2 is not None) and the computing time.
+		np.ndarray | tuple[np.ndarray, list[TYPE_EMB_ALL], dict[str, float]] | tuple[np.ndarray, list[TYPE_EMB_ALL], list[TYPE_EMB_ALL], dict[str, float]]:
+			Distance matrix, the embeddings of xtals_1 (and xtals_2 if xtals_2 is not
+			None) and the computing time.
+
+	Raises:
+		ValueError: If an unsupported distance metric is provided.
 
 	.. _tutorial notebook: https://github.com/WMD-group/xtalmet/blob/main/examples/tutorial.ipynb
 	"""

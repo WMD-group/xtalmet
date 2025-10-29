@@ -131,7 +131,10 @@ class Evaluator:
 
 		Returns:
 			float | tuple: Uniqueness value or (uniqueness value, a dictionary of time
-			taken for each step).
+				taken for each step).
+
+		Raises:
+			ValueError: If an unsupported distance metric or screening method is provided.
 
 		.. _tutorial notebook: https://github.com/WMD-group/xtalmet/blob/main/examples/tutorial.ipynb
 		"""
@@ -304,6 +307,10 @@ class Evaluator:
 		Returns:
 			float | tuple: Novelty value or a tuple containing the novelty value
 				and a dictionary of time taken for each step.
+
+		Raises:
+			ValueError: If an unsupported dataset name, distance metric, or screening
+			method is provided.
 
 		.. _tutorial notebook: https://github.com/WMD-group/xtalmet/blob/main/examples/tutorial.ipynb
 		"""
