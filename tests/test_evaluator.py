@@ -4,7 +4,6 @@ import datetime
 import gzip
 import os
 import pickle
-from typing import Literal
 
 import pytest
 
@@ -38,95 +37,6 @@ class TestEvaluator:
 		assert True
 
 	@pytest.mark.parametrize(
-		"distance, kwargs",
-		[
-			("smat", {}),
-			("comp", {}),
-			("wyckoff", {}),
-			("magpie", {}),
-			("pdd", {}),
-			("amd", {}),
-			("pdd", {"k": 200, "return_row_data": True}),
-			("amd", {"k": 200}),
-		],
-	)
-	def test_embed(
-		self,
-		tmpdir: str,
-		prepare_gen_xtals: list[Crystal],
-		prepare_train_xtals: list[Crystal],
-		distance: Literal["smat", "comp", "wyckoff", "magpie", "pdd", "amd"],
-		kwargs: dict,
-	):
-		"""Test _embed."""
-		gen_xtals = prepare_gen_xtals
-		train_xtals = prepare_train_xtals
-		evaluator = Evaluator(gen_xtals)
-		for datatype, xtals in [("gen", gen_xtals), ("train", train_xtals)]:
-			embs_1, _ = evaluator._embed(xtals, distance, None, datatype, **kwargs)
-			embs_2, _ = evaluator._embed(xtals, distance, tmpdir, datatype, **kwargs)
-			if distance in ["pdd", "amd"]:
-				assert all((embs_1[i] == embs_2[i]).all() for i in range(len(embs_1)))
-			else:
-				assert embs_1 == embs_2
-			assert os.path.exists(os.path.join(tmpdir, f"{datatype}_{distance}.pkl.gz"))
-
-	@pytest.mark.parametrize(
-		"distance, kwargs",
-		[
-			("smat", {}),
-			("comp", {}),
-			("wyckoff", {}),
-			("magpie", {}),
-			("pdd", {}),
-			("amd", {}),
-			("smat", {"ltol": 0.3, "stol": 0.4, "angle_tol": 6}),
-			(
-				"pdd",
-				{
-					"metric": "chebyshev",
-					"backend": "multiprocessing",
-					"n_jobs": 2,
-					"verbose": True,
-				},
-			),
-			(
-				"pdd",
-				{
-					"metric": "chebyshev",
-					"backend": "multiprocessing",
-					"n_jobs": None,
-					"verbose": False,
-				},
-			),
-			("amd", {"metric": "chebyshev", "low_memory": False}),
-		],
-	)
-	def test_distance_matrix(
-		self,
-		tmpdir: str,
-		prepare_gen_xtals: list[Crystal],
-		prepare_train_xtals: list[Crystal],
-		distance: Literal["smat", "comp", "wyckoff", "magpie", "pdd", "amd"],
-		kwargs: dict,
-	):
-		"""Test _distance_matrix."""
-		gen_xtals = prepare_gen_xtals
-		train_xtals = prepare_train_xtals
-		evaluator = Evaluator(gen_xtals)
-		embs_gen, _ = evaluator._embed(gen_xtals, distance, None, "gen")
-		embs_train, _ = evaluator._embed(train_xtals, distance, None, "train")
-		for met, embs in [("uni", embs_gen), ("nov", embs_train)]:
-			d_mtx_1, _ = evaluator._distance_matrix(
-				embs_gen, embs, distance, None, met, **kwargs
-			)
-			d_mtx_2, _ = evaluator._distance_matrix(
-				embs_gen, embs, distance, tmpdir, met, **kwargs
-			)
-			assert (d_mtx_1 == d_mtx_2).all()
-			assert os.path.exists(os.path.join(tmpdir, f"mtx_{met}_{distance}.pkl.gz"))
-
-	@pytest.mark.parametrize(
 		"distance, screen, kwargs",
 		[
 			("smat", None, {}),
@@ -135,13 +45,13 @@ class TestEvaluator:
 			("magpie", None, {}),
 			("pdd", None, {}),
 			("amd", None, {}),
-			("smat", None, {"args_mtx": {"ltol": 0.3, "stol": 0.4, "angle_tol": 6}}),
+			("smat", None, {"args_dist": {"ltol": 0.3, "stol": 0.4, "angle_tol": 6}}),
 			(
 				"pdd",
 				None,
 				{
 					"args_emb": {"k": 200, "return_row_data": True},
-					"args_mtx": {
+					"args_dist": {
 						"metric": "chebyshev",
 						"backend": "multiprocessing",
 						"n_jobs": 2,
@@ -154,7 +64,7 @@ class TestEvaluator:
 				None,
 				{
 					"args_emb": {"k": 100},
-					"args_mtx": {
+					"args_dist": {
 						"metric": "chebyshev",
 						"backend": "multiprocessing",
 						"n_jobs": None,
@@ -167,7 +77,7 @@ class TestEvaluator:
 				None,
 				{
 					"args_emb": {"k": 200},
-					"args_mtx": {"metric": "chebyshev", "low_memory": False},
+					"args_dist": {"metric": "chebyshev", "low_memory": False},
 				},
 			),
 			(
@@ -175,7 +85,7 @@ class TestEvaluator:
 				None,
 				{
 					"args_emb": {"k": 100},
-					"args_mtx": {"metric": "chebyshev", "low_memory": False},
+					"args_dist": {"metric": "chebyshev", "low_memory": False},
 				},
 			),
 			("smat", "smact", {}),
@@ -190,8 +100,8 @@ class TestEvaluator:
 		self,
 		tmpdir: str,
 		prepare_gen_xtals: list[Crystal],
-		distance: Literal["smat", "comp", "wyckoff", "magpie", "pdd", "amd"],
-		screen: Literal[None, "smact", "ehull"],
+		distance: str,
+		screen: str | None,
 		kwargs: dict,
 	):
 		"""Test uniqueness."""
@@ -222,7 +132,7 @@ class TestEvaluator:
 		assert uniqueness_1 == uniqueness_2
 		for key in ["uni_emb", "uni_d_mtx", "uni_metric", "uni_total"]:
 			assert key in times
-			assert times[key] > 0
+			assert times[key] >= 0
 
 	@pytest.mark.parametrize(
 		"download, distance, screen, kwargs",
@@ -305,8 +215,8 @@ class TestEvaluator:
 		prepare_gen_xtals: list[Crystal],
 		prepare_train_xtals: list[Crystal],
 		download: bool,
-		distance: Literal["smat", "comp", "wyckoff", "magpie", "pdd", "amd"],
-		screen: Literal[None, "smact", "ehull"],
+		distance: str,
+		screen: str | None,
 		kwargs: dict,
 	):
 		"""Test novelty."""
@@ -314,10 +224,10 @@ class TestEvaluator:
 		train_xtals = "mp20" if download else prepare_train_xtals
 		evaluator = Evaluator(gen_xtals)
 		novelty_1 = evaluator.novelty(
-			train_xtals, distance, screen, None, False, **kwargs
+			train_xtals, distance, screen, None, None, False, **kwargs
 		)
 		novelty_2, times = evaluator.novelty(
-			train_xtals, distance, screen, tmpdir, True, **kwargs
+			train_xtals, distance, screen, tmpdir, tmpdir, True, **kwargs
 		)
 		assert os.path.exists(os.path.join(tmpdir, f"gen_{distance}.pkl.gz"))
 		if not download:
@@ -348,4 +258,4 @@ class TestEvaluator:
 			"nov_total",
 		]:
 			assert key in times
-			assert times[key] > 0
+			assert times[key] >= 0

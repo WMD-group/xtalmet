@@ -1,15 +1,19 @@
 """Computing the embeddings for datasets."""
 
+import gzip
 import io
 import json
 import os
+import pickle
+import time
 
 import pandas as pd
 import requests
 from pymatgen.io.cif import CifParser
 
+from xtalmet.constants import SUPPORTED_DISTANCES
 from xtalmet.crystal import Crystal
-from xtalmet.evaluator import Evaluator
+from xtalmet.distance import _compute_embeddings
 
 
 def dataset_embeddings():
@@ -24,16 +28,14 @@ def dataset_embeddings():
 
 	dir_save = os.path.join(os.path.dirname(__file__), "hf", "mp20", "train")
 	os.makedirs(dir_save, exist_ok=True)
-	evaluator = Evaluator(train_xtals)
 	times = {}
-	for distance in ["smat", "comp", "wyckoff", "magpie", "pdd", "amd"]:
-		_, time = evaluator._embed(
-			train_xtals,
-			distance,
-			dir_save,
-			"train",
-		)
-		times[f"d_{distance}"] = time
+	for distance in SUPPORTED_DISTANCES:
+		start = time.time()
+		embs = _compute_embeddings(distance, train_xtals)
+		end = time.time()
+		times[distance] = end - start
+		with gzip.open(os.path.join(dir_save, f"train_{distance}.pkl.gz"), "wb") as f:
+			pickle.dump(embs, f)
 
 	with open(os.path.join(dir_save, "times.json"), "w") as f:
 		json.dump(times, f, indent=4, sort_keys=True)

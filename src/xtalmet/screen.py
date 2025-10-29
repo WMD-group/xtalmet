@@ -16,6 +16,7 @@ from pymatgen.entries.computed_entries import ComputedEntry
 from pymatgen.ext.matproj import MPRester
 from smact.screening import smact_validity
 
+from .constants import HF_VERSION
 from .crystal import Crystal
 
 
@@ -96,7 +97,7 @@ def screen_ehull(
 				repo_id="masahiro-negishi/xtalmet",
 				filename="phase-diagram/ppd-mp_all_entries_uncorrected_250618.pkl.gz",
 				repo_type="dataset",
-				revision="v0.1.1",
+				revision=HF_VERSION,
 			)
 			with gzip.open(path, "rb") as f:
 				ppd_mp = pickle.load(f)
