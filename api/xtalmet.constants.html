@@ -110,8 +110,9 @@
 
 <dl class="py data">
 <dt class="sig sig-object py" id="xtalmet.constants.TYPE_EMB_WYCKOFF">
-<span class="sig-prename descclassname"><span class="pre">xtalmet.constants.</span></span><span class="sig-name descname"><span class="pre">TYPE_EMB_WYCKOFF</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">tuple[int,</span> <span class="pre">tuple[str]]</span> <span class="pre">|</span> <span class="pre">Exception</span></em><a class="headerlink" href="#xtalmet.constants.TYPE_EMB_WYCKOFF" title="Link to this definition"></a></dt>
-<dd><p>Type of embeddings for d_wyckoff. A tuple containing the space group number and a tuple of Wyckoff letters, or an Exception from SpacegroupAnalyzer.</p>
+<span class="sig-prename descclassname"><span class="pre">xtalmet.constants.</span></span><span class="sig-name descname"><span class="pre">TYPE_EMB_WYCKOFF</span></span><a class="headerlink" href="#xtalmet.constants.TYPE_EMB_WYCKOFF" title="Link to this definition"></a></dt>
+<dd><p>Type of embeddings for d_wyckoff. A tuple containing the space group number and a tuple of Wyckoff letters.</p>
+<p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]</p>
 </dd></dl>
 
 <dl class="py data">
@@ -123,19 +124,21 @@
 
 <dl class="py data">
 <dt class="sig sig-object py" id="xtalmet.constants.TYPE_EMB_PDD">
-<span class="sig-prename descclassname"><span class="pre">xtalmet.constants.</span></span><span class="sig-name descname"><span class="pre">TYPE_EMB_PDD</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">numpy.ndarray[numpy.float32</span> <span class="pre">|</span> <span class="pre">numpy.float64]</span> <span class="pre">|</span> <span class="pre">Exception</span></em><a class="headerlink" href="#xtalmet.constants.TYPE_EMB_PDD" title="Link to this definition"></a></dt>
-<dd><p>Type of embeddings for d_pdd. A numpy array of floats (pair distance distribution) or an Exception from periodicset_from_pymatgen_structure.</p>
+<span class="sig-prename descclassname"><span class="pre">xtalmet.constants.</span></span><span class="sig-name descname"><span class="pre">TYPE_EMB_PDD</span></span><a class="headerlink" href="#xtalmet.constants.TYPE_EMB_PDD" title="Link to this definition"></a></dt>
+<dd><p>Type of embeddings for d_pdd. A numpy array of floats (pair distance distribution) .</p>
+<p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float32</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">float64</span></code>]</p>
 </dd></dl>
 
 <dl class="py data">
 <dt class="sig sig-object py" id="xtalmet.constants.TYPE_EMB_AMD">
-<span class="sig-prename descclassname"><span class="pre">xtalmet.constants.</span></span><span class="sig-name descname"><span class="pre">TYPE_EMB_AMD</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">numpy.ndarray[numpy.float32</span> <span class="pre">|</span> <span class="pre">numpy.float64]</span> <span class="pre">|</span> <span class="pre">Exception</span></em><a class="headerlink" href="#xtalmet.constants.TYPE_EMB_AMD" title="Link to this definition"></a></dt>
-<dd><p>Type of embeddings for d_amd. A numpy array of floats (average minimum distance) or an Exception from periodicset_from_pymatgen_structure.</p>
+<span class="sig-prename descclassname"><span class="pre">xtalmet.constants.</span></span><span class="sig-name descname"><span class="pre">TYPE_EMB_AMD</span></span><a class="headerlink" href="#xtalmet.constants.TYPE_EMB_AMD" title="Link to this definition"></a></dt>
+<dd><p>Type of embeddings for d_amd. A numpy array of floats (average minimum distance).</p>
+<p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float32</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">float64</span></code>]</p>
 </dd></dl>
 
 <dl class="py data">
 <dt class="sig sig-object py" id="xtalmet.constants.TYPE_EMB_ALL">
-<span class="sig-prename descclassname"><span class="pre">xtalmet.constants.</span></span><span class="sig-name descname"><span class="pre">TYPE_EMB_ALL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">tuple[tuple[str,</span> <span class="pre">int]]</span> <span class="pre">|</span> <span class="pre">tuple[int,</span> <span class="pre">tuple[str]]</span> <span class="pre">|</span> <span class="pre">Exception</span> <span class="pre">|</span> <span class="pre">list[float]</span> <span class="pre">|</span> <span class="pre">numpy.ndarray[numpy.float32</span> <span class="pre">|</span> <span class="pre">numpy.float64]</span></em><a class="headerlink" href="#xtalmet.constants.TYPE_EMB_ALL" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">xtalmet.constants.</span></span><span class="sig-name descname"><span class="pre">TYPE_EMB_ALL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">tuple[tuple[str,</span> <span class="pre">int]]</span> <span class="pre">|</span> <span class="pre">tuple[int,</span> <span class="pre">tuple[str]]</span> <span class="pre">|</span> <span class="pre">list[float]</span> <span class="pre">|</span> <span class="pre">numpy.ndarray[numpy.float32</span> <span class="pre">|</span> <span class="pre">numpy.float64]</span></em><a class="headerlink" href="#xtalmet.constants.TYPE_EMB_ALL" title="Link to this definition"></a></dt>
 <dd><p>Union type of all embeddings.</p>
 </dd></dl>
 
@@ -172,7 +175,7 @@
 <dl class="py data">
 <dt class="sig sig-object py" id="xtalmet.constants.HF_VERSION">
 <span class="sig-prename descclassname"><span class="pre">xtalmet.constants.</span></span><span class="sig-name descname"><span class="pre">HF_VERSION</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'v1.0.0'</span></em><a class="headerlink" href="#xtalmet.constants.HF_VERSION" title="Link to this definition"></a></dt>
-<dd><p>Version of Hugging Face repository to use</p>
+<dd><p>Version of Hugging Face repository to use.</p>
 </dd></dl>
 
 </section>
