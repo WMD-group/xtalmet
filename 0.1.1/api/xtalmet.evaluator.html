@@ -101,6 +101,84 @@
 </dd>
 </dl>
 <dl class="py method">
+<dt class="sig sig-object py" id="xtalmet.evaluator.Evaluator.uniqueness">
+<span class="sig-name descname"><span class="pre">uniqueness</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">distance</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">screen</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dir_intermediate_gen</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#xtalmet.evaluator.Evaluator.uniqueness" title="Link to this definition"></a></dt>
+<dd><p>Evaluate the uniqueness of a set of crystals.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>distance</strong> (<em>str</em>) – Distance function used for uniqueness evaluation. Currently
+supported distances are shown in SUPPORTED_DISTANCES in constants.py.
+For more detailed information about each distance metric, please refer
+to the <a class="reference external" href="https://github.com/WMD-group/xtalmet/blob/main/examples/tutorial.ipynb">tutorial notebook</a>.</p></li>
+<li><p><strong>screen</strong> (<em>str</em><em> | </em><em>None</em>) – Method to screen the crystals. Currently supported
+methods are shown in SUPPORTED_SCREENS in constants.py.</p></li>
+<li><p><strong>dir_intermediate_gen</strong> (<em>str</em><em> | </em><em>None</em>) – Directory to search for pre-computed
+embeddings, distance matrix, and screening results for faster
+computation. If pre-computed files do not exist in the directory, they
+will be saved to the directory for future use. If set to None, no files
+will be loaded or saved. It is recommended that you set this argument.
+This is especially important when evaluating a large number of generated
+crystals or when d_smat is used as the distance metric.</p></li>
+<li><p><strong>return_time</strong> (<em>bool</em>) – Whether to return the time taken for each step.</p></li>
+<li><p><strong>**kwargs</strong> – Additional keyword arguments for specific distance metrics and
+thermodynamic screening. It can contain three keys: “args_emb”,
+“args_dist”, and “args_screen”. The value of “args_emb” is a dict of
+arguments for the calculation of embeddings, the value of “args_dist” is
+a dict of arguments for the calculation of distance matrix using the
+embeddings, and the value of “args_screen” is a dict of arguments for
+the screening function.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">evaluator</span><span class="o">.</span><span class="n">uniqueness</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">distance</span><span class="o">=</span><span class="s2">&quot;smat&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">screen</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">dir_intermediate_gen</span><span class="o">=</span><span class="s2">&quot;./intermediate&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">return_time</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">(</span>
+<span class="gp">... </span>    <span class="mf">0.9945</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">{</span>
+<span class="gp">... </span>        <span class="s2">&quot;uni_emb&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;uni_d_mtx&quot;</span><span class="p">:</span> <span class="mf">16953.978</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;uni_metric&quot;</span><span class="p">:</span> <span class="mf">0.152</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;uni_total&quot;</span><span class="p">:</span> <span class="mf">16954.130</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">},</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">evaluator</span><span class="o">.</span><span class="n">uniqueness</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">distance</span><span class="o">=</span><span class="s2">&quot;amd&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">screen</span><span class="o">=</span><span class="s2">&quot;ehull&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">dir_intermediate_gen</span><span class="o">=</span><span class="s2">&quot;./intermediate&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">return_time</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="o">**</span><span class="p">{</span>
+<span class="gp">... </span>        <span class="s2">&quot;args_emb&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mi">200</span><span class="p">},</span>
+<span class="gp">... </span>        <span class="s2">&quot;args_dist&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;metric&quot;</span><span class="p">:</span> <span class="s2">&quot;chebyshev&quot;</span><span class="p">,</span> <span class="s2">&quot;low_memory&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
+<span class="gp">... </span>        <span class="s2">&quot;args_screen&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;diagram&quot;</span><span class="p">:</span> <span class="s2">&quot;mp_250618&quot;</span><span class="p">},</span>
+<span class="gp">... </span>    <span class="p">},</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="mf">0.0016</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><dl class="simple">
+<dt>Uniqueness value or (uniqueness value, a dictionary of time</dt><dd><p>taken for each step).</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>float | tuple</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ValueError</strong> – If an unsupported distance metric or screening method is provided.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="xtalmet.evaluator.Evaluator.novelty">
 <span class="sig-name descname"><span class="pre">novelty</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">train_xtals</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="xtalmet.crystal.html#xtalmet.crystal.Crystal" title="xtalmet.crystal.Crystal"><span class="pre">Crystal</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Structure</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'mp20'</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">screen</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dir_intermediate_gen</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dir_intermediate_train</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#xtalmet.evaluator.Evaluator.novelty" title="Link to this definition"></a></dt>
 <dd><p>Evaluate the novelty of a set of crystals.</p>
@@ -188,77 +266,11 @@ the screening function.</p></li>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>float | tuple</p>
 </dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="xtalmet.evaluator.Evaluator.uniqueness">
-<span class="sig-name descname"><span class="pre">uniqueness</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">distance</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">screen</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dir_intermediate_gen</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#xtalmet.evaluator.Evaluator.uniqueness" title="Link to this definition"></a></dt>
-<dd><p>Evaluate the uniqueness of a set of crystals.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>distance</strong> (<em>str</em>) – Distance function used for uniqueness evaluation. Currently
-supported distances are shown in SUPPORTED_DISTANCES in constants.py.
-For more detailed information about each distance metric, please refer
-to the <a class="reference external" href="https://github.com/WMD-group/xtalmet/blob/main/examples/tutorial.ipynb">tutorial notebook</a>.</p></li>
-<li><p><strong>screen</strong> (<em>str</em><em> | </em><em>None</em>) – Method to screen the crystals. Currently supported
-methods are shown in SUPPORTED_SCREENS in constants.py.</p></li>
-<li><p><strong>dir_intermediate_gen</strong> (<em>str</em><em> | </em><em>None</em>) – Directory to search for pre-computed
-embeddings, distance matrix, and screening results for faster
-computation. If pre-computed files do not exist in the directory, they
-will be saved to the directory for future use. If set to None, no files
-will be loaded or saved. It is recommended that you set this argument.
-This is especially important when evaluating a large number of generated
-crystals or when d_smat is used as the distance metric.</p></li>
-<li><p><strong>return_time</strong> (<em>bool</em>) – Whether to return the time taken for each step.</p></li>
-<li><p><strong>**kwargs</strong> – Additional keyword arguments for specific distance metrics and
-thermodynamic screening. It can contain three keys: “args_emb”,
-“args_dist”, and “args_screen”. The value of “args_emb” is a dict of
-arguments for the calculation of embeddings, the value of “args_dist” is
-a dict of arguments for the calculation of distance matrix using the
-embeddings, and the value of “args_screen” is a dict of arguments for
-the screening function.</p></li>
+<li><p><strong>ValueError</strong> – If an unsupported dataset name, distance metric, or screening</p></li>
+<li><p><strong>method is provided.</strong> – </p></li>
 </ul>
-</dd>
-</dl>
-<p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">evaluator</span><span class="o">.</span><span class="n">uniqueness</span><span class="p">(</span>
-<span class="gp">... </span>    <span class="n">distance</span><span class="o">=</span><span class="s2">&quot;smat&quot;</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="n">screen</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="n">dir_intermediate_gen</span><span class="o">=</span><span class="s2">&quot;./intermediate&quot;</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="n">return_time</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<span class="gp">... </span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="p">(</span>
-<span class="gp">... </span>    <span class="mf">0.9945</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="p">{</span>
-<span class="gp">... </span>        <span class="s2">&quot;uni_emb&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;uni_d_mtx&quot;</span><span class="p">:</span> <span class="mf">16953.978</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;uni_metric&quot;</span><span class="p">:</span> <span class="mf">0.152</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;uni_total&quot;</span><span class="p">:</span> <span class="mf">16954.130</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="p">},</span>
-<span class="gp">... </span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">evaluator</span><span class="o">.</span><span class="n">uniqueness</span><span class="p">(</span>
-<span class="gp">... </span>    <span class="n">distance</span><span class="o">=</span><span class="s2">&quot;amd&quot;</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="n">screen</span><span class="o">=</span><span class="s2">&quot;ehull&quot;</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="n">dir_intermediate_gen</span><span class="o">=</span><span class="s2">&quot;./intermediate&quot;</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="n">return_time</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="o">**</span><span class="p">{</span>
-<span class="gp">... </span>        <span class="s2">&quot;args_emb&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mi">200</span><span class="p">},</span>
-<span class="gp">... </span>        <span class="s2">&quot;args_dist&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;metric&quot;</span><span class="p">:</span> <span class="s2">&quot;chebyshev&quot;</span><span class="p">,</span> <span class="s2">&quot;low_memory&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
-<span class="gp">... </span>        <span class="s2">&quot;args_screen&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;diagram&quot;</span><span class="p">:</span> <span class="s2">&quot;mp_250618&quot;</span><span class="p">},</span>
-<span class="gp">... </span>    <span class="p">},</span>
-<span class="gp">... </span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="mf">0.0016</span>
-</pre></div>
-</div>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Uniqueness value or (uniqueness value, a dictionary of time
-taken for each step).</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>float | tuple</p>
 </dd>
 </dl>
 </dd></dl>

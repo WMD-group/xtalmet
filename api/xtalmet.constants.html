@@ -49,7 +49,21 @@
 <li class="toctree-l1"><a class="reference internal" href="../tutorial.html">Tutorial</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="xtalmet.html">API</a><ul class="current">
 <li class="toctree-l2 current"><a class="reference internal" href="xtalmet.html#submodules">Submodules</a><ul class="current">
-<li class="toctree-l3 current"><a class="current reference internal" href="#">xtalmet.constants module</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">xtalmet.constants module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#xtalmet.constants.TYPE_EMB_COMP"><code class="docutils literal notranslate"><span class="pre">TYPE_EMB_COMP</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#xtalmet.constants.TYPE_EMB_WYCKOFF"><code class="docutils literal notranslate"><span class="pre">TYPE_EMB_WYCKOFF</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#xtalmet.constants.TYPE_EMB_MAGPIE"><code class="docutils literal notranslate"><span class="pre">TYPE_EMB_MAGPIE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#xtalmet.constants.TYPE_EMB_PDD"><code class="docutils literal notranslate"><span class="pre">TYPE_EMB_PDD</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#xtalmet.constants.TYPE_EMB_AMD"><code class="docutils literal notranslate"><span class="pre">TYPE_EMB_AMD</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#xtalmet.constants.TYPE_EMB_ALL"><code class="docutils literal notranslate"><span class="pre">TYPE_EMB_ALL</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#xtalmet.constants.DIST_WO_EMB"><code class="docutils literal notranslate"><span class="pre">DIST_WO_EMB</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#xtalmet.constants.BINARY_DISTANCES"><code class="docutils literal notranslate"><span class="pre">BINARY_DISTANCES</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#xtalmet.constants.CONTINUOUS_DISTANCES"><code class="docutils literal notranslate"><span class="pre">CONTINUOUS_DISTANCES</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#xtalmet.constants.SUPPORTED_DISTANCES"><code class="docutils literal notranslate"><span class="pre">SUPPORTED_DISTANCES</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#xtalmet.constants.SUPPORTED_SCREENS"><code class="docutils literal notranslate"><span class="pre">SUPPORTED_SCREENS</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#xtalmet.constants.HF_VERSION"><code class="docutils literal notranslate"><span class="pre">HF_VERSION</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="xtalmet.crystal.html">xtalmet.crystal module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="xtalmet.distance.html">xtalmet.distance module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="xtalmet.evaluator.html">xtalmet.evaluator module</a></li>
@@ -87,6 +101,80 @@
   <section id="module-xtalmet.constants">
 <span id="xtalmet-constants-module"></span><h1>xtalmet.constants module<a class="headerlink" href="#module-xtalmet.constants" title="Link to this heading"></a></h1>
 <p>Type definitions used in xtalmet.</p>
+<dl class="py data">
+<dt class="sig sig-object py" id="xtalmet.constants.TYPE_EMB_COMP">
+<span class="sig-prename descclassname"><span class="pre">xtalmet.constants.</span></span><span class="sig-name descname"><span class="pre">TYPE_EMB_COMP</span></span><a class="headerlink" href="#xtalmet.constants.TYPE_EMB_COMP" title="Link to this definition"></a></dt>
+<dd><p>Type of embeddings for d_comp. A tuple containing elements and their counts (divided by gcd).</p>
+<p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]]</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="xtalmet.constants.TYPE_EMB_WYCKOFF">
+<span class="sig-prename descclassname"><span class="pre">xtalmet.constants.</span></span><span class="sig-name descname"><span class="pre">TYPE_EMB_WYCKOFF</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">tuple[int,</span> <span class="pre">tuple[str]]</span> <span class="pre">|</span> <span class="pre">Exception</span></em><a class="headerlink" href="#xtalmet.constants.TYPE_EMB_WYCKOFF" title="Link to this definition"></a></dt>
+<dd><p>Type of embeddings for d_wyckoff. A tuple containing the space group number and a tuple of Wyckoff letters, or an Exception from SpacegroupAnalyzer.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="xtalmet.constants.TYPE_EMB_MAGPIE">
+<span class="sig-prename descclassname"><span class="pre">xtalmet.constants.</span></span><span class="sig-name descname"><span class="pre">TYPE_EMB_MAGPIE</span></span><a class="headerlink" href="#xtalmet.constants.TYPE_EMB_MAGPIE" title="Link to this definition"></a></dt>
+<dd><p>Type of embeddings for d_magpie. A list of floats (Magpie feature vector).</p>
+<p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="xtalmet.constants.TYPE_EMB_PDD">
+<span class="sig-prename descclassname"><span class="pre">xtalmet.constants.</span></span><span class="sig-name descname"><span class="pre">TYPE_EMB_PDD</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">numpy.ndarray[numpy.float32</span> <span class="pre">|</span> <span class="pre">numpy.float64]</span> <span class="pre">|</span> <span class="pre">Exception</span></em><a class="headerlink" href="#xtalmet.constants.TYPE_EMB_PDD" title="Link to this definition"></a></dt>
+<dd><p>Type of embeddings for d_pdd. A numpy array of floats (pair distance distribution) or an Exception from periodicset_from_pymatgen_structure.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="xtalmet.constants.TYPE_EMB_AMD">
+<span class="sig-prename descclassname"><span class="pre">xtalmet.constants.</span></span><span class="sig-name descname"><span class="pre">TYPE_EMB_AMD</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">numpy.ndarray[numpy.float32</span> <span class="pre">|</span> <span class="pre">numpy.float64]</span> <span class="pre">|</span> <span class="pre">Exception</span></em><a class="headerlink" href="#xtalmet.constants.TYPE_EMB_AMD" title="Link to this definition"></a></dt>
+<dd><p>Type of embeddings for d_amd. A numpy array of floats (average minimum distance) or an Exception from periodicset_from_pymatgen_structure.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="xtalmet.constants.TYPE_EMB_ALL">
+<span class="sig-prename descclassname"><span class="pre">xtalmet.constants.</span></span><span class="sig-name descname"><span class="pre">TYPE_EMB_ALL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">tuple[tuple[str,</span> <span class="pre">int]]</span> <span class="pre">|</span> <span class="pre">tuple[int,</span> <span class="pre">tuple[str]]</span> <span class="pre">|</span> <span class="pre">Exception</span> <span class="pre">|</span> <span class="pre">list[float]</span> <span class="pre">|</span> <span class="pre">numpy.ndarray[numpy.float32</span> <span class="pre">|</span> <span class="pre">numpy.float64]</span></em><a class="headerlink" href="#xtalmet.constants.TYPE_EMB_ALL" title="Link to this definition"></a></dt>
+<dd><p>Union type of all embeddings.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="xtalmet.constants.DIST_WO_EMB">
+<span class="sig-prename descclassname"><span class="pre">xtalmet.constants.</span></span><span class="sig-name descname"><span class="pre">DIST_WO_EMB</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['smat']</span></em><a class="headerlink" href="#xtalmet.constants.DIST_WO_EMB" title="Link to this definition"></a></dt>
+<dd><p>Distance metrics that do not use embeddings.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="xtalmet.constants.BINARY_DISTANCES">
+<span class="sig-prename descclassname"><span class="pre">xtalmet.constants.</span></span><span class="sig-name descname"><span class="pre">BINARY_DISTANCES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['smat',</span> <span class="pre">'comp',</span> <span class="pre">'wyckoff']</span></em><a class="headerlink" href="#xtalmet.constants.BINARY_DISTANCES" title="Link to this definition"></a></dt>
+<dd><p>Binary distance metrics.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="xtalmet.constants.CONTINUOUS_DISTANCES">
+<span class="sig-prename descclassname"><span class="pre">xtalmet.constants.</span></span><span class="sig-name descname"><span class="pre">CONTINUOUS_DISTANCES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['magpie',</span> <span class="pre">'pdd',</span> <span class="pre">'amd']</span></em><a class="headerlink" href="#xtalmet.constants.CONTINUOUS_DISTANCES" title="Link to this definition"></a></dt>
+<dd><p>Continuous distance metrics.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="xtalmet.constants.SUPPORTED_DISTANCES">
+<span class="sig-prename descclassname"><span class="pre">xtalmet.constants.</span></span><span class="sig-name descname"><span class="pre">SUPPORTED_DISTANCES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['smat',</span> <span class="pre">'comp',</span> <span class="pre">'wyckoff',</span> <span class="pre">'magpie',</span> <span class="pre">'pdd',</span> <span class="pre">'amd']</span></em><a class="headerlink" href="#xtalmet.constants.SUPPORTED_DISTANCES" title="Link to this definition"></a></dt>
+<dd><p>Supported distance metrics.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="xtalmet.constants.SUPPORTED_SCREENS">
+<span class="sig-prename descclassname"><span class="pre">xtalmet.constants.</span></span><span class="sig-name descname"><span class="pre">SUPPORTED_SCREENS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[None,</span> <span class="pre">'smact',</span> <span class="pre">'ehull']</span></em><a class="headerlink" href="#xtalmet.constants.SUPPORTED_SCREENS" title="Link to this definition"></a></dt>
+<dd><p>Supported screening methods.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="xtalmet.constants.HF_VERSION">
+<span class="sig-prename descclassname"><span class="pre">xtalmet.constants.</span></span><span class="sig-name descname"><span class="pre">HF_VERSION</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'v1.0.0'</span></em><a class="headerlink" href="#xtalmet.constants.HF_VERSION" title="Link to this definition"></a></dt>
+<dd><p>Version of Hugging Face repository to use</p>
+</dd></dl>
+
 </section>
 
 
