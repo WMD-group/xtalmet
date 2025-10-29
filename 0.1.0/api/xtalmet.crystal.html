@@ -172,60 +172,6 @@ lost when converting to other formats.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="xtalmet.crystal.Crystal.get_AMD">
-<span class="sig-name descname"><span class="pre">get_AMD</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">100</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span><span class="p"><span class="pre">[</span></span><span class="pre">float32</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float64</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Exception</span></span></span><a class="headerlink" href="#xtalmet.crystal.Crystal.get_AMD" title="Link to this definition"></a></dt>
-<dd><p>Get the average minimum distance (AMD) of the crystal.</p>
-<p>Embedding for d_amd.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>k</strong> (<em>int</em>) – Number of nearest neighbors to consider. Also the embedding length.</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>AMD or an Exception
-from periodicset_from_pymatgen_structure</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>np.ndarray[np.float32 | np.float64] | Exception</p>
-</dd>
-</dl>
-<p class="rubric">References</p>
-<ul class="simple">
-<li><p>Widdson et al., (2022). Average Minimum Distances of periodic point sets -
-foundational invariants for mapping periodic crystals. MATCH
-Communications in Mathematical and in Computer Chemistry, 87(3), 529-559,
-<a class="reference external" href="https://doi.org/10.46793/match.87-3.529W">https://doi.org/10.46793/match.87-3.529W</a></p></li>
-</ul>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="xtalmet.crystal.Crystal.get_PDD">
-<span class="sig-name descname"><span class="pre">get_PDD</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span><span class="p"><span class="pre">[</span></span><span class="pre">float32</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float64</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Exception</span></span></span><a class="headerlink" href="#xtalmet.crystal.Crystal.get_PDD" title="Link to this definition"></a></dt>
-<dd><p>Get the pointwise distance distribution (PDD) of the crystal.</p>
-<p>Embedding for d_ppd.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>k</strong> (<em>int</em>) – Number of nearest neighbors to consider.</p></li>
-<li><p><strong>**kwargs</strong> – Additional arguments for amd.PDD, except k.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>PDD or an Exception
-from periodicset_from_pymatgen_structure</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>np.ndarray[np.float32 | np.float64] | Exception</p>
-</dd>
-</dl>
-<p class="rubric">References</p>
-<ul class="simple">
-<li><p>Widdowson et al., (2022). Resolving the data ambiguity for periodic
-crystals. Advances in Neural Information Processing Systems, 35,
-24625–24638. <a class="reference external" href="https://openreview.net/forum?id=4wrB7Mo9_OQ">https://openreview.net/forum?id=4wrB7Mo9_OQ</a></p></li>
-</ul>
-</dd></dl>
-
-<dl class="py method">
 <dt class="sig sig-object py" id="xtalmet.crystal.Crystal.get_ase_atoms">
 <span class="sig-name descname"><span class="pre">get_ase_atoms</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Atoms</span></span></span><a class="headerlink" href="#xtalmet.crystal.Crystal.get_ase_atoms" title="Link to this definition"></a></dt>
 <dd><p>Get the ASE Atoms object of the crystal.</p>
@@ -256,55 +202,31 @@ crystals. Advances in Neural Information Processing Systems, 35,
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="xtalmet.crystal.Crystal.get_composition_tuple">
-<span class="sig-name descname"><span class="pre">get_composition_tuple</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#xtalmet.crystal.Crystal.get_composition_tuple" title="Link to this definition"></a></dt>
-<dd><p>Get the composition of the crystal as a tuple of (element, count).</p>
-<p>Embedding for d_comp.</p>
+<dt class="sig sig-object py" id="xtalmet.crystal.Crystal.get_embedding">
+<span class="sig-name descname"><span class="pre">get_embedding</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">distance</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Exception</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">[</span></span><span class="pre">float32</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float64</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#xtalmet.crystal.Crystal.get_embedding" title="Link to this definition"></a></dt>
+<dd><p>Get the embedding of the crystal based on the specified distance metric.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>A tuple containing elements and their counts (divided by gcd).</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>tuple</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="xtalmet.crystal.Crystal.get_magpie">
-<span class="sig-name descname"><span class="pre">get_magpie</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#xtalmet.crystal.Crystal.get_magpie" title="Link to this definition"></a></dt>
-<dd><p>Get the magpie embedding of the crystal.</p>
-<p>Embedding for d_magpie. Not influenced by oxidation states.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Magpie feature vector of the crystal.</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>list[float]</p>
-</dd>
-</dl>
-<p class="rubric">References</p>
-<ul class="simple">
-<li><p>Ward et al., (2016). A general-purpose machine learning framework for
-predicting properties of inorganic materials. npj Computational Materials,
-2(1), 1-7. <a class="reference external" href="https://doi.org/10.1038/npjcompumats.2016.28">https://doi.org/10.1038/npjcompumats.2016.28</a></p></li>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>distance</strong> (<em>str</em>) – The distance metric to use.</p></li>
+<li><p><strong>**kwargs</strong> – Additional arguments for embedding methods if needed.</p></li>
 </ul>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="xtalmet.crystal.Crystal.get_wyckoff">
-<span class="sig-name descname"><span class="pre">get_wyckoff</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Exception</span></span></span><a class="headerlink" href="#xtalmet.crystal.Crystal.get_wyckoff" title="Link to this definition"></a></dt>
-<dd><p>Get the Wyckoff representation of the crystal.</p>
-<p>Embedding for d_wyckoff.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>A tuple containing the space group number and a tuple of
-Wyckoff letters, or an Exception from SpacegroupAnalyzer.</p>
 </dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>tuple | Exception</p>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The embedding corresponding to the specified distance
+metric.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>TYPE_EMB_ALL</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If an unsupported distance metric is provided.</p>
 </dd>
 </dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For “smat” distance, the embedding is the Crystal object itself.</p>
+</div>
 </dd></dl>
 
 </dd></dl>
