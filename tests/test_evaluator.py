@@ -4,11 +4,14 @@ import datetime
 import gzip
 import os
 import pickle
+from multiprocessing import cpu_count
 
 import pytest
 
 from xtalmet.crystal import Crystal
 from xtalmet.evaluator import Evaluator
+
+N_PROCESSES = max(cpu_count() // 2 - 1, 1)
 
 
 @pytest.fixture(scope="module")
@@ -37,17 +40,38 @@ class TestEvaluator:
 		assert True
 
 	@pytest.mark.parametrize(
-		"distance, screen, kwargs",
+		"distance, screen, multiprocessing, n_processes, kwargs",
 		[
-			("smat", None, {}),
-			("comp", None, {}),
-			("wyckoff", None, {}),
-			("magpie", None, {}),
-			("pdd", None, {}),
-			("amd", None, {}),
-			("smat", None, {"args_dist": {"ltol": 0.3, "stol": 0.4, "angle_tol": 6}}),
+			("smat", None, False, None, {}),
+			("smat", None, True, N_PROCESSES, {}),
+			("comp", None, False, None, {}),
+			("comp", None, True, None, {}),
+			("wyckoff", None, False, None, {}),
+			("wyckoff", None, True, N_PROCESSES, {}),
+			("magpie", None, False, None, {}),
+			("magpie", None, True, None, {}),
+			("pdd", None, False, None, {}),
+			("pdd", None, True, N_PROCESSES, {}),
+			("amd", None, False, None, {}),
+			("amd", None, True, None, {}),
+			(
+				"smat",
+				None,
+				False,
+				None,
+				{"args_dist": {"ltol": 0.3, "stol": 0.4, "angle_tol": 6}},
+			),
+			(
+				"smat",
+				None,
+				True,
+				N_PROCESSES,
+				{"args_dist": {"ltol": 0.3, "stol": 0.4, "angle_tol": 6}},
+			),
 			(
 				"pdd",
+				None,
+				False,
 				None,
 				{
 					"args_emb": {"k": 200, "return_row_data": True},
@@ -62,6 +86,8 @@ class TestEvaluator:
 			(
 				"pdd",
 				None,
+				True,
+				None,
 				{
 					"args_emb": {"k": 100},
 					"args_dist": {
@@ -75,6 +101,8 @@ class TestEvaluator:
 			(
 				"amd",
 				None,
+				False,
+				None,
 				{
 					"args_emb": {"k": 200},
 					"args_dist": {"metric": "chebyshev", "low_memory": False},
@@ -83,17 +111,25 @@ class TestEvaluator:
 			(
 				"amd",
 				None,
+				True,
+				N_PROCESSES,
 				{
 					"args_emb": {"k": 100},
 					"args_dist": {"metric": "chebyshev", "low_memory": False},
 				},
 			),
-			("smat", "smact", {}),
-			("comp", "smact", {}),
-			("wyckoff", "smact", {}),
-			("magpie", "ehull", {"args_screen": {"diagram": "mp_250618"}}),
-			("pdd", "ehull", {"args_screen": {"diagram": "mp_250618"}}),
-			("amd", "ehull", {"args_screen": {"diagram": "mp_250618"}}),
+			("smat", "smact", False, None, {}),
+			("comp", "smact", True, None, {}),
+			("wyckoff", "smact", False, None, {}),
+			(
+				"magpie",
+				"ehull",
+				True,
+				N_PROCESSES,
+				{"args_screen": {"diagram": "mp_250618"}},
+			),
+			("pdd", "ehull", False, None, {"args_screen": {"diagram": "mp_250618"}}),
+			("amd", "ehull", True, None, {"args_screen": {"diagram": "mp_250618"}}),
 		],
 	)
 	def test_uniqueness(
@@ -102,14 +138,18 @@ class TestEvaluator:
 		prepare_gen_xtals: list[Crystal],
 		distance: str,
 		screen: str | None,
+		multiprocessing: bool,
+		n_processes: int | None,
 		kwargs: dict,
 	):
 		"""Test uniqueness."""
 		gen_xtals = prepare_gen_xtals
 		evaluator = Evaluator(gen_xtals)
-		uniqueness_1 = evaluator.uniqueness(distance, screen, None, False, **kwargs)
+		uniqueness_1 = evaluator.uniqueness(
+			distance, screen, None, multiprocessing, n_processes, False, **kwargs
+		)
 		uniqueness_2, times = evaluator.uniqueness(
-			distance, screen, tmpdir, True, **kwargs
+			distance, screen, tmpdir, multiprocessing, n_processes, True, **kwargs
 		)
 		assert os.path.exists(os.path.join(tmpdir, f"gen_{distance}.pkl.gz"))
 		assert os.path.exists(os.path.join(tmpdir, f"mtx_uni_{distance}.pkl.gz"))
@@ -135,23 +175,41 @@ class TestEvaluator:
 			assert times[key] >= 0
 
 	@pytest.mark.parametrize(
-		"download, distance, screen, kwargs",
+		"download, distance, screen, multiprocessing, n_processes, kwargs",
 		[
-			(False, "smat", None, {}),
-			(False, "comp", None, {}),
-			(False, "wyckoff", None, {}),
-			(False, "magpie", None, {}),
-			(False, "pdd", None, {}),
-			(False, "amd", None, {}),
+			(False, "smat", None, False, None, {}),
+			(False, "smat", None, True, N_PROCESSES, {}),
+			(False, "comp", None, False, None, {}),
+			(False, "comp", None, True, None, {}),
+			(False, "wyckoff", None, False, None, {}),
+			(False, "wyckoff", None, True, N_PROCESSES, {}),
+			(False, "magpie", None, False, None, {}),
+			(False, "magpie", None, True, None, {}),
+			(False, "pdd", None, False, None, {}),
+			(False, "pdd", None, True, N_PROCESSES, {}),
+			(False, "amd", None, False, None, {}),
+			(False, "amd", None, True, None, {}),
 			(
 				False,
 				"smat",
+				None,
+				False,
 				None,
 				{"args_mtx": {"ltol": 0.3, "stol": 0.4, "angle_tol": 6}},
 			),
 			(
 				False,
+				"smat",
+				None,
+				True,
+				N_PROCESSES,
+				{"args_mtx": {"ltol": 0.3, "stol": 0.4, "angle_tol": 6}},
+			),
+			(
+				False,
 				"pdd",
+				None,
+				False,
 				None,
 				{
 					"args_emb": {"k": 200, "return_row_data": True},
@@ -167,6 +225,8 @@ class TestEvaluator:
 				False,
 				"pdd",
 				None,
+				True,
+				None,
 				{
 					"args_emb": {"k": 100},
 					"args_mtx": {
@@ -181,6 +241,8 @@ class TestEvaluator:
 				False,
 				"amd",
 				None,
+				False,
+				None,
 				{
 					"args_emb": {"k": 200},
 					"args_mtx": {"metric": "chebyshev", "low_memory": False},
@@ -190,23 +252,46 @@ class TestEvaluator:
 				False,
 				"amd",
 				None,
+				True,
+				N_PROCESSES,
 				{
 					"args_emb": {"k": 100},
 					"args_mtx": {"metric": "chebyshev", "low_memory": False},
 				},
 			),
-			(True, "smat", None, {}),
-			(True, "comp", None, {}),
-			(True, "wyckoff", None, {}),
-			(True, "magpie", None, {}),
-			(True, "pdd", None, {}),
-			(True, "amd", None, {}),
-			(False, "smat", "ehull", {"args_screen": {"diagram": "mp_250618"}}),
-			(False, "comp", "ehull", {"args_screen": {"diagram": "mp_250618"}}),
-			(False, "wyckoff", "ehull", {"args_screen": {"diagram": "mp_250618"}}),
-			(False, "magpie", "smact", {}),
-			(False, "pdd", "smact", {}),
-			(False, "amd", "smact", {}),
+			(True, "smat", None, False, None, {}),
+			(True, "comp", None, True, None, {}),
+			(True, "wyckoff", None, False, None, {}),
+			(True, "magpie", None, True, N_PROCESSES, {}),
+			(True, "pdd", None, False, None, {}),
+			(True, "amd", None, True, None, {}),
+			(
+				False,
+				"smat",
+				"ehull",
+				False,
+				None,
+				{"args_screen": {"diagram": "mp_250618"}},
+			),
+			(
+				False,
+				"comp",
+				"ehull",
+				True,
+				N_PROCESSES,
+				{"args_screen": {"diagram": "mp_250618"}},
+			),
+			(
+				False,
+				"wyckoff",
+				"ehull",
+				False,
+				None,
+				{"args_screen": {"diagram": "mp_250618"}},
+			),
+			(False, "magpie", "smact", True, None, {}),
+			(False, "pdd", "smact", False, None, {}),
+			(False, "amd", "smact", True, N_PROCESSES, {}),
 		],
 	)
 	def test_novelty(
@@ -217,6 +302,8 @@ class TestEvaluator:
 		download: bool,
 		distance: str,
 		screen: str | None,
+		multiprocessing: bool,
+		n_processes: int | None,
 		kwargs: dict,
 	):
 		"""Test novelty."""
@@ -224,10 +311,26 @@ class TestEvaluator:
 		train_xtals = "mp20" if download else prepare_train_xtals
 		evaluator = Evaluator(gen_xtals)
 		novelty_1 = evaluator.novelty(
-			train_xtals, distance, screen, None, None, False, **kwargs
+			train_xtals,
+			distance,
+			screen,
+			None,
+			None,
+			multiprocessing,
+			n_processes,
+			False,
+			**kwargs,
 		)
 		novelty_2, times = evaluator.novelty(
-			train_xtals, distance, screen, tmpdir, tmpdir, True, **kwargs
+			train_xtals,
+			distance,
+			screen,
+			tmpdir,
+			tmpdir,
+			multiprocessing,
+			n_processes,
+			True,
+			**kwargs,
 		)
 		assert os.path.exists(os.path.join(tmpdir, f"gen_{distance}.pkl.gz"))
 		if not download:

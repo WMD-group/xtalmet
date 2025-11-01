@@ -72,6 +72,8 @@ class Evaluator:
 		distance: str,
 		screen: str | None = None,
 		dir_intermediate_gen: str | None = None,
+		multiprocessing: bool = False,
+		n_processes: int | None = None,
 		return_time: bool = False,
 		**kwargs,
 	) -> float | tuple[float, dict[str, float]]:
@@ -91,6 +93,13 @@ class Evaluator:
 				will be loaded or saved. It is recommended that you set this argument.
 				This is especially important when evaluating a large number of generated
 				crystals or when d_smat is used as the distance metric.
+			multiprocessing (bool): Whether to use multiprocessing for distance matrix
+				calculation. Default is False.
+			n_processes (int | None): Maximum number of processes to use for
+				multiprocessing. If None, the number of logical CPU cores - 1 will be
+				used. We recommend setting this argument to a smaller number than the
+				number of available CPU cores to avoid memory issues. If multiprocessing
+				is False, this argument is ignored. Default is None.
 			return_time (bool): Whether to return the time taken for each step.
 			**kwargs: Additional keyword arguments for specific distance metrics and
 				thermodynamic screening. It can contain three keys: "args_emb",
@@ -105,6 +114,7 @@ class Evaluator:
 			...     distance="smat",
 			...     screen=None,
 			...     dir_intermediate_gen="./intermediate",
+			...     multiprocessing=False,
 			...     return_time=True,
 			... )
 			>>> (
@@ -120,6 +130,8 @@ class Evaluator:
 			...     distance="amd",
 			...     screen="ehull",
 			...     dir_intermediate_gen="./intermediate",
+			...     multiprocessing=True,
+			...     n_processes=10,
 			...     return_time=False,
 			...     **{
 			...         "args_emb": {"k": 200},
@@ -173,6 +185,8 @@ class Evaluator:
 				distance,
 				gen_xtals,
 				None,
+				multiprocessing,
+				n_processes,
 				True,
 				**kwargs,
 			)
@@ -232,6 +246,8 @@ class Evaluator:
 		screen: str | None = None,
 		dir_intermediate_gen: str | None = None,
 		dir_intermediate_train: str | None = None,
+		multiprocessing: bool = False,
+		n_processes: int | None = None,
 		return_time: bool = False,
 		**kwargs,
 	) -> float | tuple[float, dict[str, float]]:
@@ -263,6 +279,13 @@ class Evaluator:
 				you set this argument. This is especially important when evaluating a
 				large number of generated crystals. If train_xtals is a dataset name,
 				this argument is ignored.
+			multiprocessing (bool): Whether to use multiprocessing for distance matrix
+				calculation. Default is False.
+			n_processes (int | None): Maximum number of processes to use for
+				multiprocessing. If None, the number of logical CPU cores - 1 will be
+				used. We recommend setting this argument to a smaller number than the
+				number of available CPU cores to avoid memory issues. If multiprocessing
+				is False, this argument is ignored. Default is None.
 			return_time (bool): Whether to return the time taken for each step.
 			**kwargs: Additional keyword arguments for specific distance metrics and
 				thermodynamic screening. It can contain three keys: "args_emb",
@@ -278,6 +301,7 @@ class Evaluator:
 			...     distance="smat",
 			...     screen=None,
 			...     dir_intermediate_gen="./intermediate",
+			...     multiprocessing=False,
 			...     return_time=True,
 			... )
 			>>> (
@@ -296,6 +320,8 @@ class Evaluator:
 			...     screen="ehull",
 			...     dir_intermediate_gen="./intermediate",
 			...     dir_intermediate_train="./intermediate_train",
+			...     multiprocessing=True,
+			...     n_processes=10,
 			...     return_time=False,
 			...     **{
 			...         "args_emb": {"k": 200},
@@ -376,6 +402,8 @@ class Evaluator:
 				distance,
 				gen_xtals,
 				train_xtals,
+				multiprocessing,
+				n_processes,
 				True,
 				**kwargs,
 			)

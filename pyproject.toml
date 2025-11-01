@@ -39,6 +39,7 @@ build-backend = "uv_build"
 
 [tool.ruff]
 line-length = 88
+extend-include = ["*.ipynb"]
 
 [tool.ruff.lint]
 select = [

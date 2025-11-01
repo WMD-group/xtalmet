@@ -1,6 +1,7 @@
 """Test distance functions."""
 
 import os
+from multiprocessing import cpu_count
 
 import numpy as np
 import pytest
@@ -27,6 +28,8 @@ from xtalmet.distance import (
 	distance,
 	distance_matrix,
 )
+
+N_PROCESSES = max(cpu_count() // 2 - 1, 1)
 
 
 @pytest.fixture(
@@ -222,10 +225,19 @@ class TestDistance:
 			xtal_1._get_emb_d_amd(), xtal_2._get_emb_d_amd(), **kwargs
 		) == approx(expected["amd"], rel=1e-3)
 
-	@pytest.mark.parametrize("kwargs", [{}, {"ltol": 0.3, "stol": 0.4, "angle_tol": 6}])
+	@pytest.mark.parametrize(
+		"multiprocessing, n_processes, kwargs",
+		[
+			(False, None, {}),
+			(True, N_PROCESSES, {"ltol": 0.3, "stol": 0.4, "angle_tol": 6}),
+			(True, None, {"ltol": 0.3, "stol": 0.4, "angle_tol": 6}),
+		],
+	)
 	def test_distance_matrix_d_smat(
 		self,
 		prepare_four_xtals: tuple[Crystal, Crystal, Crystal, Crystal],
+		multiprocessing: bool,
+		n_processes: int | None,
 		kwargs: dict,
 	):
 		"""Test _distance_matrix_d_smat."""
@@ -235,13 +247,24 @@ class TestDistance:
 		for i in range(4):
 			for j in range(4):
 				expected[i, j] = _d_smat(embs[i], embs[j], **kwargs)
-		results_1 = _distance_matrix_d_smat(embs, **kwargs)
+		results_1 = _distance_matrix_d_smat(
+			embs, None, multiprocessing, n_processes, **kwargs
+		)
 		assert np.all(results_1 == expected)
-		results_2 = _distance_matrix_d_smat(embs, embs, **kwargs)
+		results_2 = _distance_matrix_d_smat(
+			embs, embs, multiprocessing, n_processes, **kwargs
+		)
 		assert np.all(results_2 == expected)
 
+	@pytest.mark.parametrize(
+		"multiprocessing, n_processes",
+		[(False, None), (True, N_PROCESSES), (True, None)],
+	)
 	def test_distance_matrix_d_comp(
-		self, prepare_four_xtals: tuple[Crystal, Crystal, Crystal, Crystal]
+		self,
+		prepare_four_xtals: tuple[Crystal, Crystal, Crystal, Crystal],
+		multiprocessing: bool,
+		n_processes: int | None,
 	):
 		"""Test _distance_matrix_d_comp."""
 		xtals = prepare_four_xtals
@@ -250,13 +273,20 @@ class TestDistance:
 		for i in range(4):
 			for j in range(4):
 				expected[i, j] = _d_comp(embs[i], embs[j])
-		results_1 = _distance_matrix_d_comp(embs)
+		results_1 = _distance_matrix_d_comp(embs, None, multiprocessing, n_processes)
 		assert np.all(results_1 == expected)
-		results_2 = _distance_matrix_d_comp(embs, embs)
+		results_2 = _distance_matrix_d_comp(embs, embs, multiprocessing, n_processes)
 		assert np.all(results_2 == expected)
 
+	@pytest.mark.parametrize(
+		"multiprocessing, n_processes",
+		[(False, None), (True, N_PROCESSES), (True, None)],
+	)
 	def test_distance_matrix_d_wyckoff(
-		self, prepare_four_xtals: tuple[Crystal, Crystal, Crystal, Crystal]
+		self,
+		prepare_four_xtals: tuple[Crystal, Crystal, Crystal, Crystal],
+		multiprocessing: bool,
+		n_processes: int | None,
 	):
 		"""Test _distance_matrix_d_wyckoff."""
 		xtals = prepare_four_xtals
@@ -265,13 +295,20 @@ class TestDistance:
 		for i in range(4):
 			for j in range(4):
 				expected[i, j] = _d_wyckoff(embs[i], embs[j])
-		results_1 = _distance_matrix_d_wyckoff(embs)
+		results_1 = _distance_matrix_d_wyckoff(embs, None, multiprocessing, n_processes)
 		assert np.all(results_1 == expected)
-		results_2 = _distance_matrix_d_wyckoff(embs, embs)
+		results_2 = _distance_matrix_d_wyckoff(embs, embs, multiprocessing, n_processes)
 		assert np.all(results_2 == expected)
 
+	@pytest.mark.parametrize(
+		"multiprocessing, n_processes",
+		[(False, None), (True, N_PROCESSES), (True, None)],
+	)
 	def test_distance_matrix_d_magpie(
-		self, prepare_four_xtals: tuple[Crystal, Crystal, Crystal, Crystal]
+		self,
+		prepare_four_xtals: tuple[Crystal, Crystal, Crystal, Crystal],
+		multiprocessing: bool,
+		n_processes: int | None,
 	):
 		"""Test _distance_matrix_d_magpie."""
 		xtals = prepare_four_xtals
@@ -280,39 +317,49 @@ class TestDistance:
 		for i in range(4):
 			for j in range(4):
 				expected[i, j] = _d_magpie(embs[i], embs[j])
-		results_1 = _distance_matrix_d_magpie(embs)
+		results_1 = _distance_matrix_d_magpie(embs, None, multiprocessing, n_processes)
 		assert np.allclose(results_1, expected, rtol=1e-3)
-		results_2 = _distance_matrix_d_magpie(embs, embs)
+		results_2 = _distance_matrix_d_magpie(embs, embs, multiprocessing, n_processes)
 		assert np.allclose(results_2, expected, rtol=1e-3)
 
 	@pytest.mark.parametrize(
-		"kwargs",
+		"multiprocessing, n_processes, kwargs",
 		[
-			{},
-			{"args_emb": {"k": 100}},
-			{"args_emb": {"k": 100, "return_row_data": True}},
-			{
-				"args_dist": {
-					"metric": "chebyshev",
-					"backend": "multiprocessing",
-					"n_jobs": 2,
-					"verbose": True,
-				}
-			},
-			{
-				"args_emb": {"k": 100},
-				"args_dist": {
-					"metric": "chebyshev",
-					"backend": "multiprocessing",
-					"n_jobs": None,
-					"verbose": False,
+			(False, None, {}),
+			(True, N_PROCESSES, {"args_emb": {"k": 100}}),
+			(False, None, {"args_emb": {"k": 100, "return_row_data": True}}),
+			(
+				True,
+				None,
+				{
+					"args_dist": {
+						"metric": "chebyshev",
+						"backend": "multiprocessing",
+						"n_jobs": 2,
+						"verbose": True,
+					}
 				},
-			},
+			),
+			(
+				False,
+				None,
+				{
+					"args_emb": {"k": 100},
+					"args_dist": {
+						"metric": "chebyshev",
+						"backend": "multiprocessing",
+						"n_jobs": None,
+						"verbose": False,
+					},
+				},
+			),
 		],
 	)
 	def test_distance_matrix_d_pdd(
 		self,
 		prepare_four_xtals: tuple[Structure, Structure, Crystal, Crystal, dict],
+		multiprocessing: bool,
+		n_processes: int | None,
 		kwargs: dict,
 	):
 		"""Test _distance_matrix_d_pdd."""
@@ -326,9 +373,13 @@ class TestDistance:
 				expected[i, j] = _d_pdd(
 					embs[i], embs[j], **(kwargs.get("args_dist", {}))
 				)
-		results_1 = _distance_matrix_d_pdd(embs, **(kwargs.get("args_dist", {})))
+		results_1 = _distance_matrix_d_pdd(
+			embs, None, multiprocessing, n_processes, **(kwargs.get("args_dist", {}))
+		)
 		assert np.allclose(results_1, expected, rtol=1e-3)
-		results_2 = _distance_matrix_d_pdd(embs, embs, **(kwargs.get("args_dist", {})))
+		results_2 = _distance_matrix_d_pdd(
+			embs, embs, multiprocessing, n_processes, **(kwargs.get("args_dist", {}))
+		)
 		assert np.allclose(results_2, expected, rtol=1e-3)
 
 	@pytest.mark.parametrize(
@@ -359,36 +410,45 @@ class TestDistance:
 				expected[i, j] = _d_amd(
 					embs[i], embs[j], **(kwargs.get("args_dist", {}))
 				)
-		results_1 = _distance_matrix_d_amd(embs, **(kwargs.get("args_dist", {})))
+		results_1 = _distance_matrix_d_amd(embs, None, **(kwargs.get("args_dist", {})))
 		assert np.allclose(results_1, expected, rtol=1e-3)
 		results_2 = _distance_matrix_d_amd(embs, embs, **(kwargs.get("args_dist", {})))
 		assert np.allclose(results_2, expected, rtol=1e-3)
 
 	@pytest.mark.parametrize(
-		"distance_name, kwargs",
+		"distance_name, multiprocessing, n_processes, kwargs",
 		[
-			("smat", {}),
-			("smat", {"ltol": 0.3, "stol": 0.4, "angle_tol": 6}),
-			("comp", {}),
-			("wyckoff", {}),
-			("magpie", {}),
-			("pdd", {}),
-			("pdd", {"k": 100}),
-			("pdd", {"k": 100, "return_row_data": True}),
-			("amd", {}),
-			("amd", {"k": 100}),
+			("smat", False, None, {}),
+			("smat", True, N_PROCESSES, {"ltol": 0.3, "stol": 0.4, "angle_tol": 6}),
+			("comp", False, None, {}),
+			("comp", True, None, {}),
+			("wyckoff", False, None, {}),
+			("wyckoff", True, N_PROCESSES, {}),
+			("magpie", False, None, {}),
+			("magpie", True, None, {}),
+			("pdd", False, None, {}),
+			("pdd", True, N_PROCESSES, {"k": 100}),
+			("pdd", False, None, {"k": 100, "return_row_data": True}),
+			("amd", True, None, {}),
+			("amd", False, None, {"k": 100}),
 		],
 	)
 	def test_compute_embeddings(
 		self,
 		prepare_four_xtals: tuple[Crystal, Crystal, Crystal, Crystal],
 		distance_name: str,
+		multiprocessing: bool,
+		n_processes: int | None,
 		kwargs: dict,
 	):
 		"""Test compute_embeddings function."""
 		xtals = prepare_four_xtals
-		embs_1 = _compute_embeddings(distance_name, xtals[0], **kwargs)
-		embs_all = _compute_embeddings(distance_name, xtals, **kwargs)
+		embs_1 = _compute_embeddings(
+			distance_name, xtals[0], multiprocessing, n_processes, **kwargs
+		)
+		embs_all = _compute_embeddings(
+			distance_name, xtals, multiprocessing, n_processes, **kwargs
+		)
 		assert type(embs_1) is type(embs_all[0])
 		assert isinstance(embs_all, list)
 		assert len(embs_all) == 4
@@ -453,10 +513,10 @@ class TestDistance:
 		"""Test distance."""
 		struc_1, struc_2, xtal_1, xtal_2, expected = prepare
 		emb_1 = _compute_embeddings(
-			distance_name, xtal_1, **(kwargs.get("args_emb", {}))
+			distance_name, xtal_1, False, **(kwargs.get("args_emb", {}))
 		)
 		emb_2 = _compute_embeddings(
-			distance_name, xtal_2, **(kwargs.get("args_emb", {}))
+			distance_name, xtal_2, False, **(kwargs.get("args_emb", {}))
 		)
 		d = [None for _ in range(6)]
 		d[0] = distance(distance_name, struc_1, struc_2, **kwargs)
@@ -473,18 +533,23 @@ class TestDistance:
 				assert di == approx(expected[distance_name], rel=1e-3)
 
 	@pytest.mark.parametrize(
-		"distance_name, kwargs",
+		"distance_name, multiprocessing, n_processes, kwargs",
 		[
-			("smat", {}),
-			("smat", {"args_dist": {"ltol": 0.3, "stol": 0.4, "angle_tol": 6}}),
-			("comp", {}),
-			("wyckoff", {}),
-			("magpie", {}),
-			("pdd", {}),
-			("pdd", {"args_emb": {"k": 100}}),
-			("pdd", {"args_emb": {"k": 100, "return_row_data": True}}),
+			("smat", False, None, {}),
+			("smat", True, N_PROCESSES, {"ltol": 0.3, "stol": 0.4, "angle_tol": 6}),
+			("comp", False, None, {}),
+			("comp", True, None, {}),
+			("wyckoff", False, None, {}),
+			("wyckoff", True, N_PROCESSES, {}),
+			("magpie", False, None, {}),
+			("magpie", True, None, {}),
+			("pdd", False, None, {}),
+			("pdd", True, N_PROCESSES, {"args_emb": {"k": 100}}),
+			("pdd", False, None, {"args_emb": {"k": 100, "return_row_data": True}}),
 			(
 				"pdd",
+				True,
+				None,
 				{
 					"args_dist": {
 						"metric": "chebyshev",
@@ -496,6 +561,8 @@ class TestDistance:
 			),
 			(
 				"pdd",
+				False,
+				None,
 				{
 					"args_emb": {"k": 100},
 					"args_dist": {
@@ -506,16 +573,20 @@ class TestDistance:
 					},
 				},
 			),
-			("amd", {}),
-			("amd", {"args_emb": {"k": 100}}),
+			("amd", True, N_PROCESSES, {}),
+			("amd", False, None, {"args_emb": {"k": 100}}),
 			(
 				"amd",
+				True,
+				None,
 				{
 					"args_dist": {"metric": "chebyshev", "low_memory": False},
 				},
 			),
 			(
 				"amd",
+				False,
+				None,
 				{
 					"args_emb": {"k": 100},
 					"args_dist": {"metric": "chebyshev", "low_memory": False},
@@ -527,6 +598,8 @@ class TestDistance:
 		self,
 		prepare_d_mtx: tuple[Structure, Structure, Structure, Structure, dict],
 		distance_name: str,
+		multiprocessing: bool,
+		n_processes: int | None,
 		kwargs: dict,
 	):
 		"""Test distance_matrix."""
@@ -534,29 +607,68 @@ class TestDistance:
 		structures = [struc_1, struc_2, struc_3, struc_4]
 		xtals = [Crystal.from_Structure(s) for s in structures]
 		embs = [
-			_compute_embeddings(distance_name, xtal, **(kwargs.get("args_emb", {})))
+			_compute_embeddings(
+				distance_name,
+				xtal,
+				multiprocessing,
+				n_processes,
+				**(kwargs.get("args_emb", {})),
+			)
 			for xtal in xtals
 		]
 		matrices = [None for _ in range(12)]
-		matrices[0] = distance_matrix(distance_name, structures, None, **kwargs)
+		matrices[0] = distance_matrix(
+			distance_name, structures, None, multiprocessing, n_processes, **kwargs
+		)
 		matrices[1], _, times_1 = distance_matrix(
-			distance_name, structures, None, True, **kwargs
+			distance_name,
+			structures,
+			None,
+			multiprocessing,
+			n_processes,
+			True,
+			**kwargs,
 		)
-		matrices[2] = distance_matrix(distance_name, structures, structures, **kwargs)
+		matrices[2] = distance_matrix(
+			distance_name,
+			structures,
+			structures,
+			multiprocessing,
+			n_processes,
+			**kwargs,
+		)
 		matrices[3], _, _, times_2 = distance_matrix(
-			distance_name, structures, structures, True, **kwargs
+			distance_name,
+			structures,
+			structures,
+			multiprocessing,
+			n_processes,
+			True,
+			**kwargs,
 		)
-		matrices[4] = distance_matrix(distance_name, xtals, None, **kwargs)
-		matrices[5], _, _ = distance_matrix(distance_name, xtals, None, True, **kwargs)
-		matrices[6] = distance_matrix(distance_name, xtals, xtals, **kwargs)
+		matrices[4] = distance_matrix(
+			distance_name, xtals, None, multiprocessing, n_processes, **kwargs
+		)
+		matrices[5], _, _ = distance_matrix(
+			distance_name, xtals, None, multiprocessing, n_processes, True, **kwargs
+		)
+		matrices[6] = distance_matrix(
+			distance_name, xtals, xtals, multiprocessing, n_processes, **kwargs
+		)
 		matrices[7], _, _, _ = distance_matrix(
-			distance_name, xtals, xtals, True, **kwargs
+			distance_name, xtals, xtals, multiprocessing, n_processes, True, **kwargs
 		)
-		matrices[8] = distance_matrix(distance_name, embs, None, **kwargs)
-		matrices[9], _, _ = distance_matrix(distance_name, embs, None, True, **kwargs)
-		matrices[10] = distance_matrix(distance_name, embs, embs, **kwargs)
+		matrices[8] = distance_matrix(
+			distance_name, embs, None, multiprocessing, n_processes, **kwargs
+		)
+		matrices[9], _, _ = distance_matrix(
+			distance_name, embs, None, multiprocessing, n_processes, True, **kwargs
+		)
+		matrices[10] = distance_matrix(
+			distance_name, embs, embs, multiprocessing, n_processes, **kwargs
+		)
 		matrices[11], _, _, _ = distance_matrix(
-			distance_name, embs, embs, True, **kwargs
+			distance_name, embs, embs, multiprocessing, n_processes, True, **kwargs
 		)
 		if distance_name in BINARY_DISTANCES:
 			for d_mtx in matrices:
