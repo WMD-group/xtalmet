@@ -82,13 +82,11 @@ These include the work of Onwuli et al. [6] on distances between compositional e
 ## Citation
 If you find xtalmet useful in your research, please consider citing:
 ```bibtex
-@misc{negishi2025continuousuniquenessnoveltymetrics,
-      title={Continuous Uniqueness and Novelty Metrics for Generative Modeling of Inorganic Crystals}, 
+@inproceedings{negishi2025continuous,
+      title={Continuous Uniqueness and Novelty Metrics for Generative Modeling of Inorganic Crystals},
       author={Masahiro Negishi and Hyunsoo Park and Kinga O. Mastej and Aron Walsh},
+      booktitle={AI for Accelerated Materials Design - NeurIPS 2025},
       year={2025},
-      eprint={2510.12405},
-      archivePrefix={arXiv},
-      primaryClass={cs.LG},
-      url={https://arxiv.org/abs/2510.12405}, 
+      url={https://openreview.net/forum?id=PiKMmLHbEH}
 }
 ```
