@@ -1,6 +1,10 @@
 """This module offers a range of distance functions for crystals."""
 
+import functools
 import time
+import warnings
+from collections.abc import Callable
+from multiprocessing import Pool, cpu_count
 
 import amd
 import numpy as np
@@ -132,8 +136,125 @@ def _d_amd(emb_1: TYPE_EMB_AMD, emb_2: TYPE_EMB_AMD, **kwargs) -> float:
 	return amd.AMD_cdist([emb_1], [emb_2], **kwargs)[0][0].item()
 
 
+def _set_n_processes(n_processes: int | None = None) -> int:
+	"""Set the number of processes for multiprocessing.
+
+	Args:
+		n_processes (int | None): Number of processes. If None, use
+			max(cpu_count() - 1, 1). Default is None.
+	"""
+	if n_processes is None:
+		return max(cpu_count() - 1, 1)
+	else:
+		return max(min(n_processes, cpu_count() - 1), 1)
+
+
+def _distance_matrix_binary_template(
+	embs_1: list,
+	embs_2: list | None = None,
+	multiprocessing: bool = False,
+	n_processes: int | None = None,
+	d_func: Callable | None = None,
+	initializer: Callable | None = None,
+	initargs: tuple = (),
+) -> np.ndarray:
+	"""Template to compute the binary distance matrix between two sets of embeddings.
+
+	If embs_2 is None, compute the distance matrix within embs_1.
+
+	Args:
+		embs_1 (list): Embeddings
+		embs_2 (list | None): Embeddings or None. Default is None.
+		multiprocessing (bool): Whether to use multiprocessing. Default is False.
+		n_processes (int | None): Maximum number of processes for multiprocessing. If
+			multiprocessing is False, this argument will be ignored. Default is None.
+		d_func (Callable | None): Binary distance function.
+		initializer (Callable | None): Initializer function for worker processes.
+		initargs (tuple): Arguments for the initializer function.
+
+	Returns:
+		np.ndarray: Distance matrix.
+	"""
+	given_two_sets = embs_2 is not None
+	if given_two_sets:
+		if multiprocessing:
+			with Pool(
+				processes=_set_n_processes(n_processes),
+				initializer=initializer,
+				initargs=initargs,
+			) as pool:
+				results = pool.starmap(
+					d_func,
+					((emb_i, emb_j) for emb_i in embs_1 for emb_j in embs_2),
+				)
+				d_mtx = np.array(results).reshape(len(embs_1), len(embs_2))
+		else:
+			d_mtx = np.zeros((len(embs_1), len(embs_2)))
+			for i, emb_i in enumerate(embs_1):
+				for j, emb_j in enumerate(embs_2):
+					d_mtx[i, j] = d_func(emb_i, emb_j)
+	else:
+		if multiprocessing:
+			with Pool(
+				processes=_set_n_processes(n_processes),
+				initializer=initializer,
+				initargs=initargs,
+			) as pool:
+				results = pool.starmap(
+					d_func,
+					(
+						(embs_1[i], embs_1[j])
+						for i in range(len(embs_1))
+						for j in range(i + 1)
+					),
+				)
+				d_mtx = np.zeros((len(embs_1), len(embs_1)))
+				for i in range(len(embs_1)):
+					for j in range(i + 1):
+						d_mtx[i, j] = results[i * (i + 1) // 2 + j]
+						d_mtx[j, i] = d_mtx[i, j]
+		else:
+			d_mtx = np.zeros((len(embs_1), len(embs_1)))
+			for i, emb_i in enumerate(embs_1):
+				for j, emb_j in enumerate(embs_1[: i + 1]):
+					d_mtx[i, j] = d_func(emb_i, emb_j)
+					d_mtx[j, i] = d_mtx[i, j]
+	return d_mtx
+
+
+_global_matcher: StructureMatcher | None = None
+
+
+def _init_worker_distance_matrix_d_smat(kwargs_dict: dict):
+	"""Initialize global StructureMatcher for worker processes.
+
+	Args:
+		kwargs_dict (dict): Additional keyword arguments for StructureMatcher.
+	"""
+	global _global_matcher
+	_global_matcher = StructureMatcher(**kwargs_dict)
+
+
+def _worker_distance_matrix_d_smat(emb_i, emb_j):
+	"""Worker function for computing d_smat in multiprocessing.
+
+	Args:
+		emb_i: Embedding i.
+		emb_j: Embedding j.
+
+	Returns:
+		float: d_smat distance between emb_i and emb_j.
+	"""
+	global _global_matcher
+	return _d_smat(emb_i, emb_j, matcher=_global_matcher)
+
+
 def _distance_matrix_d_smat(
-	embs_1: list[Crystal], embs_2: list[Crystal] | None = None, **kwargs
+	embs_1: list[Crystal],
+	embs_2: list[Crystal] | None = None,
+	multiprocessing: bool = False,
+	n_processes: int | None = None,
+	**kwargs,
 ):
 	"""Compute the distance matrix between two sets of embeddings based on d_smat.
 
@@ -142,28 +263,30 @@ def _distance_matrix_d_smat(
 	Args:
 		embs_1 (list[Crystal]): Embeddings
 		embs_2 (list[Crystal] | None): Embeddings or None. Default is None.
+		multiprocessing (bool): Whether to use multiprocessing. Default is False.
+		n_processes (int | None): Maximum number of processes for multiprocessing. If
+			multiprocessing is False, this argument will be ignored. Default is None.
 		**kwargs: Additional keyword arguments for StructureMatcher.
 
 	Returns:
 		np.ndarray: d_smat distance matrix.
 	"""
-	given_two_sets = embs_2 is not None
-	d_mtx = np.ones((len(embs_1), len(embs_2) if given_two_sets else len(embs_1)))
-	matcher = StructureMatcher(**kwargs)
-	if given_two_sets:
-		for i, emb_i in enumerate(embs_1):
-			for j, emb_j in enumerate(embs_2):
-				d_mtx[i, j] = _d_smat(emb_i, emb_j, matcher=matcher)
-	else:
-		for i, emb_i in enumerate(embs_1):
-			for j, emb_j in enumerate(embs_1[: i + 1]):
-				d_mtx[i, j] = _d_smat(emb_i, emb_j, matcher=matcher)
-				d_mtx[j, i] = d_mtx[i, j]
-	return d_mtx
+	return _distance_matrix_binary_template(
+		embs_1,
+		embs_2,
+		multiprocessing,
+		n_processes,
+		_worker_distance_matrix_d_smat,
+		_init_worker_distance_matrix_d_smat,
+		(kwargs,),
+	)
 
 
 def _distance_matrix_d_comp(
-	embs_1: list[TYPE_EMB_COMP], embs_2: list[TYPE_EMB_COMP] | None = None
+	embs_1: list[TYPE_EMB_COMP],
+	embs_2: list[TYPE_EMB_COMP] | None = None,
+	multiprocessing: bool = False,
+	n_processes: int | None = None,
 ) -> np.ndarray:
 	"""Compute the distance matrix between two sets of embeddings based on d_comp.
 
@@ -172,26 +295,23 @@ def _distance_matrix_d_comp(
 	Args:
 		embs_1 (list[TYPE_EMB_COMP]): Embeddings
 		embs_2 (list[TYPE_EMB_COMP] | None): Embeddings or None. Default is None.
+		multiprocessing (bool): Whether to use multiprocessing. Default is False.
+		n_processes (int | None): Maximum number of processes for multiprocessing. If
+			multiprocessing is False, this argument will be ignored. Default is None.
 
 	Returns:
 		np.ndarray: d_comp distance matrix.
 	"""
-	given_two_sets = embs_2 is not None
-	d_mtx = np.ones((len(embs_1), len(embs_2) if given_two_sets else len(embs_1)))
-	if given_two_sets:
-		for i, emb_i in enumerate(embs_1):
-			for j, emb_j in enumerate(embs_2):
-				d_mtx[i, j] = _d_comp(emb_i, emb_j)
-	else:
-		for i, emb_i in enumerate(embs_1):
-			for j, emb_j in enumerate(embs_1[: i + 1]):
-				d_mtx[i, j] = _d_comp(emb_i, emb_j)
-				d_mtx[j, i] = d_mtx[i, j]
-	return d_mtx
+	return _distance_matrix_binary_template(
+		embs_1, embs_2, multiprocessing, n_processes, _d_comp
+	)
 
 
 def _distance_matrix_d_wyckoff(
-	embs_1: list[TYPE_EMB_WYCKOFF], embs_2: list[TYPE_EMB_WYCKOFF] | None = None
+	embs_1: list[TYPE_EMB_WYCKOFF],
+	embs_2: list[TYPE_EMB_WYCKOFF] | None = None,
+	multiprocessing: bool = False,
+	n_processes: int | None = None,
 ) -> np.ndarray:
 	"""Compute the distance matrix between two sets of embeddings based on d_wyckoff.
 
@@ -200,26 +320,53 @@ def _distance_matrix_d_wyckoff(
 	Args:
 		embs_1 (list[TYPE_EMB_WYCKOFF]): Embeddings
 		embs_2 (list[TYPE_EMB_WYCKOFF] | None): Embeddings or None. Default is None.
+		multiprocessing (bool): Whether to use multiprocessing. Default is False.
+		n_processes (int | None): Maximum number of processes for multiprocessing. If
+			multiprocessing is False, this argument will be ignored. Default is None.
 
 	Returns:
 		np.ndarray: d_wyckoff distance matrix.
 	"""
-	given_two_sets = embs_2 is not None
-	d_mtx = np.ones((len(embs_1), len(embs_2) if given_two_sets else len(embs_1)))
-	if given_two_sets:
-		for i, emb_i in enumerate(embs_1):
-			for j, emb_j in enumerate(embs_2):
-				d_mtx[i, j] = _d_wyckoff(emb_i, emb_j)
-	else:
-		for i, emb_i in enumerate(embs_1):
-			for j, emb_j in enumerate(embs_1[: i + 1]):
-				d_mtx[i, j] = _d_wyckoff(emb_i, emb_j)
-				d_mtx[j, i] = d_mtx[i, j]
-	return d_mtx
+	return _distance_matrix_binary_template(
+		embs_1, embs_2, multiprocessing, n_processes, _d_wyckoff
+	)
+
+
+_embs_2: np.ndarray | None = None
+
+
+def _init_worker_distance_matrix_d_magpie(embs_2: np.ndarray):
+	"""Initialize global variables for worker processes.
+
+	Args:
+		embs_2 (np.ndarray): 2D array of embeddings.
+	"""
+	global _embs_2
+	_embs_2 = embs_2
+
+
+def _worker_distance_matrix_d_magpie(emb: np.ndarray) -> np.ndarray:
+	"""Worker function for computing a row of the distance matrix in multiprocessing.
+
+	Compute a row of the distance matrix based on d_magpie.
+
+	Args:
+		emb (np.ndarray): 1D array of a single embedding.
+
+	Returns:
+		np.ndarray: A row of the d_magpie distance matrix.
+	"""
+	global _embs_2
+	d_sq = (emb[np.newaxis, :] - _embs_2) ** 2
+	d_euclidean = np.sqrt(np.sum(d_sq, axis=1))
+	return d_euclidean
 
 
 def _distance_matrix_d_magpie(
-	embs_1: list[TYPE_EMB_MAGPIE], embs_2: list[TYPE_EMB_MAGPIE] | None = None
+	embs_1: list[TYPE_EMB_MAGPIE],
+	embs_2: list[TYPE_EMB_MAGPIE] | None = None,
+	multiprocessing: bool = False,
+	n_processes: int | None = None,
 ) -> np.ndarray:
 	"""Compute the distance matrix between two sets of embeddings based on d_magpie.
 
@@ -228,6 +375,9 @@ def _distance_matrix_d_magpie(
 	Args:
 		embs_1 (list[TYPE_EMB_MAGPIE]): Embeddings
 		embs_2 (list[TYPE_EMB_MAGPIE] | None): Embeddings or None. Default is None.
+		multiprocessing (bool): Whether to use multiprocessing. Default is False.
+		n_processes (int | None): Maximum number of processes for multiprocessing. If
+			multiprocessing is False, this argument will be ignored. Default is None.
 
 	Returns:
 		np.ndarray: d_magpie distance matrix.
@@ -237,15 +387,32 @@ def _distance_matrix_d_magpie(
 	d_mtx = np.zeros((len(embs_1), len(embs_2)))
 	embs_1 = np.array(embs_1)
 	embs_2 = np.array(embs_2)
-	for i, emb in enumerate(embs_1):
-		d_sq = (emb[np.newaxis, :] - embs_2) ** 2
-		d_euclidean = np.sqrt(np.sum(d_sq, axis=1))
-		d_mtx[i, :] = d_euclidean
+	if multiprocessing:
+		with Pool(
+			processes=_set_n_processes(n_processes),
+			initializer=_init_worker_distance_matrix_d_magpie,
+			initargs=(embs_2,),
+		) as pool:
+			results = pool.map(
+				_worker_distance_matrix_d_magpie,
+				embs_1,
+			)
+			for i, row in enumerate(results):
+				d_mtx[i, :] = row
+	else:
+		for i, emb in enumerate(embs_1):
+			d_sq = (emb[np.newaxis, :] - embs_2) ** 2
+			d_euclidean = np.sqrt(np.sum(d_sq, axis=1))
+			d_mtx[i, :] = d_euclidean
 	return d_mtx
 
 
 def _distance_matrix_d_pdd(
-	embs_1: list[TYPE_EMB_PDD], embs_2: list[TYPE_EMB_PDD] | None = None, **kwargs
+	embs_1: list[TYPE_EMB_PDD],
+	embs_2: list[TYPE_EMB_PDD] | None = None,
+	multiprocessing: bool = False,
+	n_processes: int | None = None,
+	**kwargs,
 ) -> np.ndarray:
 	"""Compute the distance matrix between two sets of embeddings based on d_pdd.
 
@@ -254,11 +421,17 @@ def _distance_matrix_d_pdd(
 	Args:
 		embs_1 (list[TYPE_EMB_PDD]): Embeddings
 		embs_2 (list[TYPE_EMB_PDD] | None): Embeddings or None. Default is None.
+		multiprocessing (bool): Whether to use multiprocessing. Default is False.
+		n_processes (int | None): Maximum number of processes for multiprocessing. If
+			multiprocessing is False, this argument will be ignored. Default is None.
 		**kwargs: Additional arguments for amd.PDD_pdist and amd.PDD_cdist.
 
 	Returns:
 		np.ndarray: d_pdd distance matrix.
 	"""
+	if multiprocessing and "n_jobs" not in kwargs:
+		kwargs["n_jobs"] = _set_n_processes(n_processes)
+
 	given_two_sets = embs_2 is not None
 	valids_1 = [emb for emb in embs_1 if not isinstance(emb, Exception)]
 	error_indices_1 = [i for i, emb in enumerate(embs_1) if isinstance(emb, Exception)]
@@ -283,7 +456,9 @@ def _distance_matrix_d_pdd(
 
 
 def _distance_matrix_d_amd(
-	embs_1: list[TYPE_EMB_AMD], embs_2: list[TYPE_EMB_AMD] | None = None, **kwargs
+	embs_1: list[TYPE_EMB_AMD],
+	embs_2: list[TYPE_EMB_AMD] | None = None,
+	**kwargs,
 ) -> np.ndarray:
 	"""Compute the distance matrix between two sets of embeddings based on d_amd.
 
@@ -320,27 +495,60 @@ def _distance_matrix_d_amd(
 	return d_mtx
 
 
+def _compute_embedding_worker(xtal: Crystal, distance: str, **kwargs) -> TYPE_EMB_ALL:
+	"""Worker function for computing embedding in multiprocessing.
+
+	Compute the embedding for a crystal based on the specified distance metric.
+
+	Args:
+		xtal (Crystal): A Crystal object.
+		distance (str): The distance metric to use.
+		**kwargs: Additional arguments for embedding methods if needed.
+
+	Returns:
+		TYPE_EMB_ALL: The embedding.
+	"""
+	try:
+		return xtal.get_embedding(distance, **kwargs)
+	except Exception as e:
+		return e
+
+
 def _compute_embeddings(
-	distance: str, xtals: Crystal | list[Crystal], **kwargs
+	distance: str,
+	xtals: Crystal | list[Crystal],
+	multiprocessing: bool,
+	n_processes: int | None = None,
+	**kwargs,
 ) -> TYPE_EMB_ALL | list[TYPE_EMB_ALL]:
 	"""Compute embedding(s) for given crystal(s) based on the specified distance metric.
 
 	Args:
 		distance (str): The distance metric to use.
 		xtals (Crystal | list[Crystal]): A Crystal object or a list of Crystal objects.
+		multiprocessing (bool): Whether to use multiprocessing. Default is False.
+		n_processes (int | None): Maximum number of processes for multiprocessing. If
+			multiprocessing is False, this argument will be ignored. Default is None.
 		**kwargs: Additional arguments for embedding methods if needed.
 
 	Returns:
-		TYPE_EMB_ALL | list[TYPE_EMB_ALL]: A list of embeddings.
+		TYPE_EMB_ALL | list[TYPE_EMB_ALL]: A single embedding or a list of embeddings.
 	"""
 	if isinstance(xtals, Crystal):
 		xtals = [xtals]
-	embs = []
-	for xtal in xtals:
-		try:
-			embs.append(xtal.get_embedding(distance, **kwargs))
-		except Exception as e:
-			embs.append(e)
+
+	if multiprocessing:
+		_compute_embedding_worker_partial = functools.partial(
+			_compute_embedding_worker, distance=distance, **kwargs
+		)
+
+		with Pool(processes=_set_n_processes(n_processes)) as pool:
+			embs = pool.map(
+				_compute_embedding_worker_partial,
+				xtals,
+			)
+	else:
+		embs = [_compute_embedding_worker(xtal, distance, **kwargs) for xtal in xtals]
 	if len(embs) == 1:
 		return embs[0]
 	else:
@@ -389,11 +597,15 @@ def distance(
 
 	# compute embeddings
 	if distance not in DIST_WO_EMB and isinstance(xtal_1, Crystal):
-		emb_1 = _compute_embeddings(distance, xtal_1, **(kwargs.get("args_emb", {})))
+		emb_1 = _compute_embeddings(
+			distance, xtal_1, False, **(kwargs.get("args_emb", {}))
+		)
 	else:
 		emb_1 = xtal_1
 	if distance not in DIST_WO_EMB and isinstance(xtal_2, Crystal):
-		emb_2 = _compute_embeddings(distance, xtal_2, **(kwargs.get("args_emb", {})))
+		emb_2 = _compute_embeddings(
+			distance, xtal_2, False, **(kwargs.get("args_emb", {}))
+		)
 	else:
 		emb_2 = xtal_2
 
@@ -424,6 +636,8 @@ def distance_matrix(
 	distance: str,
 	xtals_1: list[Structure | Crystal | TYPE_EMB_ALL],
 	xtals_2: list[Structure | Crystal | TYPE_EMB_ALL] | None = None,
+	multiprocessing: bool = False,
+	n_processes: int | None = None,
 	verbose: bool = False,
 	**kwargs,
 ) -> (
@@ -448,6 +662,9 @@ def distance_matrix(
 			Structures or Crystals or embeddings.
 		xtals_2 (list[Structure | Crystal | TYPE_EMB_ALL] | None): A list of
 			pymatgen Structures or Crystals or embeddings, or None. Default is None.
+		multiprocessing (bool): Whether to use multiprocessing. Default is False.
+		n_processes (int | None): Maximum number of processes for multiprocessing. If
+			multiprocessing is False, this argument will be ignored. Default is None.
 		verbose (bool): Whether to return embeddings and the computing time. Default is
 			False.
 		**kwargs: Additional keyword arguments for specific distance metrics. It can
@@ -482,7 +699,13 @@ def distance_matrix(
 	# compute embeddings
 	if distance not in DIST_WO_EMB and isinstance(xtals_1[0], Crystal):
 		emb_1_start = time.time()
-		embs_1 = _compute_embeddings(distance, xtals_1, **(kwargs.get("args_emb", {})))
+		embs_1 = _compute_embeddings(
+			distance,
+			xtals_1,
+			multiprocessing,
+			n_processes,
+			**(kwargs.get("args_emb", {})),
+		)
 		emb_1_end = time.time()
 		times["emb_1"] = emb_1_end - emb_1_start
 	else:
@@ -492,7 +715,11 @@ def distance_matrix(
 		if distance not in DIST_WO_EMB and isinstance(xtals_2[0], Crystal):
 			emb_2_start = time.time()
 			embs_2 = _compute_embeddings(
-				distance, xtals_2, **(kwargs.get("args_emb", {}))
+				distance,
+				xtals_2,
+				multiprocessing,
+				n_processes,
+				**(kwargs.get("args_emb", {})),
 			)
 			emb_2_end = time.time()
 			times["emb_2"] = emb_2_end - emb_2_start
@@ -505,16 +732,34 @@ def distance_matrix(
 	# compute distances
 	d_mtx_start = time.time()
 	if distance == "smat":
-		d_mtx = _distance_matrix_d_smat(embs_1, embs_2, **(kwargs.get("args_dist", {})))
+		d_mtx = _distance_matrix_d_smat(
+			embs_1,
+			embs_2,
+			multiprocessing,
+			n_processes,
+			**(kwargs.get("args_dist", {})),
+		)
 	elif distance == "comp":
-		d_mtx = _distance_matrix_d_comp(embs_1, embs_2)
+		d_mtx = _distance_matrix_d_comp(embs_1, embs_2, multiprocessing, n_processes)
 	elif distance == "wyckoff":
-		d_mtx = _distance_matrix_d_wyckoff(embs_1, embs_2)
+		d_mtx = _distance_matrix_d_wyckoff(embs_1, embs_2, multiprocessing, n_processes)
 	elif distance == "magpie":
-		d_mtx = _distance_matrix_d_magpie(embs_1, embs_2)
+		d_mtx = _distance_matrix_d_magpie(embs_1, embs_2, multiprocessing, n_processes)
 	elif distance == "pdd":
-		d_mtx = _distance_matrix_d_pdd(embs_1, embs_2, **(kwargs.get("args_dist", {})))
+		d_mtx = _distance_matrix_d_pdd(
+			embs_1,
+			embs_2,
+			multiprocessing,
+			n_processes,
+			**(kwargs.get("args_dist", {})),
+		)
 	elif distance == "amd":
+		if multiprocessing:
+			warnings.warn(
+				"Multiprocessing is not implemented for _distance_matrix_d_amd. "
+				"Proceeding without multiprocessing.",
+				stacklevel=2,
+			)
 		d_mtx = _distance_matrix_d_amd(embs_1, embs_2, **(kwargs.get("args_dist", {})))
 	else:
 		raise ValueError(f"Unsupported distance metric: {distance}")
