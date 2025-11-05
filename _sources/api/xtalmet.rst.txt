@@ -16,4 +16,5 @@ Submodules
    xtalmet.crystal
    xtalmet.distance
    xtalmet.evaluator
-   xtalmet.screen
+   xtalmet.stability
+   xtalmet.validity
