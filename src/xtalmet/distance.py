@@ -632,15 +632,7 @@ def distance(
 		return d, emb_1, emb_2
 
 
-def distance_matrix(
-	distance: str,
-	xtals_1: list[Structure | Crystal | TYPE_EMB_ALL],
-	xtals_2: list[Structure | Crystal | TYPE_EMB_ALL] | None = None,
-	multiprocessing: bool = False,
-	n_processes: int | None = None,
-	verbose: bool = False,
-	**kwargs,
-) -> (
+TYPE_D_MTX_RETURN = (
 	np.ndarray
 	| tuple[np.ndarray, list[TYPE_EMB_ALL], dict[str, float]]
 	| tuple[
@@ -649,7 +641,18 @@ def distance_matrix(
 		list[TYPE_EMB_ALL],
 		dict[str, float],
 	]
-):
+)  #: Return type for distance_matrix function.
+
+
+def distance_matrix(
+	distance: str,
+	xtals_1: list[Structure | Crystal | TYPE_EMB_ALL],
+	xtals_2: list[Structure | Crystal | TYPE_EMB_ALL] | None = None,
+	multiprocessing: bool = False,
+	n_processes: int | None = None,
+	verbose: bool = False,
+	**kwargs,
+) -> TYPE_D_MTX_RETURN:
 	"""Compute the distance matrix between two sets of crystals.
 
 	If xtals_2 is None, compute the distance matrix within xtals_1.
@@ -674,9 +677,8 @@ def distance_matrix(
 			using the embeddings.
 
 	Returns:
-		np.ndarray | tuple[np.ndarray, list[TYPE_EMB_ALL], dict[str, float]] | tuple[np.ndarray, list[TYPE_EMB_ALL], list[TYPE_EMB_ALL], dict[str, float]]:
-			Distance matrix, the embeddings of xtals_1 (and xtals_2 if xtals_2 is not
-			None) and the computing time.
+		TYPE_D_MTX_RETURN: Distance matrix, the embeddings of xtals_1 (and xtals_2 if
+			xtals_2 is not None) and the computing time.
 
 	Raises:
 		ValueError: If an unsupported distance metric is provided.
