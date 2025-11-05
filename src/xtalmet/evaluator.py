@@ -15,11 +15,12 @@ from .constants import (
 	CONTINUOUS_DISTANCES,
 	HF_VERSION,
 	SUPPORTED_DISTANCES,
-	SUPPORTED_SCREENS,
+	SUPPORTED_VALIDITY,
 )
 from .crystal import Crystal
 from .distance import distance_matrix
-from .screen import screen_ehull, screen_smact
+from .stability import compute_stability_scores
+from .validity import screen_smact
 
 
 class Evaluator:
@@ -70,22 +71,25 @@ class Evaluator:
 	def uniqueness(
 		self,
 		distance: str,
-		screen: str | None = None,
+		validity: list[str] | None = None,
+		stability: str | None = None,
 		dir_intermediate_gen: str | None = None,
 		multiprocessing: bool = False,
 		n_processes: int | None = None,
 		return_time: bool = False,
 		**kwargs,
 	) -> float | tuple[float, dict[str, float]]:
-		"""Evaluate the uniqueness of a set of crystals.
+		r"""Evaluate the uniqueness of a set of crystals.
 
 		Args:
 			distance (str): Distance function used for uniqueness evaluation. Currently
 				supported distances are shown in SUPPORTED_DISTANCES in constants.py.
 				For more detailed information about each distance metric, please refer
 				to the `tutorial notebook`_.
-			screen (str | None): Method to screen the crystals. Currently supported
-				methods are shown in SUPPORTED_SCREENS in constants.py.
+			validity (list[str] | None): Methods to screen the crystals. Currently
+				supported methods are shown in SUPPORTED_VALIDITY in constants.py.
+			stability (str | None): Stability criterion for the crystals. "continuous"
+				or "binary" or None.
 			dir_intermediate_gen (str | None): Directory to search for pre-computed
 				embeddings, distance matrix, and screening results for faster
 				computation. If pre-computed files do not exist in the directory, they
@@ -102,59 +106,125 @@ class Evaluator:
 				is False, this argument is ignored. Default is None.
 			return_time (bool): Whether to return the time taken for each step.
 			**kwargs: Additional keyword arguments for specific distance metrics and
-				thermodynamic screening. It can contain three keys: "args_emb",
-				"args_dist", and "args_screen". The value of "args_emb" is a dict of
+				stability calculations. It can contain three keys: "args_emb",
+				"args_dist", and "args_stability". The value of "args_emb" is a dict of
 				arguments for the calculation of embeddings, the value of "args_dist" is
 				a dict of arguments for the calculation of distance matrix using the
-				embeddings, and the value of "args_screen" is a dict of arguments for
-				the screening function.
+				embeddings, and the value of "args_stability" is a dict of arguments for
+				the stability evaluation. For more details, please refer to the
+				`tutorial notebook`_.
 
 		Examples:
 			>>> evaluator.uniqueness(
 			...     distance="smat",
-			...     screen=None,
+			...     validity=None,
+			...     stability=None,
 			...     dir_intermediate_gen="./intermediate",
-			...     multiprocessing=False,
+			...     multiprocessing=True,
+			...     n_processes=10,
 			...     return_time=True,
 			... )
 			>>> (
-			...     0.9945,
+			...     TODO,
 			...     {
-			...         "uni_emb": 0.0,
-			...         "uni_d_mtx": 16953.978,
-			...         "uni_metric": 0.152,
-			...         "uni_total": 16954.130,
+			...         "uni_emb": TODO,
+			...         "uni_d_mtx": TODO,
+			...         "uni_metric": TODO,
+			...         "uni_total": TODO,
 			...     },
 			... )
 			>>> evaluator.uniqueness(
-			...     distance="amd",
-			...     screen="ehull",
+			...     distance="pdd",
+			...     validity=["smact"],
+			...     stability="binary",
 			...     dir_intermediate_gen="./intermediate",
 			...     multiprocessing=True,
 			...     n_processes=10,
 			...     return_time=False,
 			...     **{
-			...         "args_emb": {"k": 200},
-			...         "args_dist": {"metric": "chebyshev", "low_memory": False},
-			...         "args_screen": {"diagram": "mp_250618"},
+			...         "args_stability": {"diagram": "mp_250618", "threshold": 0.1},
 			...     },
 			... )
-			>>> 0.0016
+			>>> TODO
+			>>> evaluator.uniqueness(
+			...     distance="amd",
+			...     validity=["smact"],
+			...     stability="continuous",
+			...     dir_intermediate_gen="./intermediate",
+			...     multiprocessing=False,
+			...     return_time=False,
+			...     **{
+			...         "args_emb": {"k": 200},
+			...         "args_dist": {"metric": "chebyshev", "low_memory": False},
+			...         "args_stability": {"diagram": "mp_250618", "intercept": 0.2},
+			...     },
+			... )
+			>>> TODO
 
 		Returns:
 			float | tuple: Uniqueness value or (uniqueness value, a dictionary of time
 			taken for each step).
 
 		Raises:
-			ValueError: If an unsupported distance metric or screening method is
-			provided.
+			ValueError: If an unsupported distance metric or validity method or
+				stability criterion is provided.
+
+		Note:
+			Here, I demonstrate how uniqueness is computed for binary/continuous
+			distances with binary/continuous stability. The binary stability score,
+			:math:`S_b(x)`, for each crystal :math:`x` is defined as follows.
+
+			.. math::
+				S_b(x) =
+					\begin{cases}
+						1 & \text{if } E_\text{hull}(x) \le \text{threshold} \\
+						0 & \text{otherwise}
+					\end{cases}
+
+			You can set the threshold in kwargs (see the examples). Default threshold is
+			0.1 [eV/atom]. The continuous stability score, :math:`S_c(x)`, for each
+			crystal :math:`x` is defined as follows.
+
+			.. math::
+				S_c(x) =
+					\begin{cases}
+						1 & \text{if } E_\text{hull}(x) \le 0 \\
+						1 - \frac{E_\text{hull}(x)}{\text{intercept}} & \text{if }
+						E_\text{hull}(x) \le \text{intercept} \\
+						0 & \text{otherwise}
+					\end{cases}
+
+			You can set the intercept in kwargs. Default intercept is 1.215
+			[eV/atom]. Then, the uniqueness score with a binary distance is calculated
+			as follows.
+
+			.. math::
+				U = \frac{1}{n} \sum_{i=1}^{n} V(x_i) \cdot S(x_i) \cdot I \left(
+				\land_{j=1}^{i-1} \left( V(x_j) == 0 \lor S(x_j) == 0 \lor d(x_i, x_j)
+				\neq 0 \right) \right),
+
+			where :math:`\{x_1, x_2, \ldots, x_n\}` is the set of generated crystals,
+			:math:`I` is the indicator function, :math:`S` is either :math:`S_b` or
+			:math:`S_c`, and :math:`V` is the validity function that returns 1 for valid
+			crystals and 0 for invalid crystals. For a continuous distance, the
+			uniqueness score is calculated as follows.
+
+			.. math::
+				U = \frac{1}{n} \sum_{i=1}^{n} V(x_i) \cdot S(x_i) \cdot \left(
+				\frac{1}{n} \sum_{j=1}^{n} V(x_j) \cdot S(x_j) \cdot d(x_i, x_j)
+				\right)
+				.
 
 		.. _tutorial notebook: https://github.com/WMD-group/xtalmet/blob/main/examples/tutorial.ipynb
 		"""
 		if distance not in SUPPORTED_DISTANCES:
 			raise ValueError(f"Unsupported distance: {distance}.")
-		if screen not in SUPPORTED_SCREENS:
-			raise ValueError(f"Unsupported screening method: {screen}.")
+		if validity is not None:
+			for v in validity:
+				if v not in SUPPORTED_VALIDITY:
+					raise ValueError(f"Unsupported validity method: {v}.")
+		if stability not in [None, "binary", "continuous"]:
+			raise ValueError(f"Unsupported stability criterion: {stability}.")
 
 		times: dict[str, float] = {}
 
@@ -205,31 +275,59 @@ class Evaluator:
 						os.path.join(dir_intermediate_gen, f"gen_{distance}.pkl.gz"),
 					)
 
-		# Step 2: Screening (optional)
+		# Step 2: Validity check (optional)
 		valid_indices = np.ones(self.n_samples, dtype=bool)
 		# Remove crystals whose embeddings could not be computed
 		valid_indices &= np.array(
 			[d_mtx_i0 != float("nan") for d_mtx_i0 in d_mtx[:, 0]]
 		)
-		if screen == "smact":
-			valid_indices &= screen_smact(self.gen_xtals, dir_intermediate_gen)
-		elif screen == "ehull":
-			valid_indices &= screen_ehull(
-				self.gen_xtals,
-				diagram=kwargs.get("args_screen", {"diagram": "mp_250618"})["diagram"],
-				dir_intermediate=dir_intermediate_gen,
-			)
-		d_mtx = d_mtx[valid_indices][:, valid_indices]
+		if validity is not None:
+			if "smact" in validity:
+				valid_indices &= screen_smact(self.gen_xtals, dir_intermediate_gen)
+			else:
+				pass
 
-		# Step 3: Compute uniqueness
+		# Step 3: Stability evaluation (optional)
+		stability_scores = np.ones(self.n_samples)  # \in [0, 1]. 1 means stable.
+		if stability is not None:
+			args_stability = kwargs.get("args_stability", {})
+			diagram = args_stability.get("diagram", "mp_250618")
+			if "args_stability" in kwargs:
+				kwargs["args_stability"].pop("diagram", None)
+			stability_scores = compute_stability_scores(
+				self.gen_xtals,
+				diagram=diagram,
+				dir_intermediate=dir_intermediate_gen,
+				binary=(stability == "binary"),
+				**kwargs.get("args_stability", {}),
+			)
+
+		# Step 4: Compute uniqueness
 		start_time_metric = time.time()
 		if distance in BINARY_DISTANCES:
-			n_unique = sum(
-				[1 if np.all(d_mtx[i, :i] != 0) else 0 for i in range(len(d_mtx))]
+			is_unique = np.array(
+				[
+					1
+					if np.all(
+						np.logical_or(
+							np.logical_or(
+								~valid_indices[:i], stability_scores[:i] == 0
+							),
+							d_mtx[i, :i] != 0,
+						)
+					)
+					else 0
+					for i in range(len(d_mtx))
+				]
 			)
-			uniqueness = n_unique / self.n_samples
+			uniqueness = (
+				np.sum(valid_indices * stability_scores * is_unique) / self.n_samples
+			)
 		elif distance in CONTINUOUS_DISTANCES:
-			uniqueness = float(np.sum(d_mtx) / (self.n_samples * (self.n_samples - 1)))
+			vs = valid_indices * stability_scores
+			uniqueness = np.sum(vs[:, np.newaxis] * vs[np.newaxis, :] * d_mtx) / (
+				self.n_samples * (self.n_samples - 1)
+			)
 		end_time_metric = time.time()
 		times["uni_metric"] = end_time_metric - start_time_metric
 		times["uni_total"] = sum(times.values())
@@ -243,7 +341,8 @@ class Evaluator:
 		self,
 		train_xtals: list[Crystal | Structure] | Literal["mp20"],
 		distance: str,
-		screen: str | None = None,
+		validity: str | None = None,
+		stability: str | None = None,
 		dir_intermediate_gen: str | None = None,
 		dir_intermediate_train: str | None = None,
 		multiprocessing: bool = False,
@@ -251,7 +350,7 @@ class Evaluator:
 		return_time: bool = False,
 		**kwargs,
 	) -> float | tuple[float, dict[str, float]]:
-		"""Evaluate the novelty of a set of crystals.
+		r"""Evaluate the novelty of a set of crystals.
 
 		Args:
 			train_xtals (list[Crystal | Structure] | Literal["mp20"]): List of training
@@ -263,8 +362,10 @@ class Evaluator:
 				distances are shown in SUPPORTED_DISTANCES in constants.py. For more
 				detailed information about each distance metric, please refer to the
 				`tutorial notebook`_.
-			screen (str | None): Method to screen the generated crystals. Currently
-				supported methods are shown in SUPPORTED_SCREENS in constants.py.
+			validity (str | None): Method to screen the crystals. Currently supported
+				methods are shown in SUPPORTED_VALIDITY in constants.py.
+			stability (str | None): Stability criterion for the crystals. "continuous"
+				or "binary" or None.
 			dir_intermediate_gen (str | None): Directory to search for pre-computed
 				embeddings, distance matrix, and screening results for faster
 				computation. If pre-computed files do not exist in the directory, they
@@ -289,47 +390,71 @@ class Evaluator:
 			return_time (bool): Whether to return the time taken for each step.
 			**kwargs: Additional keyword arguments for specific distance metrics and
 				thermodynamic screening. It can contain three keys: "args_emb",
-				"args_dist", and "args_screen". The value of "args_emb" is a dict of
+				"args_dist", and "args_stability". The value of "args_emb" is a dict of
 				arguments for the calculation of embeddings, the value of "args_dist" is
 				a dict of arguments for the calculation of distance matrix using the
-				embeddings, and the value of "args_screen" is a dict of arguments for
-				the screening function.
+				embeddings, and the value of "args_stability" is a dict of arguments for
+				the stability evaluation. For more details, please refer to the
+				`tutorial notebook`_.
 
 		Examples:
 			>>> evaluator.novelty(
 			...     train_xtals="mp20",
 			...     distance="smat",
-			...     screen=None,
+			...     validity=None,
+			...     stability=None,
 			...     dir_intermediate_gen="./intermediate",
-			...     multiprocessing=False,
+			...     multiprocessing=True,
+			...     n_processes=10,
 			...     return_time=True,
 			... )
 			>>> (
-			...     0.9892,
+			...     TODO,
 			...     {
-			...         "nov_emb_gen": 1.693,
-			...         "nov_emb_train": 5.790,
-			...         "nov_d_mtx": 42784.921,
-			...         "nov_metric": 0.628,
-			...         "nov_total": 42793.032,
+			...         "nov_emb_gen": TODO,
+			...         "nov_emb_train": TODO,
+			...         "nov_d_mtx": TODO,
+			...         "nov_metric": TODO,
+			...         "nov_total": TODO,
 			...     },
 			... )
 			>>> evaluator.novelty(
 			...     train_xtals=list_of_train_xtals,
-			...     distance="amd",
-			...     screen="ehull",
+			...     distance="pdd",
+			...     validity=["smact"],
+			...     stability="binary",
 			...     dir_intermediate_gen="./intermediate",
 			...     dir_intermediate_train="./intermediate_train",
 			...     multiprocessing=True,
 			...     n_processes=10,
 			...     return_time=False,
 			...     **{
-			...         "args_emb": {"k": 200},
-			...         "args_dist": {"metric": "chebyshev", "low_memory": False},
-			...         "args_screen": {"diagram": "mp_250618"},
+			...         "args_stability": {
+			...             "diagram": "mp_250618",
+			...             "threshold": 0.1,
+			...         },
 			...     },
 			... )
-			>>> 0.0075
+			>>> TODO
+			>>> evaluator.novelty(
+			...     train_xtals=list_of_train_xtals,
+			...     distance="amd",
+			...     validity=["smact"],
+			...     stability="continuous",
+			...     dir_intermediate_gen="./intermediate",
+			...     dir_intermediate_train="./intermediate_train",
+			...     multiprocessing=False,
+			...     return_time=False,
+			...     **{
+			...         "args_emb": {"k": 200},
+			...         "args_dist": {"metric": "chebyshev", "low_memory": False},
+			...         "args_stability": {
+			...             "diagram": "mp_250618",
+			...             "intercept": 0.2,
+			...         },
+			...     },
+			... )
+			>>> TODO
 
 		Returns:
 			float | tuple: Novelty value or a tuple containing the novelty value
@@ -337,7 +462,51 @@ class Evaluator:
 
 		Raises:
 			ValueError: If an unsupported dataset name, distance metric, or screening
-			method is provided.
+				method is provided.
+
+		Note:
+			Here, I demonstrate how novelty is computed for binary/continuous distances
+			with binary/continuous stability. The binary stability score, :math:`S_b(x)`
+			, for each crystal :math:`x` is defined as follows.
+
+			.. math::
+				S_b(x) =
+					\begin{cases}
+						1 & \text{if } E_\text{hull}(x) \le \text{threshold} \\
+						0 & \text{otherwise}
+					\end{cases}
+
+			You can set the threshold in kwargs (see the examples). Default threshold is
+			0.1 [eV/atom]. The continuous stability score, :math:`S_c(x)`, for each
+			crystal :math:`x` is defined as follows.
+
+			.. math::
+				S_c(x) =
+					\begin{cases}
+						1 & \text{if } E_\text{hull}(x) \le 0 \\
+						1 - \frac{E_\text{hull}(x)}{\text{intercept}} & \text{if }
+						E_\text{hull}(x) \le \text{intercept} \\
+						0 & \text{otherwise}
+					\end{cases}
+
+			You can set the intercept in kwargs. Default intercept is 1.215
+			[eV/atom]. Then, the novelty score with a binary distance is calculated as
+			follows.
+
+			.. math::
+				N = \frac{1}{n} \sum_{i=1}^{n} V(x_i) \cdot S(x_i) \cdot I \left(
+				\land_{j=1}^{m} d(x_i, y_j) \neq 0 \right),
+
+			where :math:`\{x_1, x_2, \ldots, x_n\}` is the set of generated crystals,
+			:math:`\{y_1, y_2, \ldots, y_m\}` is the set of training crystals, :math:`I`
+			is the indicator function, :math:`S` is either :math:`S_b` or :math:`S_c`,
+			and :math:`V` is the validity function that returns 1 for valid crystals and
+			0 for invalid crystals. For a continuous distance, the novelty score is
+			calculated as follows.
+
+			.. math::
+				N = \frac{1}{n} \sum_{i=1}^{n} V(x_i) \cdot S(x_i) \cdot
+				\min_{j=1 \ldots m} d(x_i, y_j)
 
 		.. _tutorial notebook: https://github.com/WMD-group/xtalmet/blob/main/examples/tutorial.ipynb
 		"""
@@ -345,8 +514,12 @@ class Evaluator:
 			raise ValueError(f"Unsupported dataset name: {train_xtals}.")
 		if distance not in SUPPORTED_DISTANCES:
 			raise ValueError(f"Unsupported distance: {distance}.")
-		if screen not in SUPPORTED_SCREENS:
-			raise ValueError(f"Unsupported screening method: {screen}.")
+		if validity is not None:
+			for v in validity:
+				if v not in SUPPORTED_VALIDITY:
+					raise ValueError(f"Unsupported validity method: {v}.")
+		if stability not in [None, "binary", "continuous"]:
+			raise ValueError(f"Unsupported stability criterion: {stability}.")
 
 		times: dict[str, float] = {}
 
@@ -432,7 +605,7 @@ class Evaluator:
 					os.path.join(dir_intermediate_train, f"train_{distance}.pkl.gz"),
 				)
 
-		# Step 2: Screening (optional)
+		# Step 2: Validity check(optional)
 		valid_indices_gen = np.ones(self.n_samples, dtype=bool)
 		valid_indices_train = np.ones(len(d_mtx[0]), dtype=bool)
 		# Remove crystals whose embeddings could not be computed
@@ -442,25 +615,47 @@ class Evaluator:
 		valid_indices_train &= np.array(
 			[d_mtx_0j != float("nan") for d_mtx_0j in d_mtx[0]]
 		)
-		if screen == "smact":
-			valid_indices_gen &= screen_smact(self.gen_xtals, dir_intermediate_gen)
-		elif screen == "ehull":
-			valid_indices_gen &= screen_ehull(
-				self.gen_xtals,
-				diagram=kwargs.get("args_screen", {"diagram": "mp_250618"})["diagram"],
-				dir_intermediate=dir_intermediate_gen,
-			)
-		d_mtx = d_mtx[valid_indices_gen][:, valid_indices_train]
+		if validity is not None:
+			if "smact" in validity:
+				valid_indices_gen &= screen_smact(self.gen_xtals, dir_intermediate_gen)
+			else:
+				pass
 
-		# Step 3: Compute novelty
+		# Step 3: Stability evaluation (optional)
+		stability_scores = np.ones(self.n_samples)  # \in [0, 1]. 1 means stable.
+		if stability is not None:
+			args_stability = kwargs.get("args_stability", {})
+			diagram = args_stability.get("diagram", "mp_250618")
+			if "args_stability" in kwargs:
+				kwargs["args_stability"].pop("diagram", None)
+			stability_scores = compute_stability_scores(
+				self.gen_xtals,
+				diagram=diagram,
+				dir_intermediate=dir_intermediate_gen,
+				binary=(stability == "binary"),
+				**kwargs.get("args_stability", {}),
+			)
+
+		# Step 4: Compute novelty
 		start_time_metric = time.time()
 		if distance in BINARY_DISTANCES:
-			n_novel = sum(
-				[1 if np.all(d_mtx[i] != 0) else 0 for i in range(len(d_mtx))]
+			is_novel = np.array(
+				[
+					1
+					if np.all(np.logical_or(~valid_indices_train, d_mtx[i] != 0))
+					else 0
+					for i in range(len(d_mtx))
+				]
 			)
-			novelty = n_novel / self.n_samples
+			novelty = (
+				np.sum(valid_indices_gen * stability_scores * is_novel) / self.n_samples
+			)
 		elif distance in CONTINUOUS_DISTANCES:
-			novelty = float(np.sum(np.min(d_mtx, axis=1)) / self.n_samples)
+			d_mtx[:, ~valid_indices_train] = float("inf")
+			novelty = (
+				np.sum(valid_indices_gen * stability_scores * np.min(d_mtx, axis=1))
+				/ self.n_samples
+			)
 		end_time_metric = time.time()
 		times["nov_metric"] = end_time_metric - start_time_metric
 		times["nov_total"] = sum(times.values())
