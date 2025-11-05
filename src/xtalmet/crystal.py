@@ -89,7 +89,7 @@ class Crystal(Structure):
 			None
 
 		Note:
-			descriptions for args are copied from pymatgen.core.Structure class.
+			The descriptions for args are copied from pymatgen.core.Structure class.
 		"""
 		super().__init__(
 			lattice,
