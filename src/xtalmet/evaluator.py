@@ -291,18 +291,15 @@ class Evaluator:
 		stability_scores = np.ones(self.n_samples)  # \in [0, 1]. 1 means stable.
 		if stability is not None:
 			args_stability = kwargs.get("args_stability", {})
-			diagram = args_stability.get("diagram", "mp_250618")
-			mace_model = args_stability.get("mace_model", "mace-mh-1")
-			if "args_stability" in kwargs:
-				kwargs["args_stability"].pop("diagram", None)
-				kwargs["args_stability"].pop("mace_model", None)
+			if "diagram" not in args_stability:
+				args_stability["diagram"] = "mp_250618"
+			if "mace_model" not in args_stability:
+				args_stability["mace_model"] = "mace-mh-1"
 			stability_scores = compute_stability_scores(
 				self.gen_xtals,
-				diagram=diagram,
-				mace_model=mace_model,
 				dir_intermediate=dir_intermediate_gen,
 				binary=(stability == "binary"),
-				**kwargs.get("args_stability", {}),
+				**args_stability,
 			)
 
 		# Step 4: Compute uniqueness
@@ -628,18 +625,18 @@ class Evaluator:
 		stability_scores = np.ones(self.n_samples)  # \in [0, 1]. 1 means stable.
 		if stability is not None:
 			args_stability = kwargs.get("args_stability", {})
-			diagram = args_stability.get("diagram", "mp_250618")
-			mace_model = args_stability.get("mace_model", "mace-mh-1")
+			if "diagram" not in args_stability:
+				args_stability["diagram"] = "mp_250618"
+			if "mace_model" not in args_stability:
+				args_stability["mace_model"] = "mace-mh-1"
 			if "args_stability" in kwargs:
 				kwargs["args_stability"].pop("diagram", None)
 				kwargs["args_stability"].pop("mace_model", None)
 			stability_scores = compute_stability_scores(
 				self.gen_xtals,
-				diagram=diagram,
-				mace_model=mace_model,
 				dir_intermediate=dir_intermediate_gen,
 				binary=(stability == "binary"),
-				**kwargs.get("args_stability", {}),
+				**args_stability,
 			)
 
 		# Step 4: Compute novelty
