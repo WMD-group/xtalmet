@@ -125,12 +125,12 @@ class Evaluator:
 			...     return_time=True,
 			... )
 			>>> (
-			...     TODO,
+			...     0.8841,
 			...     {
-			...         "uni_emb": TODO,
-			...         "uni_d_mtx": TODO,
-			...         "uni_metric": TODO,
-			...         "uni_total": TODO,
+			...         "uni_emb": 0.0,
+			...         "uni_d_mtx": 803.5594861507416,
+			...         "uni_metric": 0.13433599472045898,
+			...         "uni_total": 803.693822145462,
 			...     },
 			... )
 			>>> evaluator.uniqueness(
@@ -145,7 +145,7 @@ class Evaluator:
 			...         "args_stability": {"diagram": "mp_250618", "threshold": 0.1},
 			...     },
 			... )
-			>>> TODO
+			>>> 0.1143749297315547
 			>>> evaluator.uniqueness(
 			...     distance="amd",
 			...     validity=["smact"],
@@ -154,12 +154,12 @@ class Evaluator:
 			...     multiprocessing=False,
 			...     return_time=False,
 			...     **{
-			...         "args_emb": {"k": 200},
+			...         "args_emb": {"k": 100},
 			...         "args_dist": {"metric": "chebyshev", "low_memory": False},
-			...         "args_stability": {"diagram": "mp_250618", "intercept": 0.2},
+			...         "args_stability": {"diagram": "mp_250618", "intercept": 1.215},
 			...     },
 			... )
-			>>> TODO
+			>>> 0.307829086571871
 
 		Returns:
 			float | tuple: Uniqueness value or (uniqueness value, a dictionary of time
@@ -409,13 +409,13 @@ class Evaluator:
 			...     return_time=True,
 			... )
 			>>> (
-			...     TODO,
+			...     0.4582,
 			...     {
-			...         "nov_emb_gen": TODO,
-			...         "nov_emb_train": TODO,
-			...         "nov_d_mtx": TODO,
-			...         "nov_metric": TODO,
-			...         "nov_total": TODO,
+			...         "nov_emb_gen": 0.0,
+			...         "nov_emb_train": 0.0,
+			...         "nov_d_mtx": 4101.729508161545,
+			...         "nov_metric": 0.19302725791931152,
+			...         "nov_total": 4101.922535419464,
 			...     },
 			... )
 			>>> evaluator.novelty(
@@ -435,7 +435,7 @@ class Evaluator:
 			...         },
 			...     },
 			... )
-			>>> TODO
+			>>> 0.050714678049507224
 			>>> evaluator.novelty(
 			...     train_xtals=list_of_train_xtals,
 			...     distance="amd",
@@ -446,15 +446,15 @@ class Evaluator:
 			...     multiprocessing=False,
 			...     return_time=False,
 			...     **{
-			...         "args_emb": {"k": 200},
+			...         "args_emb": {"k": 100},
 			...         "args_dist": {"metric": "chebyshev", "low_memory": False},
 			...         "args_stability": {
 			...             "diagram": "mp_250618",
-			...             "intercept": 0.2,
+			...             "intercept": 1.215,
 			...         },
 			...     },
 			... )
-			>>> TODO
+			>>> 0.06133563119311134
 
 		Returns:
 			float | tuple: Novelty value or a tuple containing the novelty value
