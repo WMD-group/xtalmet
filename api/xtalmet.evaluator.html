@@ -155,12 +155,12 @@ the stability evaluation. For more details, please refer to the
 <span class="gp">... </span>    <span class="n">return_time</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="gp">... </span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="p">(</span>
-<span class="gp">... </span>    <span class="n">TODO</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="mf">0.8841</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="p">{</span>
-<span class="gp">... </span>        <span class="s2">&quot;uni_emb&quot;</span><span class="p">:</span> <span class="n">TODO</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;uni_d_mtx&quot;</span><span class="p">:</span> <span class="n">TODO</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;uni_metric&quot;</span><span class="p">:</span> <span class="n">TODO</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;uni_total&quot;</span><span class="p">:</span> <span class="n">TODO</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;uni_emb&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;uni_d_mtx&quot;</span><span class="p">:</span> <span class="mf">803.5594861507416</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;uni_metric&quot;</span><span class="p">:</span> <span class="mf">0.13433599472045898</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;uni_total&quot;</span><span class="p">:</span> <span class="mf">803.693822145462</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="p">},</span>
 <span class="gp">... </span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">evaluator</span><span class="o">.</span><span class="n">uniqueness</span><span class="p">(</span>
@@ -175,7 +175,7 @@ the stability evaluation. For more details, please refer to the
 <span class="gp">... </span>        <span class="s2">&quot;args_stability&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;diagram&quot;</span><span class="p">:</span> <span class="s2">&quot;mp_250618&quot;</span><span class="p">,</span> <span class="s2">&quot;threshold&quot;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">},</span>
 <span class="gp">... </span>    <span class="p">},</span>
 <span class="gp">... </span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">TODO</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="mf">0.1143749297315547</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">evaluator</span><span class="o">.</span><span class="n">uniqueness</span><span class="p">(</span>
 <span class="gp">... </span>    <span class="n">distance</span><span class="o">=</span><span class="s2">&quot;amd&quot;</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">validity</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;smact&quot;</span><span class="p">],</span>
@@ -184,12 +184,12 @@ the stability evaluation. For more details, please refer to the
 <span class="gp">... </span>    <span class="n">multiprocessing</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">return_time</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="o">**</span><span class="p">{</span>
-<span class="gp">... </span>        <span class="s2">&quot;args_emb&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mi">200</span><span class="p">},</span>
+<span class="gp">... </span>        <span class="s2">&quot;args_emb&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">},</span>
 <span class="gp">... </span>        <span class="s2">&quot;args_dist&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;metric&quot;</span><span class="p">:</span> <span class="s2">&quot;chebyshev&quot;</span><span class="p">,</span> <span class="s2">&quot;low_memory&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
-<span class="gp">... </span>        <span class="s2">&quot;args_stability&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;diagram&quot;</span><span class="p">:</span> <span class="s2">&quot;mp_250618&quot;</span><span class="p">,</span> <span class="s2">&quot;intercept&quot;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">},</span>
+<span class="gp">... </span>        <span class="s2">&quot;args_stability&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;diagram&quot;</span><span class="p">:</span> <span class="s2">&quot;mp_250618&quot;</span><span class="p">,</span> <span class="s2">&quot;intercept&quot;</span><span class="p">:</span> <span class="mf">1.215</span><span class="p">},</span>
 <span class="gp">... </span>    <span class="p">},</span>
 <span class="gp">... </span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">TODO</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="mf">0.307829086571871</span>
 </pre></div>
 </div>
 <dl class="field-list simple">
@@ -312,13 +312,13 @@ the stability evaluation. For more details, please refer to the
 <span class="gp">... </span>    <span class="n">return_time</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="gp">... </span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="p">(</span>
-<span class="gp">... </span>    <span class="n">TODO</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="mf">0.4582</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="p">{</span>
-<span class="gp">... </span>        <span class="s2">&quot;nov_emb_gen&quot;</span><span class="p">:</span> <span class="n">TODO</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;nov_emb_train&quot;</span><span class="p">:</span> <span class="n">TODO</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;nov_d_mtx&quot;</span><span class="p">:</span> <span class="n">TODO</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;nov_metric&quot;</span><span class="p">:</span> <span class="n">TODO</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;nov_total&quot;</span><span class="p">:</span> <span class="n">TODO</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;nov_emb_gen&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;nov_emb_train&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;nov_d_mtx&quot;</span><span class="p">:</span> <span class="mf">4101.729508161545</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;nov_metric&quot;</span><span class="p">:</span> <span class="mf">0.19302725791931152</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;nov_total&quot;</span><span class="p">:</span> <span class="mf">4101.922535419464</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="p">},</span>
 <span class="gp">... </span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">evaluator</span><span class="o">.</span><span class="n">novelty</span><span class="p">(</span>
@@ -338,7 +338,7 @@ the stability evaluation. For more details, please refer to the
 <span class="gp">... </span>        <span class="p">},</span>
 <span class="gp">... </span>    <span class="p">},</span>
 <span class="gp">... </span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">TODO</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="mf">0.050714678049507224</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">evaluator</span><span class="o">.</span><span class="n">novelty</span><span class="p">(</span>
 <span class="gp">... </span>    <span class="n">train_xtals</span><span class="o">=</span><span class="n">list_of_train_xtals</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">distance</span><span class="o">=</span><span class="s2">&quot;amd&quot;</span><span class="p">,</span>
@@ -349,15 +349,15 @@ the stability evaluation. For more details, please refer to the
 <span class="gp">... </span>    <span class="n">multiprocessing</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">return_time</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="o">**</span><span class="p">{</span>
-<span class="gp">... </span>        <span class="s2">&quot;args_emb&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mi">200</span><span class="p">},</span>
+<span class="gp">... </span>        <span class="s2">&quot;args_emb&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">},</span>
 <span class="gp">... </span>        <span class="s2">&quot;args_dist&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;metric&quot;</span><span class="p">:</span> <span class="s2">&quot;chebyshev&quot;</span><span class="p">,</span> <span class="s2">&quot;low_memory&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
 <span class="gp">... </span>        <span class="s2">&quot;args_stability&quot;</span><span class="p">:</span> <span class="p">{</span>
 <span class="gp">... </span>            <span class="s2">&quot;diagram&quot;</span><span class="p">:</span> <span class="s2">&quot;mp_250618&quot;</span><span class="p">,</span>
-<span class="gp">... </span>            <span class="s2">&quot;intercept&quot;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span>
+<span class="gp">... </span>            <span class="s2">&quot;intercept&quot;</span><span class="p">:</span> <span class="mf">1.215</span><span class="p">,</span>
 <span class="gp">... </span>        <span class="p">},</span>
 <span class="gp">... </span>    <span class="p">},</span>
 <span class="gp">... </span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">TODO</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="mf">0.06133563119311134</span>
 </pre></div>
 </div>
 <dl class="field-list simple">
