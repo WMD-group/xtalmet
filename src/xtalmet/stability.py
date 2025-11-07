@@ -22,6 +22,7 @@ from .crystal import Crystal
 def compute_ehull(
 	xtals: list[Crystal],
 	diagram: Literal["mp_250618", "mp"] | PatchedPhaseDiagram | str = "mp_250618",
+	mace_model: str = "mace-mh-1",
 	dir_intermediate: str | None = None,
 ) -> np.ndarray[float]:
 	"""Compute energy above hull for a list of crystals.
@@ -34,6 +35,8 @@ def compute_ehull(
 			specified, the diagram will be constructed on the spot. You can also pass
 			your own diagram or a path to it. If the pre-computed results (ehull.pkl.gz)
 			exist in dir_intermediate, this argument will be ignored.
+		mace_model (str): The MACE model to use for energy prediction. Default is
+			"mace-mh-1".
 		dir_intermediate (str | None): Directory to search for pre-computed results. If
 			the pre-computed file does not exist in the directory, it will be saved to
 			the directory for future use. If set to None, no files will be loaded or
@@ -101,7 +104,14 @@ def compute_ehull(
 				) as f:
 					pickle.dump(ppd_mp, f)
 		# compute energy above hull for each generated crystal
-		calculator = mace_mp(model="medium-mpa-0", default_dtype="float64")
+		if mace_model == "mace-mh-1":
+			calculator = mace_mp(
+				model="https://github.com/ACEsuit/mace-foundations/releases/download/mace_mh_1/mace-mh-1.model",
+				default_dtype="float64",
+				head="omat_pbe",
+			)
+		else:
+			calculator = mace_mp(model=mace_model, default_dtype="float64")
 		e_above_hulls = np.zeros(len(xtals), dtype=float)
 		for idx, xtal in enumerate(xtals):
 			try:
@@ -123,6 +133,7 @@ def compute_ehull(
 def compute_stability_scores(
 	xtals: list[Crystal],
 	diagram: Literal["mp_250618", "mp"] | PatchedPhaseDiagram | str = "mp_250618",
+	mace_model: str = "mace-mh-1",
 	dir_intermediate: str | None = None,
 	binary=True,
 	**kwargs,
@@ -137,6 +148,8 @@ def compute_stability_scores(
 			specified, the diagram will be constructed on the spot. You can also pass
 			your own diagram or a path to it. If the pre-computed results (ehull.pkl.gz)
 			exist in dir_intermediate, this argument will be ignored.
+		mace_model (str): The MACE model to use for energy prediction. Default is
+			"mace-mh-1".
 		dir_intermediate (str | None): Directory to search for pre-computed results. If
 			the pre-computed file does not exist in the directory, it will be saved to
 			the directory for future use. If set to None, no files will be loaded or
@@ -155,7 +168,7 @@ def compute_stability_scores(
 		np.ndarray[float]: Array of stability scores for each crystal.
 	"""
 	e_above_hulls = compute_ehull(
-		xtals, diagram=diagram, dir_intermediate=dir_intermediate
+		xtals, diagram=diagram, mace_model=mace_model, dir_intermediate=dir_intermediate
 	)
 	stability_scores = np.zeros(len(xtals), dtype=float)
 	if binary:

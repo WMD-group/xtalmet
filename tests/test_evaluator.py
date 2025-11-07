@@ -132,7 +132,7 @@ class TestEvaluator:
 				"binary",
 				True,
 				N_PROCESSES,
-				{"args_stability": {"diagram": "mp_250618"}},
+				{"args_stability": {"diagram": "mp_250618", "mace_model": "mace-mh-1"}},
 			),
 			(
 				"pdd",
@@ -140,7 +140,12 @@ class TestEvaluator:
 				"continuous",
 				False,
 				None,
-				{"args_stability": {"diagram": "mp_250618"}},
+				{
+					"args_stability": {
+						"diagram": "mp_250618",
+						"mace_model": "medium-mpa-0",
+					}
+				},
 			),
 			(
 				"amd",
@@ -148,7 +153,7 @@ class TestEvaluator:
 				"binary",
 				True,
 				None,
-				{"args_stability": {"diagram": "mp_250618"}},
+				{"args_stability": {"diagram": "mp_250618", "mace_model": "mace-mh-1"}},
 			),
 			("smat", ["smact"], None, False, None, {}),
 			("comp", ["smact"], "binary", True, None, {}),
@@ -159,7 +164,12 @@ class TestEvaluator:
 				None,
 				True,
 				N_PROCESSES,
-				{"args_stability": {"diagram": "mp_250618"}},
+				{
+					"args_stability": {
+						"diagram": "mp_250618",
+						"mace_model": "medium-mpa-0",
+					}
+				},
 			),
 			(
 				"pdd",
@@ -167,7 +177,7 @@ class TestEvaluator:
 				"binary",
 				False,
 				None,
-				{"args_stability": {"diagram": "mp_250618"}},
+				{"args_stability": {"diagram": "mp_250618", "mace_model": "mace-mh-1"}},
 			),
 			(
 				"amd",
@@ -175,7 +185,12 @@ class TestEvaluator:
 				"continuous",
 				True,
 				None,
-				{"args_stability": {"diagram": "mp_250618"}},
+				{
+					"args_stability": {
+						"diagram": "mp_250618",
+						"mace_model": "medium-mpa-0",
+					}
+				},
 			),
 		],
 	)
@@ -246,7 +261,7 @@ class TestEvaluator:
 				None,
 				False,
 				None,
-				{"args_mtx": {"ltol": 0.3, "stol": 0.4, "angle_tol": 6}},
+				{"args_dist": {"ltol": 0.3, "stol": 0.4, "angle_tol": 6}},
 			),
 			(
 				False,
@@ -255,7 +270,7 @@ class TestEvaluator:
 				None,
 				True,
 				N_PROCESSES,
-				{"args_mtx": {"ltol": 0.3, "stol": 0.4, "angle_tol": 6}},
+				{"args_dist": {"ltol": 0.3, "stol": 0.4, "angle_tol": 6}},
 			),
 			(
 				False,
@@ -266,7 +281,7 @@ class TestEvaluator:
 				None,
 				{
 					"args_emb": {"k": 200, "return_row_data": True},
-					"args_mtx": {
+					"args_dist": {
 						"metric": "chebyshev",
 						"backend": "multiprocessing",
 						"n_jobs": 2,
@@ -283,7 +298,7 @@ class TestEvaluator:
 				None,
 				{
 					"args_emb": {"k": 100},
-					"args_mtx": {
+					"args_dist": {
 						"metric": "chebyshev",
 						"backend": "multiprocessing",
 						"n_jobs": None,
@@ -300,7 +315,7 @@ class TestEvaluator:
 				None,
 				{
 					"args_emb": {"k": 200},
-					"args_mtx": {"metric": "chebyshev", "low_memory": False},
+					"args_dist": {"metric": "chebyshev", "low_memory": False},
 				},
 			),
 			(
@@ -312,7 +327,7 @@ class TestEvaluator:
 				N_PROCESSES,
 				{
 					"args_emb": {"k": 100},
-					"args_mtx": {"metric": "chebyshev", "low_memory": False},
+					"args_dist": {"metric": "chebyshev", "low_memory": False},
 				},
 			),
 			(True, "smat", None, "continuous", False, None, {}),
@@ -325,7 +340,7 @@ class TestEvaluator:
 				"continuous",
 				True,
 				N_PROCESSES,
-				{"args_stability": {"diagram": "mp_250618"}},
+				{"args_stability": {"diagram": "mp_250618", "mace_model": "mace-mh-1"}},
 			),
 			(
 				True,
@@ -334,7 +349,12 @@ class TestEvaluator:
 				"binary",
 				False,
 				None,
-				{"args_stability": {"diagram": "mp_250618"}},
+				{
+					"args_stability": {
+						"diagram": "mp_250618",
+						"mace_model": "medium-mpa-0",
+					}
+				},
 			),
 			(
 				True,
@@ -343,7 +363,7 @@ class TestEvaluator:
 				"continuous",
 				True,
 				None,
-				{"args_stability": {"diagram": "mp_250618"}},
+				{"args_stability": {"diagram": "mp_250618", "mace_model": "mace-mh-1"}},
 			),
 			(
 				False,
@@ -370,7 +390,12 @@ class TestEvaluator:
 				"continuous",
 				False,
 				None,
-				{"args_stability": {"diagram": "mp_250618"}},
+				{
+					"args_stability": {
+						"diagram": "mp_250618",
+						"mace_model": "medium-mpa-0",
+					}
+				},
 			),
 			(False, "magpie", ["smact"], None, True, None, {}),
 			(False, "pdd", ["smact"], "binary", False, None, {}),

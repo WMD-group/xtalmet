@@ -292,11 +292,14 @@ class Evaluator:
 		if stability is not None:
 			args_stability = kwargs.get("args_stability", {})
 			diagram = args_stability.get("diagram", "mp_250618")
+			mace_model = args_stability.get("mace_model", "mace-mh-1")
 			if "args_stability" in kwargs:
 				kwargs["args_stability"].pop("diagram", None)
+				kwargs["args_stability"].pop("mace_model", None)
 			stability_scores = compute_stability_scores(
 				self.gen_xtals,
 				diagram=diagram,
+				mace_model=mace_model,
 				dir_intermediate=dir_intermediate_gen,
 				binary=(stability == "binary"),
 				**kwargs.get("args_stability", {}),
@@ -626,11 +629,14 @@ class Evaluator:
 		if stability is not None:
 			args_stability = kwargs.get("args_stability", {})
 			diagram = args_stability.get("diagram", "mp_250618")
+			mace_model = args_stability.get("mace_model", "mace-mh-1")
 			if "args_stability" in kwargs:
 				kwargs["args_stability"].pop("diagram", None)
+				kwargs["args_stability"].pop("mace_model", None)
 			stability_scores = compute_stability_scores(
 				self.gen_xtals,
 				diagram=diagram,
+				mace_model=mace_model,
 				dir_intermediate=dir_intermediate_gen,
 				binary=(stability == "binary"),
 				**kwargs.get("args_stability", {}),
