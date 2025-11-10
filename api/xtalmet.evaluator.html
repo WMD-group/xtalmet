@@ -134,13 +134,12 @@ number of available CPU cores to avoid memory issues. If multiprocessing
 is False, this argument is ignored. Default is None.</p></li>
 <li><p><strong>return_time</strong> (<em>bool</em>) – Whether to return the time taken for each step.</p></li>
 <li><p><strong>**kwargs</strong> – Additional keyword arguments for specific distance metrics and
-stability calculations. It can contain three keys: “args_emb”,
-“args_dist”, and “args_stability”. The value of “args_emb” is a dict of
-arguments for the calculation of embeddings, the value of “args_dist” is
-a dict of arguments for the calculation of distance matrix using the
-embeddings, and the value of “args_stability” is a dict of arguments for
-the stability evaluation. For more details, please refer to the
-<a class="reference external" href="https://github.com/WMD-group/xtalmet/blob/main/examples/tutorial.ipynb">tutorial notebook</a>.</p></li>
+stability calculations. It can contain four keys: “args_emb”,
+“args_dist”, “args_validity”, and “args_stability”. “args_emb” is for
+the calculation of embeddings, “args_dist” is for the calculation of
+distance matrix using the embeddings, “args_validity” is for the
+validity screening, and “args_stability” is for the stability
+evaluation. For more details, please refer to the <a class="reference external" href="https://github.com/WMD-group/xtalmet/blob/main/examples/tutorial.ipynb">tutorial notebook</a>.</p></li>
 </ul>
 </dd>
 </dl>
@@ -178,7 +177,7 @@ the stability evaluation. For more details, please refer to the
 <span class="gp">&gt;&gt;&gt; </span><span class="mf">0.1143749297315547</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">evaluator</span><span class="o">.</span><span class="n">uniqueness</span><span class="p">(</span>
 <span class="gp">... </span>    <span class="n">distance</span><span class="o">=</span><span class="s2">&quot;amd&quot;</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="n">validity</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;smact&quot;</span><span class="p">],</span>
+<span class="gp">... </span>    <span class="n">validity</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;smact&quot;</span><span class="p">,</span> <span class="s2">&quot;structure&quot;</span><span class="p">],</span>
 <span class="gp">... </span>    <span class="n">stability</span><span class="o">=</span><span class="s2">&quot;continuous&quot;</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">dir_intermediate_gen</span><span class="o">=</span><span class="s2">&quot;./intermediate&quot;</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">multiprocessing</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -186,10 +185,16 @@ the stability evaluation. For more details, please refer to the
 <span class="gp">... </span>    <span class="o">**</span><span class="p">{</span>
 <span class="gp">... </span>        <span class="s2">&quot;args_emb&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">},</span>
 <span class="gp">... </span>        <span class="s2">&quot;args_dist&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;metric&quot;</span><span class="p">:</span> <span class="s2">&quot;chebyshev&quot;</span><span class="p">,</span> <span class="s2">&quot;low_memory&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
+<span class="gp">... </span>        <span class="s2">&quot;args_validity&quot;</span><span class="p">:</span> <span class="p">{</span>
+<span class="gp">... </span>            <span class="s2">&quot;structure&quot;</span><span class="p">:</span> <span class="p">{</span>
+<span class="gp">... </span>                <span class="s2">&quot;threshold_distance&quot;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span>
+<span class="gp">... </span>                <span class="s2">&quot;threshold_volume&quot;</span><span class="p">:</span> <span class="mf">0.1</span>
+<span class="gp">... </span>            <span class="p">}</span>
+<span class="gp">... </span>        <span class="p">},</span>
 <span class="gp">... </span>        <span class="s2">&quot;args_stability&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;diagram&quot;</span><span class="p">:</span> <span class="s2">&quot;mp_250618&quot;</span><span class="p">,</span> <span class="s2">&quot;intercept&quot;</span><span class="p">:</span> <span class="mf">1.215</span><span class="p">},</span>
 <span class="gp">... </span>    <span class="p">},</span>
 <span class="gp">... </span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="mf">0.307829086571871</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="mf">0.2739442728688278</span>
 </pre></div>
 </div>
 <dl class="field-list simple">
@@ -290,13 +295,12 @@ number of available CPU cores to avoid memory issues. If multiprocessing
 is False, this argument is ignored. Default is None.</p></li>
 <li><p><strong>return_time</strong> (<em>bool</em>) – Whether to return the time taken for each step.</p></li>
 <li><p><strong>**kwargs</strong> – Additional keyword arguments for specific distance metrics and
-thermodynamic screening. It can contain three keys: “args_emb”,
-“args_dist”, and “args_stability”. The value of “args_emb” is a dict of
-arguments for the calculation of embeddings, the value of “args_dist” is
-a dict of arguments for the calculation of distance matrix using the
-embeddings, and the value of “args_stability” is a dict of arguments for
-the stability evaluation. For more details, please refer to the
-<a class="reference external" href="https://github.com/WMD-group/xtalmet/blob/main/examples/tutorial.ipynb">tutorial notebook</a>.</p></li>
+stability calculations. It can contain four keys: “args_emb”,
+“args_dist”, “args_validity”, and “args_stability”. “args_emb” is for
+the calculation of embeddings, “args_dist” is for the calculation of
+distance matrix using the embeddings, “args_validity” is for the
+validity screening, and “args_stability” is for the stability
+evaluation. For more details, please refer to the <a class="reference external" href="https://github.com/WMD-group/xtalmet/blob/main/examples/tutorial.ipynb">tutorial notebook</a>.</p></li>
 </ul>
 </dd>
 </dl>
@@ -342,7 +346,7 @@ the stability evaluation. For more details, please refer to the
 <span class="gp">&gt;&gt;&gt; </span><span class="n">evaluator</span><span class="o">.</span><span class="n">novelty</span><span class="p">(</span>
 <span class="gp">... </span>    <span class="n">train_xtals</span><span class="o">=</span><span class="n">list_of_train_xtals</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">distance</span><span class="o">=</span><span class="s2">&quot;amd&quot;</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="n">validity</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;smact&quot;</span><span class="p">],</span>
+<span class="gp">... </span>    <span class="n">validity</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;smact&quot;</span><span class="p">,</span> <span class="s2">&quot;structure&quot;</span><span class="p">],</span>
 <span class="gp">... </span>    <span class="n">stability</span><span class="o">=</span><span class="s2">&quot;continuous&quot;</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">dir_intermediate_gen</span><span class="o">=</span><span class="s2">&quot;./intermediate&quot;</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">dir_intermediate_train</span><span class="o">=</span><span class="s2">&quot;./intermediate_train&quot;</span><span class="p">,</span>
@@ -351,13 +355,16 @@ the stability evaluation. For more details, please refer to the
 <span class="gp">... </span>    <span class="o">**</span><span class="p">{</span>
 <span class="gp">... </span>        <span class="s2">&quot;args_emb&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">},</span>
 <span class="gp">... </span>        <span class="s2">&quot;args_dist&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;metric&quot;</span><span class="p">:</span> <span class="s2">&quot;chebyshev&quot;</span><span class="p">,</span> <span class="s2">&quot;low_memory&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
-<span class="gp">... </span>        <span class="s2">&quot;args_stability&quot;</span><span class="p">:</span> <span class="p">{</span>
-<span class="gp">... </span>            <span class="s2">&quot;diagram&quot;</span><span class="p">:</span> <span class="s2">&quot;mp_250618&quot;</span><span class="p">,</span>
-<span class="gp">... </span>            <span class="s2">&quot;intercept&quot;</span><span class="p">:</span> <span class="mf">1.215</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;args_validity&quot;</span><span class="p">:</span> <span class="p">{</span>
+<span class="gp">... </span>            <span class="s2">&quot;structure&quot;</span><span class="p">:</span> <span class="p">{</span>
+<span class="gp">... </span>                <span class="s2">&quot;threshold_distance&quot;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span>
+<span class="gp">... </span>                <span class="s2">&quot;threshold_volume&quot;</span><span class="p">:</span> <span class="mf">0.1</span>
+<span class="gp">... </span>            <span class="p">}</span>
 <span class="gp">... </span>        <span class="p">},</span>
+<span class="gp">... </span>        <span class="s2">&quot;args_stability&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;diagram&quot;</span><span class="p">:</span> <span class="s2">&quot;mp_250618&quot;</span><span class="p">,</span> <span class="s2">&quot;intercept&quot;</span><span class="p">:</span> <span class="mf">1.215</span><span class="p">},</span>
 <span class="gp">... </span>    <span class="p">},</span>
 <span class="gp">... </span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="mf">0.06133563119311134</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="mf">0.05753502970079833</span>
 </pre></div>
 </div>
 <dl class="field-list simple">

@@ -54,7 +54,8 @@
 <li class="toctree-l3"><a class="reference internal" href="xtalmet.evaluator.html">xtalmet.evaluator module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="xtalmet.stability.html">xtalmet.stability module</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">xtalmet.validity module</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#xtalmet.validity.screen_smact"><code class="docutils literal notranslate"><span class="pre">screen_smact()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#xtalmet.validity.validity_smact"><code class="docutils literal notranslate"><span class="pre">validity_smact()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#xtalmet.validity.validity_structure"><code class="docutils literal notranslate"><span class="pre">validity_structure()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -91,8 +92,8 @@
 <span id="xtalmet-validity-module"></span><h1>xtalmet.validity module<a class="headerlink" href="#module-xtalmet.validity" title="Link to this heading"></a></h1>
 <p>This module offers validity functions to screen crystal structures.</p>
 <dl class="py function">
-<dt class="sig sig-object py" id="xtalmet.validity.screen_smact">
-<span class="sig-prename descclassname"><span class="pre">xtalmet.validity.</span></span><span class="sig-name descname"><span class="pre">screen_smact</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xtals</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="xtalmet.crystal.html#xtalmet.crystal.Crystal" title="xtalmet.crystal.Crystal"><span class="pre">Crystal</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dir_intermediate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#xtalmet.validity.screen_smact" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="xtalmet.validity.validity_smact">
+<span class="sig-prename descclassname"><span class="pre">xtalmet.validity.</span></span><span class="sig-name descname"><span class="pre">validity_smact</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xtals</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="xtalmet.crystal.html#xtalmet.crystal.Crystal" title="xtalmet.crystal.Crystal"><span class="pre">Crystal</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dir_intermediate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#xtalmet.validity.validity_smact" title="Link to this definition"></a></dt>
 <dd><p>Screen crystals using SMACT.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -115,6 +116,36 @@ loaded or saved. Default is None.</p></li>
 <ul class="simple">
 <li><p>Davies et al., (2019). SMACT: Semiconducting Materials by Analogy and Chemical
 Theory. Journal of Open Source Software, 4(38), 1361, <a class="reference external" href="https://doi.org/10.21105/joss.01361">https://doi.org/10.21105/joss.01361</a></p></li>
+</ul>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="xtalmet.validity.validity_structure">
+<span class="sig-prename descclassname"><span class="pre">xtalmet.validity.</span></span><span class="sig-name descname"><span class="pre">validity_structure</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xtals</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="xtalmet.crystal.html#xtalmet.crystal.Crystal" title="xtalmet.crystal.Crystal"><span class="pre">Crystal</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dir_intermediate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold_distance</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold_volume</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.1</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#xtalmet.validity.validity_structure" title="Link to this definition"></a></dt>
+<dd><p>Screen crystals using structure-based validity.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xtals</strong> (<em>list</em><em>[</em><a class="reference internal" href="xtalmet.crystal.html#xtalmet.crystal.Crystal" title="xtalmet.crystal.Crystal"><em>Crystal</em></a><em>]</em>) – List of crystals to screen.</p></li>
+<li><p><strong>dir_intermediate</strong> (<em>str</em><em> | </em><em>None</em>) – Directory to search for pre-computed screening
+results. If the pre-computed file does not exist in the directory, it will
+be saved to the directory for future use. If set to None, no files will be
+loaded or saved. Default is None.</p></li>
+<li><p><strong>threshold_distance</strong> (<em>float</em>) – Minimum allowed distance between atoms.</p></li>
+<li><p><strong>threshold_volume</strong> (<em>float</em>) – Minimum allowed volume of the unit cell.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Array indicating which crystals pass the screening.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray[bool]</p>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<ul class="simple">
+<li><p>Xie et al., (2022). Crystal Diffusion Variational Autoencoder for Periodic
+Material Generation. In International Conference on Learning Representations.</p></li>
 </ul>
 </dd></dl>
 
