@@ -20,7 +20,7 @@ from .constants import (
 from .crystal import Crystal
 from .distance import distance_matrix
 from .stability import compute_stability_scores
-from .validity import screen_smact
+from .validity import validity_smact, validity_structure
 
 
 class Evaluator:
@@ -106,13 +106,12 @@ class Evaluator:
 				is False, this argument is ignored. Default is None.
 			return_time (bool): Whether to return the time taken for each step.
 			**kwargs: Additional keyword arguments for specific distance metrics and
-				stability calculations. It can contain three keys: "args_emb",
-				"args_dist", and "args_stability". The value of "args_emb" is a dict of
-				arguments for the calculation of embeddings, the value of "args_dist" is
-				a dict of arguments for the calculation of distance matrix using the
-				embeddings, and the value of "args_stability" is a dict of arguments for
-				the stability evaluation. For more details, please refer to the
-				`tutorial notebook`_.
+				stability calculations. It can contain four keys: "args_emb",
+				"args_dist", "args_validity", and "args_stability". "args_emb" is for
+				the calculation of embeddings, "args_dist" is for the calculation of
+				distance matrix using the embeddings, "args_validity" is for the
+				validity screening, and "args_stability" is for the stability
+				evaluation. For more details, please refer to the `tutorial notebook`_.
 
 		Examples:
 			>>> evaluator.uniqueness(
@@ -148,7 +147,7 @@ class Evaluator:
 			>>> 0.1143749297315547
 			>>> evaluator.uniqueness(
 			...     distance="amd",
-			...     validity=["smact"],
+			...     validity=["smact", "structure"],
 			...     stability="continuous",
 			...     dir_intermediate_gen="./intermediate",
 			...     multiprocessing=False,
@@ -156,10 +155,16 @@ class Evaluator:
 			...     **{
 			...         "args_emb": {"k": 100},
 			...         "args_dist": {"metric": "chebyshev", "low_memory": False},
+			...         "args_validity": {
+			...             "structure": {
+			...                 "threshold_distance": 0.5,
+			...                 "threshold_volume": 0.1
+			...             }
+			...         },
 			...         "args_stability": {"diagram": "mp_250618", "intercept": 1.215},
 			...     },
 			... )
-			>>> 0.307829086571871
+			>>> 0.2739442728688278
 
 		Returns:
 			float | tuple: Uniqueness value or (uniqueness value, a dictionary of time
@@ -283,7 +288,13 @@ class Evaluator:
 		)
 		if validity is not None:
 			if "smact" in validity:
-				valid_indices &= screen_smact(self.gen_xtals, dir_intermediate_gen)
+				valid_indices &= validity_smact(self.gen_xtals, dir_intermediate_gen)
+			elif "structure" in validity:
+				valid_indices &= validity_structure(
+					self.gen_xtals,
+					dir_intermediate_gen,
+					**(kwargs.get("args_validity", {}).get("structure", {})),
+				)
 			else:
 				pass
 
@@ -389,13 +400,12 @@ class Evaluator:
 				is False, this argument is ignored. Default is None.
 			return_time (bool): Whether to return the time taken for each step.
 			**kwargs: Additional keyword arguments for specific distance metrics and
-				thermodynamic screening. It can contain three keys: "args_emb",
-				"args_dist", and "args_stability". The value of "args_emb" is a dict of
-				arguments for the calculation of embeddings, the value of "args_dist" is
-				a dict of arguments for the calculation of distance matrix using the
-				embeddings, and the value of "args_stability" is a dict of arguments for
-				the stability evaluation. For more details, please refer to the
-				`tutorial notebook`_.
+				stability calculations. It can contain four keys: "args_emb",
+				"args_dist", "args_validity", and "args_stability". "args_emb" is for
+				the calculation of embeddings, "args_dist" is for the calculation of
+				distance matrix using the embeddings, "args_validity" is for the
+				validity screening, and "args_stability" is for the stability
+				evaluation. For more details, please refer to the `tutorial notebook`_.
 
 		Examples:
 			>>> evaluator.novelty(
@@ -439,7 +449,7 @@ class Evaluator:
 			>>> evaluator.novelty(
 			...     train_xtals=list_of_train_xtals,
 			...     distance="amd",
-			...     validity=["smact"],
+			...     validity=["smact", "structure"],
 			...     stability="continuous",
 			...     dir_intermediate_gen="./intermediate",
 			...     dir_intermediate_train="./intermediate_train",
@@ -448,13 +458,16 @@ class Evaluator:
 			...     **{
 			...         "args_emb": {"k": 100},
 			...         "args_dist": {"metric": "chebyshev", "low_memory": False},
-			...         "args_stability": {
-			...             "diagram": "mp_250618",
-			...             "intercept": 1.215,
+			...         "args_validity": {
+			...             "structure": {
+			...                 "threshold_distance": 0.5,
+			...                 "threshold_volume": 0.1
+			...             }
 			...         },
+			...         "args_stability": {"diagram": "mp_250618", "intercept": 1.215},
 			...     },
 			... )
-			>>> 0.06133563119311134
+			>>> 0.05753502970079833
 
 		Returns:
 			float | tuple: Novelty value or a tuple containing the novelty value
@@ -617,7 +630,15 @@ class Evaluator:
 		)
 		if validity is not None:
 			if "smact" in validity:
-				valid_indices_gen &= screen_smact(self.gen_xtals, dir_intermediate_gen)
+				valid_indices_gen &= validity_smact(
+					self.gen_xtals, dir_intermediate_gen
+				)
+			elif "structure" in validity:
+				valid_indices_gen &= validity_structure(
+					self.gen_xtals,
+					dir_intermediate_gen,
+					**(kwargs.get("args_validity", {}).get("structure", {})),
+				)
 			else:
 				pass
 

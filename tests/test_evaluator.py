@@ -132,7 +132,13 @@ class TestEvaluator:
 				"binary",
 				True,
 				N_PROCESSES,
-				{"args_stability": {"diagram": "mp_250618", "mace_model": "mace-mh-1"}},
+				{
+					"args_stability": {
+						"diagram": "mp_250618",
+						"mace_model": "mace-mh-1",
+						"threshold": 0.1,
+					}
+				},
 			),
 			(
 				"pdd",
@@ -144,6 +150,7 @@ class TestEvaluator:
 					"args_stability": {
 						"diagram": "mp_250618",
 						"mace_model": "medium-mpa-0",
+						"intercept": 1.215,
 					}
 				},
 			),
@@ -153,43 +160,63 @@ class TestEvaluator:
 				"binary",
 				True,
 				None,
-				{"args_stability": {"diagram": "mp_250618", "mace_model": "mace-mh-1"}},
+				{
+					"args_stability": {
+						"diagram": "mp_250618",
+						"mace_model": "mace-mh-1",
+						"threshold": 0.2,
+					}
+				},
 			),
 			("smat", ["smact"], None, False, None, {}),
-			("comp", ["smact"], "binary", True, None, {}),
-			("wyckoff", ["smact"], "continuous", False, None, {}),
+			("comp", ["structure"], "binary", True, None, {}),
+			("wyckoff", ["smact", "structure"], "continuous", False, None, {}),
 			(
 				"magpie",
 				["smact"],
 				None,
 				True,
 				N_PROCESSES,
-				{
-					"args_stability": {
-						"diagram": "mp_250618",
-						"mace_model": "medium-mpa-0",
-					}
-				},
+				{},
 			),
 			(
 				"pdd",
-				["smact"],
+				["structure"],
 				"binary",
 				False,
 				None,
-				{"args_stability": {"diagram": "mp_250618", "mace_model": "mace-mh-1"}},
+				{
+					"args_validity": {
+						"structure": {
+							"threshold_distance": 0.5,
+							"threshold_volume": 0.1,
+						}
+					},
+					"args_stability": {
+						"diagram": "mp_250618",
+						"mace_model": "mace-mh-1",
+						"threshold": 0.1,
+					},
+				},
 			),
 			(
 				"amd",
-				["smact"],
+				["smact", "structure"],
 				"continuous",
 				True,
 				None,
 				{
+					"args_validity": {
+						"structure": {
+							"threshold_distance": 0.6,
+							"threshold_volume": 0.2,
+						}
+					},
 					"args_stability": {
 						"diagram": "mp_250618",
 						"mace_model": "medium-mpa-0",
-					}
+						"intercept": 1.0,
+					},
 				},
 			),
 		],
@@ -340,7 +367,13 @@ class TestEvaluator:
 				"continuous",
 				True,
 				N_PROCESSES,
-				{"args_stability": {"diagram": "mp_250618", "mace_model": "mace-mh-1"}},
+				{
+					"args_stability": {
+						"diagram": "mp_250618",
+						"mace_model": "mace-mh-1",
+						"intercept": 1.215,
+					}
+				},
 			),
 			(
 				True,
@@ -353,6 +386,7 @@ class TestEvaluator:
 					"args_stability": {
 						"diagram": "mp_250618",
 						"mace_model": "medium-mpa-0",
+						"threshold": 0.1,
 					}
 				},
 			),
@@ -363,7 +397,13 @@ class TestEvaluator:
 				"continuous",
 				True,
 				None,
-				{"args_stability": {"diagram": "mp_250618", "mace_model": "mace-mh-1"}},
+				{
+					"args_stability": {
+						"diagram": "mp_250618",
+						"mace_model": "mace-mh-1",
+						"intercept": 1.0,
+					}
+				},
 			),
 			(
 				False,
@@ -377,29 +417,48 @@ class TestEvaluator:
 			(
 				False,
 				"comp",
-				["smact"],
+				["structure"],
 				"binary",
 				True,
 				N_PROCESSES,
-				{},
+				{
+					"args_validity": {
+						"structure": {
+							"threshold_distance": 0.5,
+							"threshold_volume": 0.1,
+						}
+					},
+					"args_stability": {
+						"diagram": "mp_250618",
+						"mace_model": "mace-mh-1",
+						"threshold": 0.1,
+					},
+				},
 			),
 			(
 				False,
 				"wyckoff",
-				["smact"],
+				["smact", "structure"],
 				"continuous",
 				False,
 				None,
 				{
+					"args_validity": {
+						"structure": {
+							"threshold_distance": 0.6,
+							"threshold_volume": 0.2,
+						}
+					},
 					"args_stability": {
 						"diagram": "mp_250618",
 						"mace_model": "medium-mpa-0",
-					}
+						"intercept": 1.0,
+					},
 				},
 			),
 			(False, "magpie", ["smact"], None, True, None, {}),
-			(False, "pdd", ["smact"], "binary", False, None, {}),
-			(False, "amd", ["smact"], "continuous", True, N_PROCESSES, {}),
+			(False, "pdd", ["structure"], "binary", False, None, {}),
+			(False, "amd", ["smact", "structure"], "continuous", True, N_PROCESSES, {}),
 		],
 	)
 	def test_novelty(

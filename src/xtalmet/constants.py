@@ -34,6 +34,6 @@ SUPPORTED_DISTANCES = (
 	BINARY_DISTANCES + CONTINUOUS_DISTANCES
 )  #: Supported distance metrics.
 
-SUPPORTED_VALIDITY = ["smact"]  #: Supported validity screening methods.
+SUPPORTED_VALIDITY = ["smact", "structure"]  #: Supported validity screening methods.
 
 HF_VERSION = "v1.0.0"  #: Version of Hugging Face repository to use.
