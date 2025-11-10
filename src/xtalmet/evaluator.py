@@ -289,14 +289,12 @@ class Evaluator:
 		if validity is not None:
 			if "smact" in validity:
 				valid_indices &= validity_smact(self.gen_xtals, dir_intermediate_gen)
-			elif "structure" in validity:
+			if "structure" in validity:
 				valid_indices &= validity_structure(
 					self.gen_xtals,
 					dir_intermediate_gen,
 					**(kwargs.get("args_validity", {}).get("structure", {})),
 				)
-			else:
-				pass
 
 		# Step 3: Stability evaluation (optional)
 		stability_scores = np.ones(self.n_samples)  # \in [0, 1]. 1 means stable.
@@ -633,14 +631,12 @@ class Evaluator:
 				valid_indices_gen &= validity_smact(
 					self.gen_xtals, dir_intermediate_gen
 				)
-			elif "structure" in validity:
+			if "structure" in validity:
 				valid_indices_gen &= validity_structure(
 					self.gen_xtals,
 					dir_intermediate_gen,
 					**(kwargs.get("args_validity", {}).get("structure", {})),
 				)
-			else:
-				pass
 
 		# Step 3: Stability evaluation (optional)
 		stability_scores = np.ones(self.n_samples)  # \in [0, 1]. 1 means stable.
