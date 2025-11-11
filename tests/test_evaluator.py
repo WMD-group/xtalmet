@@ -39,22 +39,23 @@ class TestEvaluator:
 		assert True
 
 	@pytest.mark.parametrize(
-		"distance, validity, stability, multiprocessing, n_processes, kwargs",
+		"distance, normalize, validity, stability, multiprocessing, n_processes, kwargs",
 		[
-			("smat", None, None, False, None, {}),
-			("smat", None, None, True, N_PROCESSES, {}),
-			("comp", None, None, False, None, {}),
-			("comp", None, None, True, None, {}),
-			("wyckoff", None, None, False, None, {}),
-			("wyckoff", None, None, True, N_PROCESSES, {}),
-			("magpie", None, None, False, None, {}),
-			("magpie", None, None, True, None, {}),
-			("pdd", None, None, False, None, {}),
-			("pdd", None, None, True, N_PROCESSES, {}),
-			("amd", None, None, False, None, {}),
-			("amd", None, None, True, None, {}),
+			("smat", None, None, None, False, None, {}),
+			("smat", None, None, None, True, N_PROCESSES, {}),
+			("comp", None, None, None, False, None, {}),
+			("comp", None, None, None, True, None, {}),
+			("wyckoff", None, None, None, False, None, {}),
+			("wyckoff", None, None, None, True, N_PROCESSES, {}),
+			("magpie", False, None, None, False, None, {}),
+			("magpie", True, None, None, True, None, {}),
+			("pdd", False, None, None, False, None, {}),
+			("pdd", True, None, None, True, N_PROCESSES, {}),
+			("amd", False, None, None, False, None, {}),
+			("amd", True, None, None, True, None, {}),
 			(
 				"smat",
+				None,
 				None,
 				None,
 				False,
@@ -65,12 +66,14 @@ class TestEvaluator:
 				"smat",
 				None,
 				None,
+				None,
 				True,
 				N_PROCESSES,
 				{"args_dist": {"ltol": 0.3, "stol": 0.4, "angle_tol": 6}},
 			),
 			(
 				"pdd",
+				False,
 				None,
 				None,
 				False,
@@ -87,6 +90,7 @@ class TestEvaluator:
 			),
 			(
 				"pdd",
+				True,
 				None,
 				None,
 				True,
@@ -103,6 +107,7 @@ class TestEvaluator:
 			),
 			(
 				"amd",
+				False,
 				None,
 				None,
 				False,
@@ -114,6 +119,7 @@ class TestEvaluator:
 			),
 			(
 				"amd",
+				True,
 				None,
 				None,
 				True,
@@ -123,11 +129,12 @@ class TestEvaluator:
 					"args_dist": {"metric": "chebyshev", "low_memory": False},
 				},
 			),
-			("smat", None, "binary", False, None, {}),
-			("comp", None, "continuous", True, None, {}),
-			("wyckoff", None, "binary", False, None, {}),
+			("smat", None, None, "binary", False, None, {}),
+			("comp", None, None, "continuous", True, None, {}),
+			("wyckoff", None, None, "binary", False, None, {}),
 			(
 				"magpie",
+				False,
 				None,
 				"binary",
 				True,
@@ -142,6 +149,7 @@ class TestEvaluator:
 			),
 			(
 				"pdd",
+				True,
 				None,
 				"continuous",
 				False,
@@ -156,6 +164,7 @@ class TestEvaluator:
 			),
 			(
 				"amd",
+				False,
 				None,
 				"binary",
 				True,
@@ -168,11 +177,12 @@ class TestEvaluator:
 					}
 				},
 			),
-			("smat", ["smact"], None, False, None, {}),
-			("comp", ["structure"], "binary", True, None, {}),
-			("wyckoff", ["smact", "structure"], "continuous", False, None, {}),
+			("smat", None, ["smact"], None, False, None, {}),
+			("comp", None, ["structure"], "binary", True, None, {}),
+			("wyckoff", None, ["smact", "structure"], "continuous", False, None, {}),
 			(
 				"magpie",
+				False,
 				["smact"],
 				None,
 				True,
@@ -181,6 +191,7 @@ class TestEvaluator:
 			),
 			(
 				"pdd",
+				True,
 				["structure"],
 				"binary",
 				False,
@@ -201,6 +212,7 @@ class TestEvaluator:
 			),
 			(
 				"amd",
+				False,
 				["smact", "structure"],
 				"continuous",
 				True,
@@ -226,6 +238,7 @@ class TestEvaluator:
 		tmpdir: str,
 		prepare_gen_xtals: list[Crystal],
 		distance: str,
+		normalize: bool | None,
 		validity: list[str] | None,
 		stability: str | None,
 		multiprocessing: bool,
@@ -237,6 +250,7 @@ class TestEvaluator:
 		evaluator = Evaluator(gen_xtals)
 		uniqueness_1 = evaluator.uniqueness(
 			distance,
+			normalize,
 			validity,
 			stability,
 			None,
@@ -247,6 +261,7 @@ class TestEvaluator:
 		)
 		uniqueness_2, times = evaluator.uniqueness(
 			distance,
+			normalize,
 			validity,
 			stability,
 			tmpdir,
@@ -259,6 +274,8 @@ class TestEvaluator:
 		assert os.path.exists(os.path.join(tmpdir, f"mtx_uni_{distance}.pkl.gz"))
 		if validity is not None and "smact" in validity:
 			assert os.path.exists(os.path.join(tmpdir, "valid_smact.pkl.gz"))
+		if validity is not None and "structure" in validity:
+			assert os.path.exists(os.path.join(tmpdir, "valid_structure.pkl.gz"))
 		if stability is not None:
 			assert os.path.exists(os.path.join(tmpdir, "ehull.pkl.gz"))
 		assert uniqueness_1 == uniqueness_2
@@ -267,23 +284,24 @@ class TestEvaluator:
 			assert times[key] >= 0
 
 	@pytest.mark.parametrize(
-		"download, distance, validity, stability, multiprocessing, n_processes, kwargs",
+		"download, distance, normalize, validity, stability, multiprocessing, n_processes, kwargs",
 		[
-			(False, "smat", None, None, False, None, {}),
-			(False, "smat", None, None, True, N_PROCESSES, {}),
-			(False, "comp", None, None, False, None, {}),
-			(False, "comp", None, None, True, None, {}),
-			(False, "wyckoff", None, None, False, None, {}),
-			(False, "wyckoff", None, None, True, N_PROCESSES, {}),
-			(False, "magpie", None, None, False, None, {}),
-			(False, "magpie", None, None, True, None, {}),
-			(False, "pdd", None, None, False, None, {}),
-			(False, "pdd", None, None, True, N_PROCESSES, {}),
-			(False, "amd", None, None, False, None, {}),
-			(False, "amd", None, None, True, None, {}),
+			(False, "smat", None, None, None, False, None, {}),
+			(False, "smat", None, None, None, True, N_PROCESSES, {}),
+			(False, "comp", None, None, None, False, None, {}),
+			(False, "comp", None, None, None, True, None, {}),
+			(False, "wyckoff", None, None, None, False, None, {}),
+			(False, "wyckoff", None, None, None, True, N_PROCESSES, {}),
+			(False, "magpie", False, None, None, False, None, {}),
+			(False, "magpie", True, None, None, True, None, {}),
+			(False, "pdd", False, None, None, False, None, {}),
+			(False, "pdd", True, None, None, True, N_PROCESSES, {}),
+			(False, "amd", False, None, None, False, None, {}),
+			(False, "amd", True, None, None, True, None, {}),
 			(
 				False,
 				"smat",
+				None,
 				None,
 				None,
 				False,
@@ -293,6 +311,7 @@ class TestEvaluator:
 			(
 				False,
 				"smat",
+				None,
 				None,
 				None,
 				True,
@@ -302,6 +321,7 @@ class TestEvaluator:
 			(
 				False,
 				"pdd",
+				False,
 				None,
 				None,
 				False,
@@ -319,6 +339,7 @@ class TestEvaluator:
 			(
 				False,
 				"pdd",
+				True,
 				None,
 				None,
 				True,
@@ -336,6 +357,7 @@ class TestEvaluator:
 			(
 				False,
 				"amd",
+				False,
 				None,
 				None,
 				False,
@@ -348,6 +370,7 @@ class TestEvaluator:
 			(
 				False,
 				"amd",
+				True,
 				None,
 				None,
 				True,
@@ -357,12 +380,13 @@ class TestEvaluator:
 					"args_dist": {"metric": "chebyshev", "low_memory": False},
 				},
 			),
-			(True, "smat", None, "continuous", False, None, {}),
-			(True, "comp", None, "binary", True, None, {}),
-			(True, "wyckoff", None, "continuous", False, None, {}),
+			(True, "smat", None, None, "continuous", False, None, {}),
+			(True, "comp", None, None, "binary", True, None, {}),
+			(True, "wyckoff", None, None, "continuous", False, None, {}),
 			(
 				True,
 				"magpie",
+				False,
 				None,
 				"continuous",
 				True,
@@ -378,6 +402,7 @@ class TestEvaluator:
 			(
 				True,
 				"pdd",
+				True,
 				None,
 				"binary",
 				False,
@@ -393,6 +418,7 @@ class TestEvaluator:
 			(
 				True,
 				"amd",
+				False,
 				None,
 				"continuous",
 				True,
@@ -408,6 +434,7 @@ class TestEvaluator:
 			(
 				False,
 				"smat",
+				None,
 				["smact"],
 				None,
 				False,
@@ -417,6 +444,7 @@ class TestEvaluator:
 			(
 				False,
 				"comp",
+				None,
 				["structure"],
 				"binary",
 				True,
@@ -438,6 +466,7 @@ class TestEvaluator:
 			(
 				False,
 				"wyckoff",
+				None,
 				["smact", "structure"],
 				"continuous",
 				False,
@@ -456,9 +485,18 @@ class TestEvaluator:
 					},
 				},
 			),
-			(False, "magpie", ["smact"], None, True, None, {}),
-			(False, "pdd", ["structure"], "binary", False, None, {}),
-			(False, "amd", ["smact", "structure"], "continuous", True, N_PROCESSES, {}),
+			(False, "magpie", False, ["smact"], None, True, None, {}),
+			(False, "pdd", True, ["structure"], "binary", False, None, {}),
+			(
+				False,
+				"amd",
+				False,
+				["smact", "structure"],
+				"continuous",
+				True,
+				N_PROCESSES,
+				{},
+			),
 		],
 	)
 	def test_novelty(
@@ -468,6 +506,7 @@ class TestEvaluator:
 		prepare_train_xtals: list[Crystal],
 		download: bool,
 		distance: str,
+		normalize: bool | None,
 		validity: list[str] | None,
 		stability: str | None,
 		multiprocessing: bool,
@@ -481,6 +520,7 @@ class TestEvaluator:
 		novelty_1 = evaluator.novelty(
 			train_xtals,
 			distance,
+			normalize,
 			validity,
 			stability,
 			None,
@@ -493,6 +533,7 @@ class TestEvaluator:
 		novelty_2, times = evaluator.novelty(
 			train_xtals,
 			distance,
+			normalize,
 			validity,
 			stability,
 			tmpdir,
@@ -508,6 +549,8 @@ class TestEvaluator:
 		assert os.path.exists(os.path.join(tmpdir, f"mtx_nov_{distance}.pkl.gz"))
 		if validity is not None and "smact" in validity:
 			assert os.path.exists(os.path.join(tmpdir, "valid_smact.pkl.gz"))
+		if validity is not None and "structure" in validity:
+			assert os.path.exists(os.path.join(tmpdir, "valid_structure.pkl.gz"))
 		if stability is not None:
 			assert os.path.exists(os.path.join(tmpdir, "ehull.pkl.gz"))
 		assert novelty_1 == novelty_2

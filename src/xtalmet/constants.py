@@ -30,6 +30,11 @@ DIST_WO_EMB = ["smat"]  #: Distance metrics that do not use embeddings.
 
 BINARY_DISTANCES = ["smat", "comp", "wyckoff"]  #: Binary distance metrics.
 CONTINUOUS_DISTANCES = ["magpie", "pdd", "amd"]  #: Continuous distance metrics.
+CONTINUOUS_UNNORMALIZED_DISTANCES = [
+	"magpie",
+	"pdd",
+	"amd",
+]  #: Continuous distance metrics that are not normalized to [0, 1].
 SUPPORTED_DISTANCES = (
 	BINARY_DISTANCES + CONTINUOUS_DISTANCES
 )  #: Supported distance metrics.

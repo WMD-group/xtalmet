@@ -13,6 +13,7 @@ from pymatgen.core import Structure
 from .constants import (
 	BINARY_DISTANCES,
 	CONTINUOUS_DISTANCES,
+	CONTINUOUS_UNNORMALIZED_DISTANCES,
 	HF_VERSION,
 	SUPPORTED_DISTANCES,
 	SUPPORTED_VALIDITY,
@@ -71,6 +72,7 @@ class Evaluator:
 	def uniqueness(
 		self,
 		distance: str,
+		normalize: bool = True,
 		validity: list[str] | None = None,
 		stability: str | None = None,
 		dir_intermediate_gen: str | None = None,
@@ -86,6 +88,12 @@ class Evaluator:
 				supported distances are shown in SUPPORTED_DISTANCES in constants.py.
 				For more detailed information about each distance metric, please refer
 				to the `tutorial notebook`_.
+			normalize (bool): Whether to normalize the distance d to [0, 1] by using d'
+				= d / (1 + d). This argument is only considered when d is a continuous
+				distance that is not normalized to [0, 1]. Such distances are listed in
+				CONTINUOUS_UNNORMALIZED_DISTANCES in constants.py. To fit the final
+				uniqueness score in [0, 1], we recommend setting this argument to True.
+				Default is True.
 			validity (list[str] | None): Methods to screen the crystals. Currently
 				supported methods are shown in SUPPORTED_VALIDITY in constants.py.
 			stability (str | None): Stability criterion for the crystals. "continuous"
@@ -134,6 +142,7 @@ class Evaluator:
 			... )
 			>>> evaluator.uniqueness(
 			...     distance="pdd",
+			...	    normalize=True,
 			...     validity=["smact"],
 			...     stability="binary",
 			...     dir_intermediate_gen="./intermediate",
@@ -144,9 +153,10 @@ class Evaluator:
 			...         "args_stability": {"diagram": "mp_250618", "threshold": 0.1},
 			...     },
 			... )
-			>>> 0.1143749297315547
+			>>> 0.00949325955406104
 			>>> evaluator.uniqueness(
 			...     distance="amd",
+			...	    normalize=True,
 			...     validity=["smact", "structure"],
 			...     stability="continuous",
 			...     dir_intermediate_gen="./intermediate",
@@ -164,7 +174,7 @@ class Evaluator:
 			...         "args_stability": {"diagram": "mp_250618", "intercept": 1.215},
 			...     },
 			... )
-			>>> 0.2739442728688278
+			>>> 0.10731830578122291
 
 		Returns:
 			float | tuple: Uniqueness value or (uniqueness value, a dictionary of time
@@ -217,8 +227,10 @@ class Evaluator:
 			.. math::
 				U = \frac{1}{n} \sum_{i=1}^{n} V(x_i) \cdot S(x_i) \cdot \left(
 				\frac{1}{n} \sum_{j=1}^{n} V(x_j) \cdot S(x_j) \cdot d(x_i, x_j)
-				\right)
-				.
+				\right).
+
+			If normalize is True, each distance :math:`d(x_i, x_j)` is normalized to
+			:math:`d'(x_i, x_j)`.
 
 		.. _tutorial notebook: https://github.com/WMD-group/xtalmet/blob/main/examples/tutorial.ipynb
 		"""
@@ -265,6 +277,8 @@ class Evaluator:
 				True,
 				**kwargs,
 			)
+			if distance in CONTINUOUS_UNNORMALIZED_DISTANCES and normalize:
+				d_mtx = d_mtx / (1 + d_mtx)
 			# Record times
 			times["uni_emb"] = times_matrix["emb_1"]
 			times["uni_d_mtx"] = times_matrix["d_mtx"]
@@ -350,6 +364,7 @@ class Evaluator:
 		self,
 		train_xtals: list[Crystal | Structure] | Literal["mp20"],
 		distance: str,
+		normalize: bool = True,
 		validity: str | None = None,
 		stability: str | None = None,
 		dir_intermediate_gen: str | None = None,
@@ -371,6 +386,12 @@ class Evaluator:
 				distances are shown in SUPPORTED_DISTANCES in constants.py. For more
 				detailed information about each distance metric, please refer to the
 				`tutorial notebook`_.
+			normalize (bool): Whether to normalize the distance d to [0, 1] by using d'
+				= d / (1 + d). This argument is only considered when d is a continuous
+				distance that is not normalized to [0, 1]. Such distances are listed in
+				CONTINUOUS_UNNORMALIZED_DISTANCES in constants.py. To fit the final
+				uniqueness score in [0, 1], we recommend setting this argument to True.
+				Default is True.
 			validity (str | None): Method to screen the crystals. Currently supported
 				methods are shown in SUPPORTED_VALIDITY in constants.py.
 			stability (str | None): Stability criterion for the crystals. "continuous"
@@ -429,6 +450,7 @@ class Evaluator:
 			>>> evaluator.novelty(
 			...     train_xtals=list_of_train_xtals,
 			...     distance="pdd",
+			...     normalize=True,
 			...     validity=["smact"],
 			...     stability="binary",
 			...     dir_intermediate_gen="./intermediate",
@@ -443,10 +465,11 @@ class Evaluator:
 			...         },
 			...     },
 			... )
-			>>> 0.050714678049507224
+			>>> 0.018415067583298726
 			>>> evaluator.novelty(
 			...     train_xtals=list_of_train_xtals,
 			...     distance="amd",
+			...	    normalize=True,
 			...     validity=["smact", "structure"],
 			...     stability="continuous",
 			...     dir_intermediate_gen="./intermediate",
@@ -465,7 +488,7 @@ class Evaluator:
 			...         "args_stability": {"diagram": "mp_250618", "intercept": 1.215},
 			...     },
 			... )
-			>>> 0.05753502970079833
+			>>> 0.05000752831894141
 
 		Returns:
 			float | tuple: Novelty value or a tuple containing the novelty value
@@ -517,7 +540,10 @@ class Evaluator:
 
 			.. math::
 				N = \frac{1}{n} \sum_{i=1}^{n} V(x_i) \cdot S(x_i) \cdot
-				\min_{j=1 \ldots m} d(x_i, y_j)
+				\min_{j=1 \ldots m} d(x_i, y_j).
+
+			If normalize is True, each distance :math:`d(x_i, x_j)` is normalized to
+			:math:`d'(x_i, x_j)`.
 
 		.. _tutorial notebook: https://github.com/WMD-group/xtalmet/blob/main/examples/tutorial.ipynb
 		"""
@@ -591,6 +617,8 @@ class Evaluator:
 				True,
 				**kwargs,
 			)
+			if distance in CONTINUOUS_UNNORMALIZED_DISTANCES and normalize:
+				d_mtx = d_mtx / (1 + d_mtx)
 			# Record times
 			times["nov_emb_gen"] = times_matrix["emb_1"]
 			times["nov_emb_train"] = times_matrix["emb_2"]
