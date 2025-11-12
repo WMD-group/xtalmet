@@ -1,3 +1,3 @@
 # Examples
-Here, we provide `tutorial.ipynb` to demonstrate the two primary features of the `xtalmet` package: 1) calculating distances between crystals, and 2) evaluating the uniqueness and novelty of a given set of generated crystals.
+Here, we provide `tutorial.ipynb` to demonstrate the two primary features of the `xtalmet` package: 1) calculating distances between crystals, and 2) evaluating the uniqueness, novelty, and VSUN (Validity, Stability, Uniqueness, Novelty) of a given set of generated crystals.
 In the `workshop` directory, you will also find all the code needed to reproduce the results presented in the paper, "Continuous Uniqueness and Novelty Metrics for Generative Modeling of Inorganic Crystals," presented at the NeurIPS 2025 AI4Mat workshop.

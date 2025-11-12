@@ -9,7 +9,7 @@
 
 The **xtalmet** package offers a variety of distance functions for comparing crystal structures. 
 These include both binary and continuous as well as compositional and structural functions. 
-It also enables you to evaluate a set of crystals using uniqueness and novelty metrics derived from these distances.
+It also enables you to evaluate a set of crystals using uniqueness, novelty, and VSUN (Validity, Stability, Uniqueness, Novelty) metrics derived from these distances.
 
 - Documentation: https://wmd-group.github.io/xtalmet/
 - Examples: https://github.com/WMD-group/xtalmet/examples
@@ -34,7 +34,7 @@ pip install xtalmet
 ```
 
 ## Usage
-Two primary features of xtalmet are the calculation of distances between crystals and the uniqueness/novelty evaluation.
+Two primary features of xtalmet are the calculation of distances between crystals and the uniqueness/novelty/vsun evaluation.
 For the former usage, suppose you have two crystals `xtal_1` and `xtal_2` (`pymatgen.core.Structure`) whose distance you want to measure.
 You can do so with one line of code:
 ```python
@@ -44,13 +44,14 @@ d = distance("amd", xtal_1, xtal_2)
 Here, "amd" is a type of continuous distance based on structural fingerprints.
 For a complete list of available distances, please refer to our [tutorial notebook](https://github.com/WMD-group/xtalmet/blob/main/examples/tutorial.ipynb).
 
-For the uniqueness/novelty evaluation, imagine that you want to assess a set of crystals `gen_xtals` (`list[pymatgen.core.Structure]`) generated from a model trained on the MP20 dataset.
+For the uniqueness/novelty/vsun evaluation, imagine that you want to assess a set of crystals `gen_xtals` (`list[pymatgen.core.Structure]`) generated from a model trained on the MP20 dataset.
 This can be done with just a few lines of code:
 ```python
 from xtalmet.evaluator import Evaluator
 evaluator = Evaluator(gen_xtals)
 uniqueness = evaluator.uniqueness(distance="amd")
 novelty = evaluator.novelty(train_xtals="mp20", distance="amd")
+vsun = evaluator.vsun(train_xtals="mp20", distance="amd", validity=["smact", "structure"], stability="continuous")
 ```
 A more detailed tutorial notebook is provided [here](https://github.com/WMD-group/xtalmet/blob/main/examples/tutorial.ipynb).
 
