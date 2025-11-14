@@ -15,12 +15,14 @@ from xtalmet.distance import (
 	_compute_embeddings,
 	_d_amd,
 	_d_comp,
+	_d_elmd,
 	_d_magpie,
 	_d_pdd,
 	_d_smat,
 	_d_wyckoff,
 	_distance_matrix_d_amd,
 	_distance_matrix_d_comp,
+	_distance_matrix_d_elmd,
 	_distance_matrix_d_magpie,
 	_distance_matrix_d_pdd,
 	_distance_matrix_d_smat,
@@ -45,6 +47,7 @@ N_PROCESSES = max(cpu_count() // 2 - 1, 1)
 				"magpie": 0.000e00,
 				"amd": 1.042e00,
 				"pdd": 1.042e00,
+				"elmd": 0.0,
 			},
 		),
 		(
@@ -57,6 +60,7 @@ N_PROCESSES = max(cpu_count() // 2 - 1, 1)
 				"magpie": 6.298e02,
 				"amd": 9.684e-02,
 				"pdd": 9.684e-02,
+				"elmd": 7.0,
 			},
 		),
 		(
@@ -69,6 +73,7 @@ N_PROCESSES = max(cpu_count() // 2 - 1, 1)
 				"magpie": 1.070e03,
 				"amd": 3.240e00,
 				"pdd": 3.276e00,
+				"elmd": 10.7,
 			},
 		),
 	],
@@ -132,6 +137,7 @@ def prepare_d_mtx() -> tuple[Structure, Structure, Structure, Structure, dict]:
 		"magpie": _d_magpie,
 		"pdd": _d_pdd,
 		"amd": _d_amd,
+		"elmd": _d_elmd,
 	}.items():
 		embs = [xtal.get_embedding(dist) for xtal in xtals]
 		d_mtx = np.zeros((4, 4))
@@ -224,6 +230,23 @@ class TestDistance:
 		assert _d_amd(
 			xtal_1._get_emb_d_amd(), xtal_2._get_emb_d_amd(), **kwargs
 		) == approx(expected["amd"], rel=1e-3)
+
+	@pytest.mark.parametrize(
+		"kwargs",
+		[
+			{},
+			{"metric": "mod_petti"},
+			{"metric": "fast"},
+		],
+	)
+	def test_d_elmd(
+		self, prepare: tuple[Structure, Structure, Crystal, Crystal, dict], kwargs: dict
+	):
+		"""Test d_elmd."""
+		_, _, xtal_1, xtal_2, expected = prepare
+		assert _d_elmd(
+			xtal_1._get_emb_d_elmd(), xtal_2._get_emb_d_elmd(), **kwargs
+		) == approx(expected["elmd"], rel=1e-3)
 
 	@pytest.mark.parametrize(
 		"multiprocessing, n_processes, kwargs",
@@ -416,6 +439,38 @@ class TestDistance:
 		assert np.allclose(results_2, expected, rtol=1e-3)
 
 	@pytest.mark.parametrize(
+		"multiprocessing, n_processes, kwargs",
+		[
+			(False, None, {}),
+			(True, N_PROCESSES, {"metric": "mod_petti"}),
+			(True, N_PROCESSES, {"metric": "fast", "return_assignments": True}),
+			(True, None, {}),
+		],
+	)
+	def test_distance_matrix_d_elmd(
+		self,
+		prepare_four_xtals: tuple[Crystal, Crystal, Crystal, Crystal],
+		multiprocessing: bool,
+		n_processes: int | None,
+		kwargs: dict,
+	):
+		"""Test _distance_matrix_d_elmd."""
+		xtals = prepare_four_xtals
+		embs = [xtal.get_embedding("elmd") for xtal in xtals]
+		expected = np.zeros((4, 4))
+		for i in range(4):
+			for j in range(4):
+				expected[i, j] = _d_elmd(embs[i], embs[j], **kwargs)
+		results_1 = _distance_matrix_d_elmd(
+			embs, None, multiprocessing, n_processes, **kwargs
+		)
+		assert np.allclose(results_1, expected, rtol=1e-3)
+		results_2 = _distance_matrix_d_elmd(
+			embs, embs, multiprocessing, n_processes, **kwargs
+		)
+		assert np.allclose(results_2, expected, rtol=1e-3)
+
+	@pytest.mark.parametrize(
 		"distance_name, multiprocessing, n_processes, kwargs",
 		[
 			("smat", False, None, {}),
@@ -431,6 +486,8 @@ class TestDistance:
 			("pdd", False, None, {"k": 100, "return_row_data": True}),
 			("amd", True, None, {}),
 			("amd", False, None, {"k": 100}),
+			("elmd", False, None, {}),
+			("elmd", True, N_PROCESSES, {}),
 		],
 	)
 	def test_compute_embeddings(
@@ -502,6 +559,9 @@ class TestDistance:
 					"args_dist": {"metric": "chebyshev", "low_memory": False},
 				},
 			),
+			("elmd", {}),
+			("elmd", {"args_dist": {"metric": "mod_petti"}}),
+			("elmd", {"args_dist": {"metric": "fast", "return_assignments": True}}),
 		],
 	)
 	def test_distance(
@@ -591,6 +651,14 @@ class TestDistance:
 					"args_emb": {"k": 100},
 					"args_dist": {"metric": "chebyshev", "low_memory": False},
 				},
+			),
+			("elmd", False, None, {}),
+			("elmd", True, N_PROCESSES, {"args_dist": {"metric": "mod_petti"}}),
+			(
+				"elmd",
+				False,
+				None,
+				{"args_dist": {"metric": "fast", "return_assignments": True}},
 			),
 		],
 	)

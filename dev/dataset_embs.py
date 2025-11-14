@@ -31,7 +31,9 @@ def dataset_embeddings():
 	times = {}
 	for distance in SUPPORTED_DISTANCES:
 		start = time.time()
-		embs = _compute_embeddings(distance, train_xtals)
+		embs = _compute_embeddings(
+			distance, train_xtals, multiprocessing=True, n_processes=10
+		)
 		end = time.time()
 		times[distance] = end - start
 		with gzip.open(os.path.join(dir_save, f"train_{distance}.pkl.gz"), "wb") as f:

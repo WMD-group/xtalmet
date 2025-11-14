@@ -367,6 +367,17 @@ wheels = [
 ]
 
 [[package]]
+name = "elmd"
+version = "0.5.15"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numba" },
+    { name = "numpy" },
+    { name = "scipy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e7/68/b2dfef945c4291a30adde2b84dbc942313304d91efc5ecac8acf39a7924f/ElMD-0.5.15.tar.gz", hash = "sha256:a07f2193f7092b7c121a79e1e8df0ec2aa51acda745e450fd2a6e98552422a65", size = 1162231, upload-time = "2025-03-21T14:15:17.472Z" }
+
+[[package]]
 name = "executing"
 version = "2.2.1"
 source = { registry = "https://pypi.org/simple" }
@@ -2498,6 +2509,7 @@ version = "0.1.1"
 source = { editable = "." }
 dependencies = [
     { name = "average-minimum-distance" },
+    { name = "elmd" },
     { name = "huggingface-hub" },
     { name = "mace-torch" },
     { name = "matminer" },
@@ -2520,6 +2532,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "average-minimum-distance", specifier = ">=1.5.3" },
+    { name = "elmd", specifier = ">=0.5.15" },
     { name = "huggingface-hub" },
     { name = "mace-torch", specifier = ">=0.3.13" },
     { name = "matminer", specifier = ">=0.9.3" },

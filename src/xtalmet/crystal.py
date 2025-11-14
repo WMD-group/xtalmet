@@ -19,6 +19,7 @@ from .constants import (
 	TYPE_EMB_ALL,
 	TYPE_EMB_AMD,
 	TYPE_EMB_COMP,
+	TYPE_EMB_ELMD,
 	TYPE_EMB_MAGPIE,
 	TYPE_EMB_PDD,
 	TYPE_EMB_WYCKOFF,
@@ -237,6 +238,16 @@ class Crystal(Structure):
 		"""
 		return amd.AMD(periodicset_from_pymatgen_structure(self), k)
 
+	def _get_emb_d_elmd(self) -> TYPE_EMB_ELMD:
+		"""Get the embedding for d_elmd.
+
+		Embedding for d_elmd.
+
+		Returns:
+			TYPE_EMB_ELMD: Compositional formula as a string.
+		"""
+		return self.composition.reduced_formula
+
 	def get_embedding(self, distance: str, **kwargs) -> TYPE_EMB_ALL:
 		"""Get the embedding of the crystal based on the specified distance metric.
 
@@ -264,6 +275,8 @@ class Crystal(Structure):
 			return self._get_emb_d_pdd(**kwargs)
 		elif distance == "amd":
 			return self._get_emb_d_amd(**kwargs)
+		elif distance == "elmd":
+			return self._get_emb_d_elmd()
 		elif distance in DIST_WO_EMB:
 			return self
 		else:

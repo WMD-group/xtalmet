@@ -8,6 +8,7 @@ from multiprocessing import Pool, cpu_count
 
 import amd
 import numpy as np
+from ElMD import elmd
 from pymatgen.analysis.structure_matcher import StructureMatcher
 from pymatgen.core import Structure
 from scipy.spatial.distance import squareform
@@ -17,6 +18,7 @@ from .constants import (
 	TYPE_EMB_ALL,
 	TYPE_EMB_AMD,
 	TYPE_EMB_COMP,
+	TYPE_EMB_ELMD,
 	TYPE_EMB_MAGPIE,
 	TYPE_EMB_PDD,
 	TYPE_EMB_WYCKOFF,
@@ -136,6 +138,32 @@ def _d_amd(emb_1: TYPE_EMB_AMD, emb_2: TYPE_EMB_AMD, **kwargs) -> float:
 	return amd.AMD_cdist([emb_1], [emb_2], **kwargs)[0][0].item()
 
 
+def _d_elmd(emb_1: TYPE_EMB_ELMD, emb_2: TYPE_EMB_ELMD, **kwargs) -> float:
+	"""Compute continuous Element Movers Distance (ElMD).
+
+	Args:
+		emb_1 (TYPE_EMB_ELMD): Embedding 1.
+		emb_2 (TYPE_EMB_ELMD): Embedding 2.
+		**kwargs: Additional arguments for ElMD.elmd.
+
+	Returns:
+		float: ElMD distance.
+
+	References:
+		- Hargreaves et al., (2020). The Earth Mover’s Distance as a Metric for the
+			Space of Inorganic Compositions. Chemistry of Materials, 32(24),
+			10610-10620.
+	"""
+	if "return_assignments" in kwargs and kwargs["return_assignments"] is True:
+		warnings.warn(
+			"return_assignments=True is not supported. Automatically set to False.",
+			UserWarning,
+			stacklevel=2,
+		)
+		kwargs["return_assignments"] = False
+	return elmd(emb_1, emb_2, **kwargs)
+
+
 def _set_n_processes(n_processes: int | None = None) -> int:
 	"""Set the number of processes for multiprocessing.
 
@@ -149,7 +177,7 @@ def _set_n_processes(n_processes: int | None = None) -> int:
 		return max(min(n_processes, cpu_count() - 1), 1)
 
 
-def _distance_matrix_binary_template(
+def _distance_matrix_template(
 	embs_1: list,
 	embs_2: list | None = None,
 	multiprocessing: bool = False,
@@ -158,7 +186,7 @@ def _distance_matrix_binary_template(
 	initializer: Callable | None = None,
 	initargs: tuple = (),
 ) -> np.ndarray:
-	"""Template to compute the binary distance matrix between two sets of embeddings.
+	"""Template to compute the distance matrix between two sets of embeddings.
 
 	If embs_2 is None, compute the distance matrix within embs_1.
 
@@ -168,7 +196,7 @@ def _distance_matrix_binary_template(
 		multiprocessing (bool): Whether to use multiprocessing. Default is False.
 		n_processes (int | None): Maximum number of processes for multiprocessing. If
 			multiprocessing is False, this argument will be ignored. Default is None.
-		d_func (Callable | None): Binary distance function.
+		d_func (Callable | None): Distance function.
 		initializer (Callable | None): Initializer function for worker processes.
 		initargs (tuple): Arguments for the initializer function.
 
@@ -271,7 +299,7 @@ def _distance_matrix_d_smat(
 	Returns:
 		np.ndarray: d_smat distance matrix.
 	"""
-	return _distance_matrix_binary_template(
+	return _distance_matrix_template(
 		embs_1,
 		embs_2,
 		multiprocessing,
@@ -302,7 +330,7 @@ def _distance_matrix_d_comp(
 	Returns:
 		np.ndarray: d_comp distance matrix.
 	"""
-	return _distance_matrix_binary_template(
+	return _distance_matrix_template(
 		embs_1, embs_2, multiprocessing, n_processes, _d_comp
 	)
 
@@ -327,7 +355,7 @@ def _distance_matrix_d_wyckoff(
 	Returns:
 		np.ndarray: d_wyckoff distance matrix.
 	"""
-	return _distance_matrix_binary_template(
+	return _distance_matrix_template(
 		embs_1, embs_2, multiprocessing, n_processes, _d_wyckoff
 	)
 
@@ -495,6 +523,37 @@ def _distance_matrix_d_amd(
 	return d_mtx
 
 
+def _distance_matrix_d_elmd(
+	embs_1: list[TYPE_EMB_ELMD],
+	embs_2: list[TYPE_EMB_ELMD] | None = None,
+	multiprocessing: bool = False,
+	n_processes: int | None = None,
+	**kwargs,
+) -> np.ndarray:
+	"""Compute the distance matrix between two sets of embeddings based on d_elmd.
+
+	If embs_2 is None, compute the distance matrix within embs_1.
+
+	Args:
+		embs_1 (list[TYPE_EMB_ELMD]): Embeddings
+		embs_2 (list[TYPE_EMB_ELMD] | None): Embeddings or None. Default is None.
+		multiprocessing (bool): Whether to use multiprocessing. Default is False.
+		n_processes (int | None): Maximum number of processes for multiprocessing. If
+			multiprocessing is False, this argument will be ignored. Default is None.
+		**kwargs: Additional arguments for ElMD.elmd.
+
+	Returns:
+		np.ndarray: d_elmd distance matrix.
+	"""
+	return _distance_matrix_template(
+		embs_1,
+		embs_2,
+		multiprocessing,
+		n_processes,
+		functools.partial(_d_elmd, **kwargs),
+	)
+
+
 def _compute_embedding_worker(xtal: Crystal, distance: str, **kwargs) -> TYPE_EMB_ALL:
 	"""Worker function for computing embedding in multiprocessing.
 
@@ -622,6 +681,8 @@ def distance(
 		d = _d_pdd(emb_1, emb_2, **(kwargs.get("args_dist", {})))
 	elif distance == "amd":
 		d = _d_amd(emb_1, emb_2, **(kwargs.get("args_dist", {})))
+	elif distance == "elmd":
+		d = _d_elmd(emb_1, emb_2, **(kwargs.get("args_dist", {})))
 	else:
 		raise ValueError(f"Unsupported distance metric: {distance}")
 
@@ -763,6 +824,14 @@ def distance_matrix(
 				stacklevel=2,
 			)
 		d_mtx = _distance_matrix_d_amd(embs_1, embs_2, **(kwargs.get("args_dist", {})))
+	elif distance == "elmd":
+		d_mtx = _distance_matrix_d_elmd(
+			embs_1,
+			embs_2,
+			multiprocessing,
+			n_processes,
+			**(kwargs.get("args_dist", {})),
+		)
 	else:
 		raise ValueError(f"Unsupported distance metric: {distance}")
 	d_mtx_end = time.time()

@@ -140,6 +140,14 @@ class TestCrystal:
 			# If an exception is raised, ensure it's a known issue.
 			assert isinstance(e, SymmetryUndeterminedError)
 
+	def test_get_emb_d_elmd(self, prepare_Structure: Structure):
+		"""Test _get_emb_d_elmd."""
+		structure = prepare_Structure
+		crystal = Crystal.from_Structure(structure)
+		elmd = crystal._get_emb_d_elmd()
+		assert isinstance(elmd, str)
+		assert elmd == structure.composition.reduced_formula
+
 	@pytest.mark.parametrize(
 		"distance, kwargs",
 		[
@@ -151,6 +159,7 @@ class TestCrystal:
 			("pdd", {"k": 150}),
 			("amd", {}),
 			("amd", {"k": 150}),
+			("elmd", {}),
 		],
 	)
 	def test_get_embedding(

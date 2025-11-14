@@ -14,7 +14,8 @@ dependencies = [
     "average-minimum-distance>=1.5.3",
     "smact>=3.1.0",
     "mace-torch>=0.3.13",
-    "huggingface_hub"
+    "huggingface_hub",
+    "ElMD>=0.5.15"
 ]
 license = { file = "LICENSE" }
 
