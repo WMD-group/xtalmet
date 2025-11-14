@@ -119,7 +119,9 @@ to the <a class="reference external" href="https://github.com/WMD-group/xtalmet/
 <li><p><strong>normalize</strong> (<em>bool</em>) – Whether to normalize the distance d to [0, 1] by using d’
 = d / (1 + d). This argument is only considered when d is a continuous
 distance that is not normalized to [0, 1]. Such distances are listed in
-CONTINUOUS_UNNORMALIZED_DISTANCES in constants.py. To fit the final
+CONTINUOUS_UNNORMALIZED_DISTANCES in constants.py. When the pre-computed
+distance matrix is loaded from the directory specified by
+dir_intermediate_gen, this argument is ignored. To fit the final
 uniqueness score in [0, 1], we recommend setting this argument to True.
 Default is True.</p></li>
 <li><p><strong>validity</strong> (<em>list</em><em>[</em><em>str</em><em>] </em><em>| </em><em>None</em>) – Methods to screen the crystals. Currently
@@ -284,8 +286,10 @@ detailed information about each distance metric, please refer to the
 <li><p><strong>normalize</strong> (<em>bool</em>) – Whether to normalize the distance d to [0, 1] by using d’
 = d / (1 + d). This argument is only considered when d is a continuous
 distance that is not normalized to [0, 1]. Such distances are listed in
-CONTINUOUS_UNNORMALIZED_DISTANCES in constants.py. To fit the final
-uniqueness score in [0, 1], we recommend setting this argument to True.
+CONTINUOUS_UNNORMALIZED_DISTANCES in constants.py. When the pre-computed
+distance matrix is loaded from the directory specified by
+dir_intermediate_gen, this argument is ignored. To fit the final
+novelty score in [0, 1], we recommend setting this argument to True.
 Default is True.</p></li>
 <li><p><strong>validity</strong> (<em>list</em><em>[</em><em>str</em><em>] </em><em>| </em><em>None</em>) – Method to screen the crystals. Currently
 supported methods are shown in SUPPORTED_VALIDITY in constants.py.</p></li>
