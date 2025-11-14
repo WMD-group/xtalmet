@@ -13,7 +13,6 @@ from pymatgen.core import Structure
 from .constants import (
 	BINARY_DISTANCES,
 	CONTINUOUS_DISTANCES,
-	CONTINUOUS_UNNORMALIZED_DISTANCES,
 	HF_VERSION,
 	SUPPORTED_DISTANCES,
 	SUPPORTED_VALIDITY,
@@ -148,13 +147,12 @@ class Evaluator:
 				distance,
 				gen_xtals,
 				None,
+				normalize,
 				multiprocessing,
 				n_processes,
 				True,
 				**kwargs,
 			)
-			if distance in CONTINUOUS_UNNORMALIZED_DISTANCES and normalize:
-				d_mtx = d_mtx / (1 + d_mtx)
 			# Record times
 			times["uni_emb"] = times_matrix["emb_1"]
 			times["uni_d_mtx"] = times_matrix["d_mtx"]
@@ -257,13 +255,12 @@ class Evaluator:
 				distance,
 				gen_xtals,
 				train_xtals,
+				normalize,
 				multiprocessing,
 				n_processes,
 				True,
 				**kwargs,
 			)
-			if distance in CONTINUOUS_UNNORMALIZED_DISTANCES and normalize:
-				d_mtx = d_mtx / (1 + d_mtx)
 			# Record times
 			times["nov_emb_gen"] = times_matrix["emb_1"]
 			times["nov_emb_train"] = times_matrix["emb_2"]
@@ -394,7 +391,9 @@ class Evaluator:
 			normalize (bool): Whether to normalize the distance d to [0, 1] by using d'
 				= d / (1 + d). This argument is only considered when d is a continuous
 				distance that is not normalized to [0, 1]. Such distances are listed in
-				CONTINUOUS_UNNORMALIZED_DISTANCES in constants.py. To fit the final
+				CONTINUOUS_UNNORMALIZED_DISTANCES in constants.py. When the pre-computed
+				distance matrix is loaded from the directory specified by
+				dir_intermediate_gen, this argument is ignored. To fit the final
 				uniqueness score in [0, 1], we recommend setting this argument to True.
 				Default is True.
 			validity (list[str] | None): Methods to screen the crystals. Currently
@@ -630,8 +629,10 @@ class Evaluator:
 			normalize (bool): Whether to normalize the distance d to [0, 1] by using d'
 				= d / (1 + d). This argument is only considered when d is a continuous
 				distance that is not normalized to [0, 1]. Such distances are listed in
-				CONTINUOUS_UNNORMALIZED_DISTANCES in constants.py. To fit the final
-				uniqueness score in [0, 1], we recommend setting this argument to True.
+				CONTINUOUS_UNNORMALIZED_DISTANCES in constants.py. When the pre-computed
+				distance matrix is loaded from the directory specified by
+				dir_intermediate_gen, this argument is ignored. To fit the final
+				novelty score in [0, 1], we recommend setting this argument to True.
 				Default is True.
 			validity (list[str] | None): Method to screen the crystals. Currently
 				supported methods are shown in SUPPORTED_VALIDITY in constants.py.

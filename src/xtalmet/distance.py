@@ -14,6 +14,7 @@ from pymatgen.core import Structure
 from scipy.spatial.distance import squareform
 
 from .constants import (
+	CONTINUOUS_UNNORMALIZED_DISTANCES,
 	DIST_WO_EMB,
 	TYPE_EMB_ALL,
 	TYPE_EMB_AMD,
@@ -618,6 +619,7 @@ def distance(
 	distance: str,
 	xtal_1: Structure | Crystal | TYPE_EMB_ALL,
 	xtal_2: Structure | Crystal | TYPE_EMB_ALL,
+	normalize: bool = True,
 	verbose: bool = False,
 	**kwargs,
 ) -> float | tuple[float, TYPE_EMB_ALL, TYPE_EMB_ALL]:
@@ -631,6 +633,10 @@ def distance(
 			Crystal or an embedding.
 		xtal_2 (Structure | Crystal | TYPE_EMB_ALL): pymatgen Structure or
 			Crystal or an embedding.
+		normalize (bool): Whether to normalize the distance d to [0, 1] by using d'
+			= d / (1 + d). This argument is only considered when d is a continuous
+			distance that is not normalized to [0, 1]. Such distances are listed in
+			CONTINUOUS_UNNORMALIZED_DISTANCES in constants.py. Default is True.
 		verbose (bool): Whether to return intermediate embeddings. Default is False.
 		**kwargs: Additional keyword arguments for specific distance metrics. It can
 			contain two keys: "args_emb" and "args_dist". The value of "args_emb" is a
@@ -686,6 +692,10 @@ def distance(
 	else:
 		raise ValueError(f"Unsupported distance metric: {distance}")
 
+	# normalize distance if needed
+	if distance in CONTINUOUS_UNNORMALIZED_DISTANCES and normalize:
+		d = d / (1 + d)
+
 	# return results
 	if not verbose:
 		return d
@@ -709,6 +719,7 @@ def distance_matrix(
 	distance: str,
 	xtals_1: list[Structure | Crystal | TYPE_EMB_ALL],
 	xtals_2: list[Structure | Crystal | TYPE_EMB_ALL] | None = None,
+	normalize: bool = True,
 	multiprocessing: bool = False,
 	n_processes: int | None = None,
 	verbose: bool = False,
@@ -726,6 +737,10 @@ def distance_matrix(
 			Structures or Crystals or embeddings.
 		xtals_2 (list[Structure | Crystal | TYPE_EMB_ALL] | None): A list of
 			pymatgen Structures or Crystals or embeddings, or None. Default is None.
+		normalize (bool): Whether to normalize the distances d to [0, 1] by using d'
+			= d / (1 + d). This argument is only considered when d is a continuous
+			distance that is not normalized to [0, 1]. Such distances are listed in
+			CONTINUOUS_UNNORMALIZED_DISTANCES in constants.py. Default is True.
 		multiprocessing (bool): Whether to use multiprocessing. Default is False.
 		n_processes (int | None): Maximum number of processes for multiprocessing. If
 			multiprocessing is False, this argument will be ignored. Default is None.
@@ -836,6 +851,10 @@ def distance_matrix(
 		raise ValueError(f"Unsupported distance metric: {distance}")
 	d_mtx_end = time.time()
 	times["d_mtx"] = d_mtx_end - d_mtx_start
+
+	# normalize distances if needed
+	if distance in CONTINUOUS_UNNORMALIZED_DISTANCES and normalize:
+		d_mtx = d_mtx / (1 + d_mtx)
 
 	# return results
 	if not verbose:

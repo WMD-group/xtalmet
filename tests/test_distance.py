@@ -9,7 +9,7 @@ from pymatgen.analysis.structure_matcher import StructureMatcher
 from pymatgen.core import Structure
 from pytest import approx
 
-from xtalmet.constants import BINARY_DISTANCES
+from xtalmet.constants import BINARY_DISTANCES, CONTINUOUS_UNNORMALIZED_DISTANCES
 from xtalmet.crystal import Crystal
 from xtalmet.distance import (
 	_compute_embeddings,
@@ -511,18 +511,20 @@ class TestDistance:
 		assert len(embs_all) == 4
 
 	@pytest.mark.parametrize(
-		"distance_name, kwargs",
+		"distance_name, normalize, kwargs",
 		[
-			("smat", {}),
-			("smat", {"args_dist": {"ltol": 0.3, "stol": 0.4, "angle_tol": 6}}),
-			("comp", {}),
-			("wyckoff", {}),
-			("magpie", {}),
-			("pdd", {}),
-			("pdd", {"args_emb": {"k": 100}}),
-			("pdd", {"args_emb": {"k": 100, "return_row_data": True}}),
+			("smat", None, {}),
+			("smat", None, {"args_dist": {"ltol": 0.3, "stol": 0.4, "angle_tol": 6}}),
+			("comp", None, {}),
+			("wyckoff", None, {}),
+			("magpie", False, {}),
+			("magpie", True, {}),
+			("pdd", True, {}),
+			("pdd", False, {"args_emb": {"k": 100}}),
+			("pdd", True, {"args_emb": {"k": 100, "return_row_data": True}}),
 			(
 				"pdd",
+				False,
 				{
 					"args_dist": {
 						"metric": "chebyshev",
@@ -534,6 +536,7 @@ class TestDistance:
 			),
 			(
 				"pdd",
+				True,
 				{
 					"args_emb": {"k": 100},
 					"args_dist": {
@@ -544,30 +547,37 @@ class TestDistance:
 					},
 				},
 			),
-			("amd", {}),
-			("amd", {"args_emb": {"k": 100}}),
+			("amd", False, {}),
+			("amd", True, {"args_emb": {"k": 100}}),
 			(
 				"amd",
+				False,
 				{
 					"args_dist": {"metric": "chebyshev", "low_memory": False},
 				},
 			),
 			(
 				"amd",
+				True,
 				{
 					"args_emb": {"k": 100},
 					"args_dist": {"metric": "chebyshev", "low_memory": False},
 				},
 			),
-			("elmd", {}),
-			("elmd", {"args_dist": {"metric": "mod_petti"}}),
-			("elmd", {"args_dist": {"metric": "fast", "return_assignments": True}}),
+			("elmd", False, {}),
+			("elmd", True, {"args_dist": {"metric": "mod_petti"}}),
+			(
+				"elmd",
+				False,
+				{"args_dist": {"metric": "fast", "return_assignments": True}},
+			),
 		],
 	)
 	def test_distance(
 		self,
 		prepare: tuple[Structure, Structure, Crystal, Crystal, dict],
 		distance_name: str,
+		normalize: bool,
 		kwargs: dict,
 	):
 		"""Test distance."""
@@ -579,35 +589,54 @@ class TestDistance:
 			distance_name, xtal_2, False, **(kwargs.get("args_emb", {}))
 		)
 		d = [None for _ in range(6)]
-		d[0] = distance(distance_name, struc_1, struc_2, **kwargs)
-		d[1], _, _ = distance(distance_name, struc_1, struc_2, True, **kwargs)
-		d[2] = distance(distance_name, xtal_1, xtal_2, **kwargs)
-		d[3], _, _ = distance(distance_name, xtal_1, xtal_2, True, **kwargs)
-		d[4] = distance(distance_name, emb_1, emb_2, **kwargs)
-		d[5], _, _ = distance(distance_name, emb_1, emb_2, True, **kwargs)
+		d[0] = distance(distance_name, struc_1, struc_2, normalize, **kwargs)
+		d[1], _, _ = distance(
+			distance_name, struc_1, struc_2, normalize, True, **kwargs
+		)
+		d[2] = distance(distance_name, xtal_1, xtal_2, normalize, **kwargs)
+		d[3], _, _ = distance(distance_name, xtal_1, xtal_2, normalize, True, **kwargs)
+		d[4] = distance(distance_name, emb_1, emb_2, normalize, **kwargs)
+		d[5], _, _ = distance(distance_name, emb_1, emb_2, normalize, True, **kwargs)
+
+		ground_truth = expected[distance_name]
+		if distance_name in CONTINUOUS_UNNORMALIZED_DISTANCES and normalize is True:
+			ground_truth = ground_truth / (1 + ground_truth)
 		if distance_name in BINARY_DISTANCES:
 			for di in d:
-				assert di == expected[distance_name]
+				assert di == ground_truth
 		else:
 			for di in d:
-				assert di == approx(expected[distance_name], rel=1e-3)
+				assert di == approx(ground_truth, rel=1e-3)
 
 	@pytest.mark.parametrize(
-		"distance_name, multiprocessing, n_processes, kwargs",
+		"distance_name, normalize, multiprocessing, n_processes, kwargs",
 		[
-			("smat", False, None, {}),
-			("smat", True, N_PROCESSES, {"ltol": 0.3, "stol": 0.4, "angle_tol": 6}),
-			("comp", False, None, {}),
-			("comp", True, None, {}),
-			("wyckoff", False, None, {}),
-			("wyckoff", True, N_PROCESSES, {}),
-			("magpie", False, None, {}),
-			("magpie", True, None, {}),
-			("pdd", False, None, {}),
-			("pdd", True, N_PROCESSES, {"args_emb": {"k": 100}}),
-			("pdd", False, None, {"args_emb": {"k": 100, "return_row_data": True}}),
+			("smat", None, False, None, {}),
+			(
+				"smat",
+				None,
+				True,
+				N_PROCESSES,
+				{"ltol": 0.3, "stol": 0.4, "angle_tol": 6},
+			),
+			("comp", None, False, None, {}),
+			("comp", None, True, None, {}),
+			("wyckoff", None, False, None, {}),
+			("wyckoff", None, True, N_PROCESSES, {}),
+			("magpie", False, False, None, {}),
+			("magpie", True, True, None, {}),
+			("pdd", False, False, None, {}),
+			("pdd", True, True, N_PROCESSES, {"args_emb": {"k": 100}}),
 			(
 				"pdd",
+				False,
+				False,
+				None,
+				{"args_emb": {"k": 100, "return_row_data": True}},
+			),
+			(
+				"pdd",
+				True,
 				True,
 				None,
 				{
@@ -622,6 +651,7 @@ class TestDistance:
 			(
 				"pdd",
 				False,
+				False,
 				None,
 				{
 					"args_emb": {"k": 100},
@@ -633,10 +663,11 @@ class TestDistance:
 					},
 				},
 			),
-			("amd", True, N_PROCESSES, {}),
-			("amd", False, None, {"args_emb": {"k": 100}}),
+			("amd", True, True, N_PROCESSES, {}),
+			("amd", False, False, None, {"args_emb": {"k": 100}}),
 			(
 				"amd",
+				True,
 				True,
 				None,
 				{
@@ -646,16 +677,18 @@ class TestDistance:
 			(
 				"amd",
 				False,
+				False,
 				None,
 				{
 					"args_emb": {"k": 100},
 					"args_dist": {"metric": "chebyshev", "low_memory": False},
 				},
 			),
-			("elmd", False, None, {}),
-			("elmd", True, N_PROCESSES, {"args_dist": {"metric": "mod_petti"}}),
+			("elmd", True, False, None, {}),
+			("elmd", False, True, N_PROCESSES, {"args_dist": {"metric": "mod_petti"}}),
 			(
 				"elmd",
+				True,
 				False,
 				None,
 				{"args_dist": {"metric": "fast", "return_assignments": True}},
@@ -666,6 +699,7 @@ class TestDistance:
 		self,
 		prepare_d_mtx: tuple[Structure, Structure, Structure, Structure, dict],
 		distance_name: str,
+		normalize: bool,
 		multiprocessing: bool,
 		n_processes: int | None,
 		kwargs: dict,
@@ -686,12 +720,19 @@ class TestDistance:
 		]
 		matrices = [None for _ in range(12)]
 		matrices[0] = distance_matrix(
-			distance_name, structures, None, multiprocessing, n_processes, **kwargs
+			distance_name,
+			structures,
+			None,
+			normalize,
+			multiprocessing,
+			n_processes,
+			**kwargs,
 		)
 		matrices[1], _, times_1 = distance_matrix(
 			distance_name,
 			structures,
 			None,
+			normalize,
 			multiprocessing,
 			n_processes,
 			True,
@@ -701,6 +742,7 @@ class TestDistance:
 			distance_name,
 			structures,
 			structures,
+			normalize,
 			multiprocessing,
 			n_processes,
 			**kwargs,
@@ -709,41 +751,86 @@ class TestDistance:
 			distance_name,
 			structures,
 			structures,
+			normalize,
 			multiprocessing,
 			n_processes,
 			True,
 			**kwargs,
 		)
 		matrices[4] = distance_matrix(
-			distance_name, xtals, None, multiprocessing, n_processes, **kwargs
+			distance_name,
+			xtals,
+			None,
+			normalize,
+			multiprocessing,
+			n_processes,
+			**kwargs,
 		)
 		matrices[5], _, _ = distance_matrix(
-			distance_name, xtals, None, multiprocessing, n_processes, True, **kwargs
+			distance_name,
+			xtals,
+			None,
+			normalize,
+			multiprocessing,
+			n_processes,
+			True,
+			**kwargs,
 		)
 		matrices[6] = distance_matrix(
-			distance_name, xtals, xtals, multiprocessing, n_processes, **kwargs
+			distance_name,
+			xtals,
+			xtals,
+			normalize,
+			multiprocessing,
+			n_processes,
+			**kwargs,
 		)
 		matrices[7], _, _, _ = distance_matrix(
-			distance_name, xtals, xtals, multiprocessing, n_processes, True, **kwargs
+			distance_name,
+			xtals,
+			xtals,
+			normalize,
+			multiprocessing,
+			n_processes,
+			True,
+			**kwargs,
 		)
 		matrices[8] = distance_matrix(
-			distance_name, embs, None, multiprocessing, n_processes, **kwargs
+			distance_name, embs, None, normalize, multiprocessing, n_processes, **kwargs
 		)
 		matrices[9], _, _ = distance_matrix(
-			distance_name, embs, None, multiprocessing, n_processes, True, **kwargs
+			distance_name,
+			embs,
+			None,
+			normalize,
+			multiprocessing,
+			n_processes,
+			True,
+			**kwargs,
 		)
 		matrices[10] = distance_matrix(
-			distance_name, embs, embs, multiprocessing, n_processes, **kwargs
+			distance_name, embs, embs, normalize, multiprocessing, n_processes, **kwargs
 		)
 		matrices[11], _, _, _ = distance_matrix(
-			distance_name, embs, embs, multiprocessing, n_processes, True, **kwargs
+			distance_name,
+			embs,
+			embs,
+			normalize,
+			multiprocessing,
+			n_processes,
+			True,
+			**kwargs,
 		)
+
+		ground_truth = expected[distance_name]
+		if distance_name in CONTINUOUS_UNNORMALIZED_DISTANCES and normalize is True:
+			ground_truth = ground_truth / (1 + ground_truth)
 		if distance_name in BINARY_DISTANCES:
 			for d_mtx in matrices:
-				assert np.all(d_mtx == expected[distance_name])
+				assert np.all(d_mtx == ground_truth)
 		else:
 			for d_mtx in matrices:
-				assert d_mtx == approx(expected[distance_name], rel=1e-3)
+				assert d_mtx == approx(ground_truth, rel=1e-3)
 		assert "emb_1" in times_1
 		assert "d_mtx" in times_1
 		assert "emb_1" in times_2
