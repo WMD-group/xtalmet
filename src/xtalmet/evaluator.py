@@ -455,7 +455,7 @@ class Evaluator:
 			...         "args_stability": {"diagram": "mp_250618", "threshold": 0.1},
 			...     },
 			... )
-			>>> 0.00949325955406104
+			>>> 0.07423132424834775
 			>>> evaluator.uniqueness(
 			...     distance="amd",
 			...	    normalize=True,
@@ -476,7 +476,7 @@ class Evaluator:
 			...         "args_stability": {"diagram": "mp_250618", "intercept": 1.215},
 			...     },
 			... )
-			>>> 0.10731830578122291
+			>>> 0.2365031565580306
 
 		Returns:
 			float | tuple: Uniqueness value or a tuple containing the uniqueness value
@@ -517,8 +517,7 @@ class Evaluator:
 
 			.. math::
 				U = \frac{1}{n} \sum_{i=1}^{n} V(x_i) \cdot S(x_i) \cdot I \left(
-				\land_{j=1}^{i-1} \left( V(x_j) = 0 \lor S(x_j) = 0 \lor d(x_i, x_j)
-				\neq 0 \right) \right),
+				\land_{j=1}^{i-1} d(x_i, x_j) \neq 0 \right),
 
 			where :math:`\{x_1, x_2, \ldots, x_n\}` is the set of generated crystals,
 			:math:`I` is the indicator function, :math:`S` is either :math:`S_b` or
@@ -528,8 +527,7 @@ class Evaluator:
 
 			.. math::
 				U = \frac{1}{n} \sum_{i=1}^{n} V(x_i) \cdot S(x_i) \cdot \left(
-				\frac{1}{n-1} \sum_{j=1}^{n} V(x_j) \cdot S(x_j) \cdot d(x_i, x_j)
-				\right).
+				\frac{1}{n-1} \sum_{j=1}^{n} d(x_i, x_j) \right).
 
 			If normalize is True, each distance :math:`d(x_i, x_j)` is normalized to
 			:math:`d'(x_i, x_j) = \frac{d(x_i, x_j)}{1 + d(x_i, x_j)}.`
@@ -564,29 +562,25 @@ class Evaluator:
 		# Step 4: Compute uniqueness
 		start_time_metric = time.time()
 		if distance in BINARY_DISTANCES:
-			is_unique = np.array(
-				[
-					1
-					if np.all(
-						np.logical_or(
-							np.logical_or(
-								~valid_indices_gen[:i], stability_scores[:i] == 0
-							),
-							d_mtx[i, :i] != 0,
-						)
-					)
-					else 0
-					for i in range(len(d_mtx))
-				]
-			)
 			uniqueness = (
-				np.sum(valid_indices_gen * stability_scores * is_unique)
+				np.sum(
+					valid_indices_gen
+					* stability_scores
+					* np.array(
+						[np.all(d_mtx[i, :i] != 0) for i in range(len(d_mtx))],
+						dtype=int,
+					)
+				)
 				/ self.n_samples
 			)
 		elif distance in CONTINUOUS_DISTANCES:
-			vs = valid_indices_gen * stability_scores
-			uniqueness = np.sum(vs[:, np.newaxis] * vs[np.newaxis, :] * d_mtx) / (
-				self.n_samples * (self.n_samples - 1)
+			uniqueness = (
+				np.sum(
+					valid_indices_gen
+					* stability_scores
+					* (np.sum(d_mtx, axis=1) / (self.n_samples - 1))
+				)
+				/ self.n_samples
 			)
 		end_time_metric = time.time()
 		times["uni_metric"] = end_time_metric - start_time_metric
@@ -819,16 +813,19 @@ class Evaluator:
 		# Step 4: Compute novelty
 		start_time_metric = time.time()
 		if distance in BINARY_DISTANCES:
-			is_novel = np.array(
-				[
-					1
-					if np.all(np.logical_or(~valid_indices_train, d_mtx[i] != 0))
-					else 0
-					for i in range(len(d_mtx))
-				]
-			)
 			novelty = (
-				np.sum(valid_indices_gen * stability_scores * is_novel) / self.n_samples
+				np.sum(
+					valid_indices_gen
+					* stability_scores
+					* np.array(
+						[
+							np.all(np.logical_or(~valid_indices_train, d_mtx[i] != 0))
+							for i in range(len(d_mtx))
+						],
+						dtype=int,
+					)
+				)
+				/ self.n_samples
 			)
 		elif distance in CONTINUOUS_DISTANCES:
 			d_mtx[:, ~valid_indices_train] = float("inf")
@@ -947,7 +944,7 @@ class Evaluator:
 			...         },
 			...     },
 			... )
-			>>> 0.0013761904710659482
+			>>> 0.010777390212461713
 			>>> evaluator.vsun(
 			...     train_xtals=list_of_train_xtals,
 			...     distance="amd",
@@ -969,7 +966,7 @@ class Evaluator:
 			...         "args_stability": {"diagram": "mp_250618", "intercept": 1.215},
 			...     },
 			... )
-			>>> 0.012114383184495899
+			>>> 0.0268044218595296
 
 		Returns:
 			float | tuple: VSUN value or a tuple containing the VSUN value and a
@@ -1009,13 +1006,9 @@ class Evaluator:
 			follows.
 
 			.. math::
-				\begin{align*}
-					U(x_i) &= I \left( \land_{j=1}^{i-1} \left( V(x_j) = 0 \lor S(x_j)
-					= 0 \lor d(x_i, x_j) \neq 0 \right) \right)\\
-					N(x_i) &= I \left( \land_{j=1}^{m} d(x_i, y_j) \neq 0 \right)\\
-					VSUN &= \frac{1}{n} \sum_{i=1}^{n} V(x_i) \cdot S(x_i) \cdot  U(x_i)
-					\cdot N(x_i).
-				\end{align*}
+				VSUN = \frac{1}{n} \sum_{i=1}^{n} V(x_i) \cdot S(x_i) \cdot I \left(
+				\land_{j=1}^{i-1} d(x_i, x_j) \neq 0 \right) \cdot I \left(
+				\land_{j=1}^{m} d(x_i, y_j) \neq 0 \right),
 
 			where :math:`\{x_1, x_2, \ldots, x_n\}` is the set of generated crystals,
 			:math:`\{y_1, y_2, \ldots, y_m\}` is the set of training crystals, :math:`I`
@@ -1025,13 +1018,10 @@ class Evaluator:
 			calculated as follows.
 
 			.. math::
-				\begin{align*}
-					U(x_i) &= \frac{1}{n-1} \sum_{j=1}^{n} V(x_j) \cdot S(x_j)
-					\cdot d(x_i, x_j) \\
-					N(x_i) &= \min_{j=1 \ldots m} d(x_i, y_j)\\
-					VSUN &= \frac{1}{n} \sum_{i=1}^{n} V(x_i) \cdot S(x_i) \cdot  U(x_i)
-					\cdot N(x_i).
-				\end{align*}
+				VSUN = \frac{1}{n} \sum_{i=1}^{n} V(x_i) \cdot S(x_i) \cdot \left(
+				\frac{1}{n-1} \sum_{j=1}^{n} d(x_i, x_j) \right) \cdot
+				\min_{j=1 \ldots m} d(x_i, y_j).
+
 
 			Note that unnormalized continuous distances are always normalized in the
 			VSUN calculation to ensure that the multiplication of uniqueness and novelty
@@ -1078,39 +1068,27 @@ class Evaluator:
 		start_time_metric = time.time()
 		if distance in BINARY_DISTANCES:
 			is_unique = np.array(
-				[
-					1
-					if np.all(
-						np.logical_or(
-							np.logical_or(
-								~valid_indices_gen[:i], stability_scores[:i] == 0
-							),
-							d_mtx_uni[i, :i] != 0,
-						)
-					)
-					else 0
-					for i in range(len(d_mtx_uni))
-				]
+				[np.all(d_mtx_uni[i, :i] != 0) for i in range(len(d_mtx_uni))],
+				dtype=int,
 			)
 			is_novel = np.array(
 				[
-					1
-					if np.all(np.logical_or(~valid_indices_train, d_mtx_nov[i] != 0))
-					else 0
+					np.all(np.logical_or(~valid_indices_train, d_mtx_nov[i] != 0))
 					for i in range(len(d_mtx_nov))
-				]
+				],
+				dtype=int,
 			)
 			vsun = (
 				np.sum(valid_indices_gen * stability_scores * is_unique * is_novel)
 				/ self.n_samples
 			)
 		elif distance in CONTINUOUS_DISTANCES:
-			vs = valid_indices_gen * stability_scores
-			d_mtx_nov[:, ~valid_indices_train] = float("inf")  # max normalized distance
+			d_mtx_nov[:, ~valid_indices_train] = float("inf")
 			vsun = (
 				np.sum(
-					vs
-					* (np.sum(vs * d_mtx_uni, axis=1) / (self.n_samples - 1))
+					valid_indices_gen
+					* stability_scores
+					* (np.sum(d_mtx_uni, axis=1) / (self.n_samples - 1))
 					* np.min(d_mtx_nov, axis=1)
 				)
 				/ self.n_samples
