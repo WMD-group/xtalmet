@@ -185,7 +185,7 @@ evaluation. For more details, please refer to the <a class="reference external" 
 <span class="gp">... </span>        <span class="s2">&quot;args_stability&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;diagram&quot;</span><span class="p">:</span> <span class="s2">&quot;mp_250618&quot;</span><span class="p">,</span> <span class="s2">&quot;threshold&quot;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">},</span>
 <span class="gp">... </span>    <span class="p">},</span>
 <span class="gp">... </span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="mf">0.00949325955406104</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="mf">0.07423132424834775</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">evaluator</span><span class="o">.</span><span class="n">uniqueness</span><span class="p">(</span>
 <span class="gp">... </span>    <span class="n">distance</span><span class="o">=</span><span class="s2">&quot;amd&quot;</span><span class="p">,</span>
 <span class="gp">... </span>        <span class="n">normalize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -206,7 +206,7 @@ evaluation. For more details, please refer to the <a class="reference external" 
 <span class="gp">... </span>        <span class="s2">&quot;args_stability&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;diagram&quot;</span><span class="p">:</span> <span class="s2">&quot;mp_250618&quot;</span><span class="p">,</span> <span class="s2">&quot;intercept&quot;</span><span class="p">:</span> <span class="mf">1.215</span><span class="p">},</span>
 <span class="gp">... </span>    <span class="p">},</span>
 <span class="gp">... </span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="mf">0.10731830578122291</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="mf">0.2365031565580306</span>
 </pre></div>
 </div>
 <dl class="field-list simple">
@@ -249,8 +249,7 @@ Then, the uniqueness score with a binary distance, optional validity
 screening and stability evaluation is calculated as follows.</p>
 <div class="math notranslate nohighlight">
 \[U = \frac{1}{n} \sum_{i=1}^{n} V(x_i) \cdot S(x_i) \cdot I \left(
-\land_{j=1}^{i-1} \left( V(x_j) = 0 \lor S(x_j) = 0 \lor d(x_i, x_j)
-\neq 0 \right) \right),\]</div>
+\land_{j=1}^{i-1} d(x_i, x_j) \neq 0 \right),\]</div>
 <p>where <span class="math notranslate nohighlight">\(\{x_1, x_2, \ldots, x_n\}\)</span> is the set of generated crystals,
 <span class="math notranslate nohighlight">\(I\)</span> is the indicator function, <span class="math notranslate nohighlight">\(S\)</span> is either <span class="math notranslate nohighlight">\(S_b\)</span> or
 <span class="math notranslate nohighlight">\(S_c\)</span>, and <span class="math notranslate nohighlight">\(V\)</span> is the validity function that returns 1 for valid
@@ -258,8 +257,7 @@ crystals and 0 for invalid crystals. For a continuous distance, the
 uniqueness score is calculated as follows.</p>
 <div class="math notranslate nohighlight">
 \[U = \frac{1}{n} \sum_{i=1}^{n} V(x_i) \cdot S(x_i) \cdot \left(
-\frac{1}{n-1} \sum_{j=1}^{n} V(x_j) \cdot S(x_j) \cdot d(x_i, x_j)
-\right).\]</div>
+\frac{1}{n-1} \sum_{j=1}^{n} d(x_i, x_j) \right).\]</div>
 <p>If normalize is True, each distance <span class="math notranslate nohighlight">\(d(x_i, x_j)\)</span> is normalized to
 <span class="math notranslate nohighlight">\(d'(x_i, x_j) = \frac{d(x_i, x_j)}{1 + d(x_i, x_j)}.\)</span></p>
 </div>
@@ -541,7 +539,7 @@ evaluation. For more details, please refer to the <a class="reference external" 
 <span class="gp">... </span>        <span class="p">},</span>
 <span class="gp">... </span>    <span class="p">},</span>
 <span class="gp">... </span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="mf">0.0013761904710659482</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="mf">0.010777390212461713</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">evaluator</span><span class="o">.</span><span class="n">vsun</span><span class="p">(</span>
 <span class="gp">... </span>    <span class="n">train_xtals</span><span class="o">=</span><span class="n">list_of_train_xtals</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">distance</span><span class="o">=</span><span class="s2">&quot;amd&quot;</span><span class="p">,</span>
@@ -563,7 +561,7 @@ evaluation. For more details, please refer to the <a class="reference external" 
 <span class="gp">... </span>        <span class="s2">&quot;args_stability&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;diagram&quot;</span><span class="p">:</span> <span class="s2">&quot;mp_250618&quot;</span><span class="p">,</span> <span class="s2">&quot;intercept&quot;</span><span class="p">:</span> <span class="mf">1.215</span><span class="p">},</span>
 <span class="gp">... </span>    <span class="p">},</span>
 <span class="gp">... </span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="mf">0.012114383184495899</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="mf">0.0268044218595296</span>
 </pre></div>
 </div>
 <dl class="field-list simple">
@@ -608,13 +606,9 @@ crystal <span class="math notranslate nohighlight">\(x\)</span> is defined as fo
 [eV/atom]. Then, the VSUN score with a binary distance is calculated as
 follows.</p>
 <div class="math notranslate nohighlight">
-\[\begin{split}\begin{align*}
-        U(x_i) &amp;= I \left( \land_{j=1}^{i-1} \left( V(x_j) = 0 \lor S(x_j)
-        = 0 \lor d(x_i, x_j) \neq 0 \right) \right)\\
-        N(x_i) &amp;= I \left( \land_{j=1}^{m} d(x_i, y_j) \neq 0 \right)\\
-        VSUN &amp;= \frac{1}{n} \sum_{i=1}^{n} V(x_i) \cdot S(x_i) \cdot  U(x_i)
-        \cdot N(x_i).
-\end{align*}\end{split}\]</div>
+\[VSUN = \frac{1}{n} \sum_{i=1}^{n} V(x_i) \cdot S(x_i) \cdot I \left(
+\land_{j=1}^{i-1} d(x_i, x_j) \neq 0 \right) \cdot I \left(
+\land_{j=1}^{m} d(x_i, y_j) \neq 0 \right),\]</div>
 <p>where <span class="math notranslate nohighlight">\(\{x_1, x_2, \ldots, x_n\}\)</span> is the set of generated crystals,
 <span class="math notranslate nohighlight">\(\{y_1, y_2, \ldots, y_m\}\)</span> is the set of training crystals, <span class="math notranslate nohighlight">\(I\)</span>
 is the indicator function, <span class="math notranslate nohighlight">\(S\)</span> is either <span class="math notranslate nohighlight">\(S_b\)</span> or <span class="math notranslate nohighlight">\(S_c\)</span>,
@@ -622,13 +616,9 @@ and <span class="math notranslate nohighlight">\(V\)</span> is the validity func
 0 for invalid crystals. For a continuous distance, the VSUN score is
 calculated as follows.</p>
 <div class="math notranslate nohighlight">
-\[\begin{split}\begin{align*}
-        U(x_i) &amp;= \frac{1}{n-1} \sum_{j=1}^{n} V(x_j) \cdot S(x_j)
-        \cdot d(x_i, x_j) \\
-        N(x_i) &amp;= \min_{j=1 \ldots m} d(x_i, y_j)\\
-        VSUN &amp;= \frac{1}{n} \sum_{i=1}^{n} V(x_i) \cdot S(x_i) \cdot  U(x_i)
-        \cdot N(x_i).
-\end{align*}\end{split}\]</div>
+\[VSUN = \frac{1}{n} \sum_{i=1}^{n} V(x_i) \cdot S(x_i) \cdot \left(
+\frac{1}{n-1} \sum_{j=1}^{n} d(x_i, x_j) \right) \cdot
+\min_{j=1 \ldots m} d(x_i, y_j).\]</div>
 <p>Note that unnormalized continuous distances are always normalized in the
 VSUN calculation to ensure that the multiplication of uniqueness and novelty
 is valid.</p>
