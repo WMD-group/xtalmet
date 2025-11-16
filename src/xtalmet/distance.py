@@ -594,8 +594,10 @@ def _compute_embeddings(
 	Returns:
 		TYPE_EMB_ALL | list[TYPE_EMB_ALL]: A single embedding or a list of embeddings.
 	"""
+	single = False
 	if isinstance(xtals, Crystal):
 		xtals = [xtals]
+		single = True
 
 	if multiprocessing:
 		_compute_embedding_worker_partial = functools.partial(
@@ -609,7 +611,7 @@ def _compute_embeddings(
 			)
 	else:
 		embs = [_compute_embedding_worker(xtal, distance, **kwargs) for xtal in xtals]
-	if len(embs) == 1:
+	if single:
 		return embs[0]
 	else:
 		return embs
