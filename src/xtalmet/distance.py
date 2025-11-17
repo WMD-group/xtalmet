@@ -171,6 +171,9 @@ def _set_n_processes(n_processes: int | None = None) -> int:
 	Args:
 		n_processes (int | None): Number of processes. If None, use
 			max(cpu_count() - 1, 1). Default is None.
+
+	Returns:
+		int: Number of processes to use.
 	"""
 	if n_processes is None:
 		return max(cpu_count() - 1, 1)
@@ -650,8 +653,8 @@ def distance(
 
 	Returns:
 		float |  tuple[np.ndarray, TYPE_EMB_ALL, TYPE_EMB_ALL, dict[str, float]]:
-			Distance between crystals. If verbose is True, also returns the embeddings
-			and the computing time.
+		Distance between crystals. If verbose is True, also returns the embeddings and
+		the computing time.
 
 	Raises:
 		ValueError: If an unsupported distance metric is provided.
@@ -756,7 +759,7 @@ def distance_matrix(
 
 	Returns:
 		TYPE_D_MTX_RETURN: Distance matrix, the embeddings of xtals_1 (and xtals_2 if
-			xtals_2 is not None) and the computing time.
+		xtals_2 is not None) and the computing time.
 
 	Raises:
 		ValueError: If an unsupported distance metric is provided.

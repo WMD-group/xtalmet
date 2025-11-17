@@ -86,9 +86,6 @@ class Crystal(Structure):
 				Will be serialized when writing the structure to JSON or YAML but is
 				lost when converting to other formats.
 
-		Returns:
-			None
-
 		Note:
 			The descriptions for args are copied from pymatgen.core.Structure class.
 		"""
