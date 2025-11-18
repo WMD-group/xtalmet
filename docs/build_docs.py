@@ -1,7 +1,12 @@
 import os
+import shutil
 import subprocess
 
 import yaml
+
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+src_path = os.path.join(project_root, "src")
+os.environ["PYTHONPATH"] = src_path + os.pathsep + os.environ.get("PYTHONPATH", "")
 
 
 # a single build step, which keeps conf.py and versions.yaml at the main branch
@@ -9,10 +14,13 @@ import yaml
 # and runs the build as we did locally
 def build_doc(version, tag):
 	os.environ["current_version"] = version
-	subprocess.run("git checkout " + tag, shell=True)
+	subprocess.run("git checkout -f" + tag, shell=True)
 	subprocess.run("git checkout main -- source/conf.py", shell=True)
 	subprocess.run("git checkout main -- source/versions.yaml", shell=True)
 	subprocess.run("git checkout main -- source/_templates/", shell=True)
+	api_dir = "source/api"
+	if os.path.exists(api_dir):
+		shutil.rmtree(api_dir)
 	subprocess.run(
 		"sphinx-apidoc -o source/api/ -f -T --remove-old -e -M -t source/_templates/apidoc/module.rst.jinja ../src/xtalmet/",
 		shell=True,
@@ -32,6 +40,7 @@ os.environ["build_all_docs"] = str(True)
 os.environ["pages_root"] = "https://wmd-group.github.io/xtalmet"
 
 # manually the main branch build in the current supported languages
+subprocess.run("git checkout -f main", shell=True)
 build_doc("latest", "main")
 move_dir("./_build_tag/html/", "./build/html/")
 
@@ -47,4 +56,4 @@ for version, details in docs.items():
 
 # finally we clean up
 subprocess.run("rm -rf _build_tag", shell=True)
-subprocess.run("git checkout main", shell=True)
+subprocess.run("git checkout -f main", shell=True)
