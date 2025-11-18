@@ -1,8 +1,6 @@
-"""This module offers validity functions to screen crystal structures."""
+"""This module offers classes to compute the validity of crystal structures."""
 
-import gzip
-import os
-import pickle
+import time
 
 import numpy as np
 from smact.screening import smact_validity
@@ -10,86 +8,151 @@ from smact.screening import smact_validity
 from .crystal import Crystal
 
 
-def validity_smact(
-	xtals: list[Crystal], dir_intermediate: str | None = None
-) -> np.ndarray[bool]:
-	"""Screen crystals using SMACT.
+class SingleValidator:
+	"""Class to calculate validity of crystal structures using a single method."""
 
-	Args:
-		xtals (list[Crystal]): List of crystals to screen.
-		dir_intermediate (str | None): Directory to search for pre-computed screening
-			results. If the pre-computed file does not exist in the directory, it will
-			be saved to the directory for future use. If set to None, no files will be
-			loaded or saved. Default is None.
+	def __init__(self, **kwargs) -> None:
+		"""Initialize SingleValidator.
 
-	Returns:
-	    np.ndarray[bool]: Array indicating which crystals pass the screening.
+		Args:
+			**kwargs: Additional keyword arguments for the validity evaluation method.
+		"""
+		raise NotImplementedError
 
-	References:
-		- Davies et al., (2019). SMACT: Semiconducting Materials by Analogy and Chemical
-		  Theory. Journal of Open Source Software, 4(38), 1361, https://doi.org/10.21105/joss.01361
-	"""
-	if dir_intermediate is not None:
-		path = os.path.join(dir_intermediate, "valid_smact.pkl.gz")
-	if dir_intermediate is not None and os.path.exists(path):
-		with gzip.open(path, "rb") as f:
-			screened = pickle.load(f)
-	else:
-		screened = np.array(
-			[smact_validity(xtal.get_composition_pymatgen()) for xtal in xtals]
+	def validate(self, xtals: list[Crystal]) -> np.ndarray[float]:
+		"""Validate a list of crystals.
+
+		Args:
+			xtals (list[Crystal]): List of crystals to validate.
+
+		Returns:
+			np.ndarray[float]: Array of validity scores for each crystal.
+		"""
+		raise NotImplementedError
+
+
+class SMACTValidator(SingleValidator):
+	"""Class to calculate validity of crystal structures using SMACT."""
+
+	def __init__(self) -> None:
+		"""Initialize SMACTValidator."""
+		pass
+
+	def validate(self, xtals: list[Crystal]) -> np.ndarray[float]:
+		"""Validate a list of crystals using SMACT.
+
+		Args:
+			xtals (list[Crystal]): List of crystals to validate.
+
+		Returns:
+			np.ndarray[float]: Array of validity scores for each crystal. A value of 1.0
+			indicates that the crystal passed the SMACT screening, while 0.0 indicates
+			that it failed.
+
+		References:
+			- Davies et al., (2019). SMACT: Semiconducting Materials by Analogy and
+			  Chemical Theory. Journal of Open Source Software, 4(38), 1361, https://doi.org/10.21105/joss.01361
+		"""
+		return np.array(
+			[smact_validity(xtal.get_composition_pymatgen()) for xtal in xtals],
+			dtype=float,
 		)
 
-	if dir_intermediate is not None and not os.path.exists(path):
-		os.makedirs(dir_intermediate, exist_ok=True)
-		with gzip.open(path, "wb") as f:
-			pickle.dump(screened, f)
-	return screened
 
+class StructureValidator(SingleValidator):
+	"""Class to calculate structure-based validity of crystal structures."""
 
-def validity_structure(
-	xtals: list[Crystal],
-	dir_intermediate: str | None = None,
-	threshold_distance: float = 0.5,
-	threshold_volume: float = 0.1,
-) -> np.ndarray[bool]:
-	"""Screen crystals using structure-based validity.
+	def __init__(
+		self, threshold_distance: float = 0.5, threshold_volume: float = 0.1
+	) -> None:
+		"""Initialize StructureValidator.
 
-	Args:
-		xtals (list[Crystal]): List of crystals to screen.
-		dir_intermediate (str | None): Directory to search for pre-computed screening
-			results. If the pre-computed file does not exist in the directory, it will
-			be saved to the directory for future use. If set to None, no files will be
-			loaded or saved. Default is None.
-		threshold_distance (float): Minimum allowed distance between atoms.
-		threshold_volume (float): Minimum allowed volume of the unit cell.
+		Args:
+			threshold_distance (float): Minimum allowed distance between atoms.
+			threshold_volume (float): Minimum allowed volume of the unit cell.
 
-	Returns:
-	    np.ndarray[bool]: Array indicating which crystals pass the screening.
+		References:
+			- Xie et al., (2022). Crystal Diffusion Variational Autoencoder for Periodic
+			  Material Generation. In International Conference on Learning
+			  Representations.
+		"""
+		self.threshold_distance = threshold_distance
+		self.threshold_volume = threshold_volume
 
-	References:
-		- Xie et al., (2022). Crystal Diffusion Variational Autoencoder for Periodic
-		  Material Generation. In International Conference on Learning Representations.
-	"""
-	if dir_intermediate is not None:
-		path = os.path.join(dir_intermediate, "valid_structure.pkl.gz")
-	if dir_intermediate is not None and os.path.exists(path):
-		with gzip.open(path, "rb") as f:
-			screened = pickle.load(f)
-	else:
+	def validate(self, xtals: list[Crystal]) -> np.ndarray[float]:
+		"""Validate a list of crystals using structure-based method.
 
-		def _validity_structure_single(xtal: Crystal) -> bool:
+		Args:
+			xtals (list[Crystal]): List of crystals to validate.
+
+		Returns:
+			np.ndarray[float]: Array of validity scores for each crystal. A value of 1.0
+			indicates that the crystal passed the structure-based screening, while 0.0
+			indicates that it failed.
+		"""
+		scores = []
+		for xtal in xtals:
 			dist_mat = xtal.distance_matrix
 			dist_mat = dist_mat + np.diag(
-				np.ones(dist_mat.shape[0]) * (threshold_distance + 10.0)
+				np.ones(dist_mat.shape[0]) * (self.threshold_distance + 10.0)
 			)
-			return (
-				dist_mat.min() >= threshold_distance and xtal.volume >= threshold_volume
-			)
+			if (
+				dist_mat.min() >= self.threshold_distance
+				and xtal.volume >= self.threshold_volume
+			):
+				scores.append(1.0)
+			else:
+				scores.append(0.0)
+		return np.array(scores, dtype=float)
 
-		screened = np.array([_validity_structure_single(xtal) for xtal in xtals])
 
-	if dir_intermediate is not None and not os.path.exists(path):
-		os.makedirs(dir_intermediate, exist_ok=True)
-		with gzip.open(path, "wb") as f:
-			pickle.dump(screened, f)
-	return screened
+class Validator:
+	"""Class to calculate validity of crystal structures."""
+
+	def __init__(self, methods: list[str], **kwargs) -> None:
+		"""Initialize Validator.
+
+		Args:
+			methods (list[str]): List of validity evaluation methods to use. The
+				currently supported methods are shown in SUPPORTED_VALIDITY in
+				constants.py.
+			**kwargs: Additional keyword arguments for each validity evaluation method.
+		"""
+		self.validators: dict[str, SingleValidator] = {}
+		for method in methods:
+			if method == "smact":
+				self.validators["smact"] = SMACTValidator()
+			elif method == "structure":
+				self.validators["structure"] = StructureValidator(
+					**kwargs.get("structure", {})
+				)
+			else:
+				raise ValueError(f"Unsupported validity method: {method}")
+
+	def validate(
+		self,
+		xtals: list[Crystal],
+		skip: list[str],
+	) -> tuple[dict[str, np.ndarray[float]], dict[str, float]]:
+		"""Validate a list of crystals using the specified methods.
+
+		Args:
+			xtals (list[Crystal]): List of crystals to validate.
+			skip (list[str]): List of validity methods to skip.
+
+		Returns:
+			tuple[dict[str, np.ndarray[float]], dict[str, float]]: A dictionary of
+			individual scores from each validator, and a dictionary of time taken for
+			each validity method.
+		"""
+		dict_individual_scores = {}
+		times = {}
+		for name, validator in self.validators.items():
+			if name in skip:
+				continue
+			start_time = time.time()
+			s = validator.validate(xtals)
+			end_time = time.time()
+			times[f"val_{name}"] = end_time - start_time
+			dict_individual_scores[name] = s
+		return dict_individual_scores, times

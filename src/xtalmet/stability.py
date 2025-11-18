@@ -1,10 +1,11 @@
 """This module offers functions to compute the stability of crystal structures."""
 
-import datetime
 import gzip
 import os
 import pickle
+import time
 import warnings
+from pathlib import Path
 from typing import Literal
 
 import numpy as np
@@ -19,42 +20,41 @@ from .constants import HF_VERSION
 from .crystal import Crystal
 
 
-def compute_ehull(
-	xtals: list[Crystal],
-	diagram: Literal["mp_250618", "mp"] | PatchedPhaseDiagram | str = "mp_250618",
-	mace_model: str = "mace-mh-1",
-	dir_intermediate: str | None = None,
-) -> np.ndarray[float]:
-	"""Compute energy above hull for a list of crystals.
+class StabilityCalculator:
+	"""Class to calculate stability scores of crystal structures."""
 
-	Args:
-		xtals (list[Crystal]): List of crystals to compute energy above hull for.
-		diagram (Literal["mp_250618", "mp"] | PatchedPhaseDiagram | str): A phased
-			diagram to use. If "mp_250618" is specified, the diagram constructed using
-			this function from the MP entries on June 18, 2025, will be used. If "mp" is
-			specified, the diagram will be constructed on the spot. You can also pass
-			your own diagram or a path to it. If the pre-computed results (ehull.pkl.gz)
-			exist in dir_intermediate, this argument will be ignored.
-		mace_model (str): The MACE model to use for energy prediction. Default is
-			"mace-mh-1".
-		dir_intermediate (str | None): Directory to search for pre-computed results. If
-			the pre-computed file does not exist in the directory, it will be saved to
-			the directory for future use. If set to None, no files will be loaded or
-			saved. Default is None.
+	def __init__(
+		self,
+		diagram: Literal["mp_250618", "mp"] | PatchedPhaseDiagram | str = "mp_250618",
+		mace_model: str = "mace-mh-1",
+		binary=True,
+		threshold: float = 0.1,
+		intercept: float = 1.215,
+	) -> None:
+		"""Initialize StabilityCalculator.
 
-	Returns:
-		np.ndarray[float]: Array of energy above hull for each crystal.
-	"""
-	if dir_intermediate is not None:
-		path_result = os.path.join(dir_intermediate, "ehull.pkl.gz")
-	if dir_intermediate is not None and os.path.exists(path_result):
-		with gzip.open(path_result, "rb") as f:
-			e_above_hulls = pickle.load(f)
-	else:
+		Args:
+			diagram (Literal["mp_250618", "mp"] | PatchedPhaseDiagram | str): A phased
+				diagram to use. If "mp_250618" is specified, the diagram constructed
+				using this class from the MP entries on June 18, 2025, will be used. If
+				"mp" is specified, the diagram will be constructed on the spot. You can
+				also pass your own diagram or a path to it.
+			mace_model (str): The MACE model to use for energy prediction. Default is
+				"mace-mh-1".
+			binary (bool): If True, compute binary stability scores (1 for stable, 0 for
+				unstable). If False, compute continuous stability scores between 0 and
+				1. Default is True.
+			threshold (float): Energy above hull threshold for stability in eV/atom.
+				Only used if binary is True. Default is 0.1 eV/atom.
+			intercept (float): Intercept for linear scaling of stability scores in
+				eV/atom. Only used if binary is False. Default is 1.215 eV/atom, which
+				is the 99th percentile of the energy above hull values for the MP data
+				with theoretical=False.
+		"""
 		# load or construct a phase diagram
 		if isinstance(diagram, PatchedPhaseDiagram):
 			ppd_mp = diagram
-		elif diagram not in ["mp_250618", "mp"]:
+		elif type(diagram) is str and Path(diagram).is_file():
 			with gzip.open(diagram, "rb") as f:
 				ppd_mp = pickle.load(f)
 		elif diagram == "mp_250618":
@@ -89,21 +89,9 @@ def compute_ehull(
 				for e in all_entries
 			]
 			ppd_mp = PatchedPhaseDiagram(all_entries_uncorrected)
-			if dir_intermediate is not None:
-				os.makedirs(dir_intermediate, exist_ok=True)
-				now = datetime.datetime.now()
-				year = str(now.year)[-2:]
-				month = f"{now.month:02d}"
-				day = f"{now.day:02d}"
-				with gzip.open(
-					os.path.join(
-						dir_intermediate,
-						f"ppd-mp_all_entries_uncorrected_{year}{month}{day}.pkl.gz",
-					),
-					"wb",
-				) as f:
-					pickle.dump(ppd_mp, f)
-		# compute energy above hull for each generated crystal
+		else:
+			raise ValueError(f"Unsupported diagram: {diagram}")
+		# prepare mace model
 		if mace_model == "mace-mh-1":
 			calculator = mace_mp(
 				model="https://github.com/ACEsuit/mace-foundations/releases/download/mace_mh_1/mace-mh-1.model",
@@ -112,71 +100,63 @@ def compute_ehull(
 			)
 		else:
 			calculator = mace_mp(model=mace_model, default_dtype="float64")
+		self.ppd_mp = ppd_mp
+		self.calculator = calculator
+		self.binary = binary
+		self.threshold = threshold
+		self.intercept = intercept
+
+	def _ehull(self, xtals: list[Crystal]) -> np.ndarray[float]:
+		"""Compute energy above hull for a list of crystals.
+
+		Args:
+		    xtals (list[Crystal]): List of crystals to compute energy above hull for.
+
+		Returns:
+		   np.ndarray[float]: Array of energy above hull for each crystal.
+		"""
 		e_above_hulls = np.zeros(len(xtals), dtype=float)
 		for idx, xtal in enumerate(xtals):
 			try:
-				mace_energy = calculator.get_potential_energy(xtal.get_ase_atoms())
+				mace_energy = self.calculator.get_potential_energy(xtal.get_ase_atoms())
 				gen_entry = ComputedEntry(xtal.get_composition_pymatgen(), mace_energy)
-				e_above_hulls[idx] = ppd_mp.get_e_above_hull(
+				e_above_hulls[idx] = self.ppd_mp.get_e_above_hull(
 					gen_entry, allow_negative=True
 				)
 			except ValueError:
 				e_above_hulls[idx] = np.nan
+		return e_above_hulls
 
-	if dir_intermediate is not None and not os.path.exists(path_result):
-		os.makedirs(dir_intermediate, exist_ok=True)
-		with gzip.open(os.path.join(dir_intermediate, "ehull.pkl.gz"), "wb") as f:
-			pickle.dump(e_above_hulls, f)
-	return e_above_hulls
+	def compute_stability_scores(
+		self,
+		xtals: list[Crystal],
+		e_above_hulls_precomputed: np.ndarray[float] | None = None,
+	) -> tuple[np.ndarray[float], np.ndarray[float], float]:
+		"""Compute stability scores for a list of crystals.
 
+		Args:
+			xtals (list[Crystal]): List of crystals to compute stability scores for.
+			e_above_hulls_precomputed (np.ndarray[float] | None): Precomputed energy
+				above hull values. If None, they will be computed internally.
 
-def compute_stability_scores(
-	xtals: list[Crystal],
-	diagram: Literal["mp_250618", "mp"] | PatchedPhaseDiagram | str = "mp_250618",
-	mace_model: str = "mace-mh-1",
-	dir_intermediate: str | None = None,
-	binary=True,
-	**kwargs,
-) -> np.ndarray[float]:
-	"""Compute stability scores for a list of crystals.
-
-	Args:
-		xtals (list[Crystal]): List of crystals to compute stability scores for.
-		diagram (Literal["mp_250618", "mp"] | PatchedPhaseDiagram | str): A phased
-			diagram to use. If "mp_250618" is specified, the diagram constructed using
-			this function from the MP entries on June 18, 2025, will be used. If "mp" is
-			specified, the diagram will be constructed on the spot. You can also pass
-			your own diagram or a path to it. If the pre-computed results (ehull.pkl.gz)
-			exist in dir_intermediate, this argument will be ignored.
-		mace_model (str): The MACE model to use for energy prediction. Default is
-			"mace-mh-1".
-		dir_intermediate (str | None): Directory to search for pre-computed results. If
-			the pre-computed file does not exist in the directory, it will be saved to
-			the directory for future use. If set to None, no files will be loaded or
-			saved. Default is None.
-		binary (bool): If True, return binary stability scores (1 for stable, 0 for
-			unstable). If False, return continuous stability scores between 0 and 1.
-			Default is True.
-		**kwargs: Additional arguments for stability score computation. If binary is
-			True, you can pass "threshold" (float) to set the energy above hull
-			threshold for stability (default is 0.1 eV/atom). If binary is False, you
-			can pass "intercept" (float) to set the intercept for linear scaling
-			(default is 1.215 eV/atom, which is the 99th percentile of the energy above
-			hull values for the MP data with theoretical=False).
-
-	Returns:
-		np.ndarray[float]: Array of stability scores for each crystal.
-	"""
-	e_above_hulls = compute_ehull(
-		xtals, diagram=diagram, mace_model=mace_model, dir_intermediate=dir_intermediate
-	)
-	stability_scores = np.zeros(len(xtals), dtype=float)
-	if binary:
-		threshold = kwargs.get("threshold", 0.1)
-		stability_scores[e_above_hulls <= threshold] = 1.0  # nan <= threshold is False
-	else:
-		intercept = kwargs.get("intercept", 1.215)
+		Returns:
+			tuple[np.ndarray[float], np.ndarray[float], float]: A tuple of stability
+			scores, raw energy above hull values, and computation time in seconds.
+		"""
+		start_time = time.time()
+		if e_above_hulls_precomputed is None:
+			e_above_hulls = self._ehull(xtals)
+		else:
+			e_above_hulls = e_above_hulls_precomputed
 		stability_scores = np.zeros(len(xtals), dtype=float)
-		isnan = np.isnan(e_above_hulls)
-		stability_scores[~isnan] = np.clip(1 - e_above_hulls[~isnan] / intercept, 0, 1)
-	return stability_scores
+		if self.binary:
+			stability_scores[e_above_hulls <= self.threshold] = (
+				1.0  # nan <= threshold is False
+			)
+		else:
+			isnan = np.isnan(e_above_hulls)
+			stability_scores[~isnan] = np.clip(
+				1 - e_above_hulls[~isnan] / self.intercept, 0, 1
+			)
+		end_time = time.time()
+		return stability_scores, e_above_hulls, end_time - start_time

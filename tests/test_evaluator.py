@@ -4,8 +4,10 @@ import gzip
 import os
 import pickle
 from multiprocessing import cpu_count
+from typing import Literal
 
 import pytest
+from pymatgen.core.structure import Structure
 
 from xtalmet.crystal import Crystal
 from xtalmet.evaluator import Evaluator
@@ -32,365 +34,89 @@ def prepare_train_xtals() -> list[Crystal]:
 class TestEvaluator:
 	"""Test the Evaluator class."""
 
-	def test_init(self, prepare_gen_xtals: list[Crystal]):
-		"""Test __init__."""
-		gen_xtals = prepare_gen_xtals
-		_ = Evaluator(gen_xtals)
-		assert True
-
 	@pytest.mark.parametrize(
-		"distance, normalize, validity, stability, multiprocessing, n_processes, kwargs",
+		"validity, stability, uniqueness, novelty, distance, ref_xtals, agg_func, weights, multiprocessing, n_processes, kwargs",
 		[
-			("smat", None, None, None, False, None, {}),
-			("smat", None, None, None, True, N_PROCESSES, {}),
-			("comp", None, None, None, False, None, {}),
-			("comp", None, None, None, True, None, {}),
-			("wyckoff", None, None, None, False, None, {}),
-			("wyckoff", None, None, None, True, N_PROCESSES, {}),
-			("magpie", False, None, None, False, None, {}),
-			("magpie", True, None, None, True, None, {}),
-			("pdd", False, None, None, False, None, {}),
-			("pdd", True, None, None, True, N_PROCESSES, {}),
-			("amd", False, None, None, False, None, {}),
-			("amd", True, None, None, True, None, {}),
+			# only validity
+			(["smact"], None, False, False, None, None, "prod", None, False, None, {}),
 			(
-				"smat",
-				None,
-				None,
+				["structure"],
 				None,
 				False,
-				None,
-				{"args_dist": {"ltol": 0.3, "stol": 0.4, "angle_tol": 6}},
-			),
-			(
-				"smat",
-				None,
-				None,
-				None,
-				True,
-				N_PROCESSES,
-				{"args_dist": {"ltol": 0.3, "stol": 0.4, "angle_tol": 6}},
-			),
-			(
-				"pdd",
 				False,
 				None,
 				None,
-				False,
-				None,
-				{
-					"args_emb": {"k": 200, "return_row_data": True},
-					"args_dist": {
-						"metric": "chebyshev",
-						"backend": "multiprocessing",
-						"n_jobs": 2,
-						"verbose": True,
-					},
-				},
-			),
-			(
-				"pdd",
-				True,
-				None,
-				None,
-				True,
-				None,
-				{
-					"args_emb": {"k": 100},
-					"args_dist": {
-						"metric": "chebyshev",
-						"backend": "multiprocessing",
-						"n_jobs": None,
-						"verbose": False,
-					},
-				},
-			),
-			(
-				"amd",
-				False,
-				None,
+				"ave",
 				None,
 				False,
 				None,
-				{
-					"args_emb": {"k": 200},
-					"args_dist": {"metric": "chebyshev", "low_memory": False},
-				},
-			),
-			(
-				"amd",
-				True,
-				None,
-				None,
-				True,
-				N_PROCESSES,
-				{
-					"args_emb": {"k": 100},
-					"args_dist": {"metric": "chebyshev", "low_memory": False},
-				},
-			),
-			("smat", None, None, "binary", False, None, {}),
-			("comp", None, None, "continuous", True, None, {}),
-			("wyckoff", None, None, "binary", False, None, {}),
-			(
-				"magpie",
-				False,
-				None,
-				"binary",
-				True,
-				N_PROCESSES,
-				{
-					"args_stability": {
-						"diagram": "mp_250618",
-						"mace_model": "mace-mh-1",
-						"threshold": 0.1,
-					}
-				},
-			),
-			(
-				"pdd",
-				True,
-				None,
-				"continuous",
-				False,
-				None,
-				{
-					"args_stability": {
-						"diagram": "mp_250618",
-						"mace_model": "medium-mpa-0",
-						"intercept": 1.215,
-					}
-				},
-			),
-			(
-				"amd",
-				False,
-				None,
-				"binary",
-				True,
-				None,
-				{
-					"args_stability": {
-						"diagram": "mp_250618",
-						"mace_model": "mace-mh-1",
-						"threshold": 0.2,
-					}
-				},
-			),
-			("smat", None, ["smact"], None, False, None, {}),
-			("comp", None, ["structure"], "binary", True, None, {}),
-			("wyckoff", None, ["smact", "structure"], "continuous", False, None, {}),
-			(
-				"magpie",
-				False,
-				["smact"],
-				None,
-				True,
-				N_PROCESSES,
 				{},
 			),
 			(
-				"pdd",
-				True,
-				["structure"],
-				"binary",
-				False,
-				None,
-				{
-					"args_validity": {
-						"structure": {
-							"threshold_distance": 0.5,
-							"threshold_volume": 0.1,
-						}
-					},
-					"args_stability": {
-						"diagram": "mp_250618",
-						"mace_model": "mace-mh-1",
-						"threshold": 0.1,
-					},
-				},
-			),
-			(
-				"amd",
-				False,
 				["smact", "structure"],
-				"continuous",
-				True,
+				None,
+				False,
+				False,
+				None,
+				None,
+				"ave",
+				{"validity": 1.0},
+				False,
 				None,
 				{
 					"args_validity": {
 						"structure": {
-							"threshold_distance": 0.6,
-							"threshold_volume": 0.2,
+							"threshold_distance": 0.5,
+							"threshold_volume": 0.1,
 						}
-					},
+					}
+				},
+			),
+			# only stability
+			(None, "binary", False, False, None, None, "prod", None, False, None, {}),
+			(
+				None,
+				"continuous",
+				False,
+				False,
+				None,
+				None,
+				"ave",
+				None,
+				False,
+				None,
+				{},
+			),
+			(
+				None,
+				"binary",
+				False,
+				False,
+				None,
+				None,
+				"ave",
+				{"stability": 1.0},
+				False,
+				None,
+				{
 					"args_stability": {
 						"diagram": "mp_250618",
 						"mace_model": "medium-mpa-0",
-						"intercept": 1.0,
-					},
-				},
-			),
-		],
-	)
-	def test_uniqueness(
-		self,
-		tmpdir: str,
-		prepare_gen_xtals: list[Crystal],
-		distance: str,
-		normalize: bool | None,
-		validity: list[str] | None,
-		stability: str | None,
-		multiprocessing: bool,
-		n_processes: int | None,
-		kwargs: dict,
-	):
-		"""Test uniqueness."""
-		gen_xtals = prepare_gen_xtals
-		evaluator = Evaluator(gen_xtals)
-		uniqueness_1 = evaluator.uniqueness(
-			distance,
-			normalize,
-			validity,
-			stability,
-			None,
-			multiprocessing,
-			n_processes,
-			False,
-			**kwargs,
-		)
-		uniqueness_2, times = evaluator.uniqueness(
-			distance,
-			normalize,
-			validity,
-			stability,
-			tmpdir,
-			multiprocessing,
-			n_processes,
-			True,
-			**kwargs,
-		)
-		assert os.path.exists(os.path.join(tmpdir, f"gen_{distance}.pkl.gz"))
-		assert os.path.exists(os.path.join(tmpdir, f"mtx_uni_{distance}.pkl.gz"))
-		if validity is not None and "smact" in validity:
-			assert os.path.exists(os.path.join(tmpdir, "valid_smact.pkl.gz"))
-		if validity is not None and "structure" in validity:
-			assert os.path.exists(os.path.join(tmpdir, "valid_structure.pkl.gz"))
-		if stability is not None:
-			assert os.path.exists(os.path.join(tmpdir, "ehull.pkl.gz"))
-		assert uniqueness_1 == uniqueness_2
-		for key in ["uni_emb", "uni_d_mtx", "uni_metric", "uni_total"]:
-			assert key in times
-			assert times[key] >= 0
-
-	@pytest.mark.parametrize(
-		"download, distance, normalize, validity, stability, multiprocessing, n_processes, kwargs",
-		[
-			(False, "smat", None, None, None, False, None, {}),
-			(False, "smat", None, None, None, True, N_PROCESSES, {}),
-			(False, "comp", None, None, None, False, None, {}),
-			(False, "comp", None, None, None, True, None, {}),
-			(False, "wyckoff", None, None, None, False, None, {}),
-			(False, "wyckoff", None, None, None, True, N_PROCESSES, {}),
-			(False, "magpie", False, None, None, False, None, {}),
-			(False, "magpie", True, None, None, True, None, {}),
-			(False, "pdd", False, None, None, False, None, {}),
-			(False, "pdd", True, None, None, True, N_PROCESSES, {}),
-			(False, "amd", False, None, None, False, None, {}),
-			(False, "amd", True, None, None, True, None, {}),
-			(
-				False,
-				"smat",
-				None,
-				None,
-				None,
-				False,
-				None,
-				{"args_dist": {"ltol": 0.3, "stol": 0.4, "angle_tol": 6}},
-			),
-			(
-				False,
-				"smat",
-				None,
-				None,
-				None,
-				True,
-				N_PROCESSES,
-				{"args_dist": {"ltol": 0.3, "stol": 0.4, "angle_tol": 6}},
-			),
-			(
-				False,
-				"pdd",
-				False,
-				None,
-				None,
-				False,
-				None,
-				{
-					"args_emb": {"k": 200, "return_row_data": True},
-					"args_dist": {
-						"metric": "chebyshev",
-						"backend": "multiprocessing",
-						"n_jobs": 2,
-						"verbose": True,
-					},
+						"threshold": 0.1,
+					}
 				},
 			),
 			(
-				False,
-				"pdd",
-				True,
-				None,
-				None,
-				True,
-				None,
-				{
-					"args_emb": {"k": 100},
-					"args_dist": {
-						"metric": "chebyshev",
-						"backend": "multiprocessing",
-						"n_jobs": None,
-						"verbose": False,
-					},
-				},
-			),
-			(
-				False,
-				"amd",
-				False,
-				None,
-				None,
-				False,
-				None,
-				{
-					"args_emb": {"k": 200},
-					"args_dist": {"metric": "chebyshev", "low_memory": False},
-				},
-			),
-			(
-				False,
-				"amd",
-				True,
-				None,
-				None,
-				True,
-				N_PROCESSES,
-				{
-					"args_emb": {"k": 100},
-					"args_dist": {"metric": "chebyshev", "low_memory": False},
-				},
-			),
-			(True, "smat", None, None, "continuous", False, None, {}),
-			(True, "comp", None, None, "binary", True, None, {}),
-			(True, "wyckoff", None, None, "continuous", False, None, {}),
-			(
-				True,
-				"magpie",
-				False,
 				None,
 				"continuous",
-				True,
-				N_PROCESSES,
+				False,
+				False,
+				None,
+				None,
+				"prod",
+				None,
+				False,
+				None,
 				{
 					"args_stability": {
 						"diagram": "mp_250618",
@@ -399,435 +125,395 @@ class TestEvaluator:
 					}
 				},
 			),
+			# only uniqueness
+			(None, None, True, False, "smat", None, "prod", None, False, None, {}),
 			(
-				True,
-				"pdd",
-				True,
 				None,
-				"binary",
-				False,
 				None,
-				{
-					"args_stability": {
-						"diagram": "mp_250618",
-						"mace_model": "medium-mpa-0",
-						"threshold": 0.1,
-					}
-				},
-			),
-			(
 				True,
-				"amd",
-				False,
-				None,
-				"continuous",
-				True,
-				None,
-				{
-					"args_stability": {
-						"diagram": "mp_250618",
-						"mace_model": "mace-mh-1",
-						"intercept": 1.0,
-					}
-				},
-			),
-			(
 				False,
 				"smat",
 				None,
-				["smact"],
+				"ave",
 				None,
 				False,
 				None,
-				{},
+				{"args_dist": {"ltol": 0.2, "stol": 0.3, "angle_tol": 5}},
 			),
+			(None, None, True, False, "comp", None, "prod", None, False, None, {}),
 			(
-				False,
-				"comp",
 				None,
-				["structure"],
-				"binary",
+				None,
 				True,
-				N_PROCESSES,
-				{
-					"args_validity": {
-						"structure": {
-							"threshold_distance": 0.5,
-							"threshold_volume": 0.1,
-						}
-					},
-					"args_stability": {
-						"diagram": "mp_250618",
-						"mace_model": "mace-mh-1",
-						"threshold": 0.1,
-					},
-				},
-			),
-			(
 				False,
 				"wyckoff",
 				None,
-				["smact", "structure"],
-				"continuous",
+				"ave",
+				{"uniqueness": 1.0},
+				False,
+				None,
+				{},
+			),
+			(None, None, True, False, "magpie", None, "prod", None, False, None, {}),
+			(None, None, True, False, "pdd", None, "ave", None, False, None, {}),
+			(
+				None,
+				None,
+				True,
+				False,
+				"pdd",
+				None,
+				"prod",
+				None,
 				False,
 				None,
 				{
-					"args_validity": {
-						"structure": {
-							"threshold_distance": 0.6,
-							"threshold_volume": 0.2,
-						}
-					},
-					"args_stability": {
-						"diagram": "mp_250618",
-						"mace_model": "medium-mpa-0",
-						"intercept": 1.0,
+					"args_emb": {"k": 100},
+					"args_dist": {
+						"metric": "chebyshev",
+						"backend": "multiprocessing",
+						"n_jobs": 2,
+						"verbose": False,
 					},
 				},
 			),
-			(False, "magpie", False, ["smact"], None, True, None, {}),
-			(False, "pdd", True, ["structure"], "binary", False, None, {}),
 			(
+				None,
+				None,
+				True,
 				False,
 				"amd",
+				None,
+				"ave",
+				{"uniqueness": 1.0},
 				False,
-				["smact", "structure"],
-				"continuous",
+				None,
+				{},
+			),
+			(
+				None,
+				None,
+				True,
+				False,
+				"amd",
+				None,
+				"prod",
+				None,
+				False,
+				None,
+				{
+					"args_emb": {"k": 100},
+					"args_dist": {"metric": "chebyshev", "low_memory": False},
+				},
+			),
+			(None, None, True, False, "elmd", None, "ave", None, False, None, {}),
+			(
+				None,
+				None,
+				True,
+				False,
+				"elmd",
+				None,
+				"prod",
+				None,
+				False,
+				None,
+				{"args_dist": {"metric": "mod_petti"}},
+			),
+			# only novelty
+			(None, None, False, True, "smat", "mp20", "prod", None, False, None, {}),
+			(
+				None,
+				None,
+				False,
+				True,
+				"smat",
+				None,
+				"ave",
+				None,
+				True,
+				None,
+				{"args_dist": {"ltol": 0.2, "stol": 0.3, "angle_tol": 5}},
+			),
+			(None, None, False, True, "comp", "mp20", "prod", None, False, None, {}),
+			(
+				None,
+				None,
+				False,
+				True,
+				"wyckoff",
+				None,
+				"ave",
+				{"novelty": 1.0},
 				True,
 				N_PROCESSES,
 				{},
 			),
+			(None, None, False, True, "magpie", "mp20", "prod", None, False, None, {}),
+			(None, None, False, True, "pdd", None, "ave", None, True, None, {}),
+			(
+				None,
+				None,
+				False,
+				True,
+				"pdd",
+				"mp20",
+				"prod",
+				None,
+				False,
+				None,
+				{
+					"args_emb": {"k": 100},
+					"args_dist": {
+						"metric": "chebyshev",
+						"backend": "multiprocessing",
+						"n_jobs": 2,
+						"verbose": False,
+					},
+				},
+			),
+			(
+				None,
+				None,
+				False,
+				True,
+				"amd",
+				None,
+				"ave",
+				{"novelty": 1.0},
+				True,
+				N_PROCESSES,
+				{},
+			),
+			(
+				None,
+				None,
+				False,
+				True,
+				"amd",
+				"mp20",
+				"prod",
+				None,
+				False,
+				None,
+				{
+					"args_emb": {"k": 100},
+					"args_dist": {"metric": "chebyshev", "low_memory": False},
+				},
+			),
+			(None, None, False, True, "elmd", None, "ave", None, True, None, {}),
+			(
+				None,
+				None,
+				False,
+				True,
+				"elmd",
+				"mp20",
+				"prod",
+				None,
+				False,
+				None,
+				{"args_dist": {"metric": "mod_petti"}},
+			),
+			# vsun
+			(
+				["smact"],
+				"binary",
+				True,
+				True,
+				"smat",
+				"mp20",
+				"prod",
+				None,
+				False,
+				None,
+				{},
+			),
+			(
+				["structure"],
+				"continuous",
+				True,
+				True,
+				"comp",
+				None,
+				"ave",
+				None,
+				True,
+				None,
+				{},
+			),
+			(
+				["smact", "structure"],
+				"binary",
+				True,
+				True,
+				"wyckoff",
+				"mp20",
+				"ave",
+				{
+					"validity": 0.25,
+					"stability": 0.25,
+					"uniqueness": 0.25,
+					"novelty": 0.25,
+				},
+				False,
+				None,
+				{},
+			),
+			(
+				["smact"],
+				"continuous",
+				True,
+				True,
+				"magpie",
+				None,
+				"prod",
+				None,
+				True,
+				N_PROCESSES,
+				{},
+			),
+			(
+				["structure"],
+				"binary",
+				True,
+				True,
+				"pdd",
+				"mp20",
+				"ave",
+				None,
+				False,
+				None,
+				{},
+			),
+			(
+				["smact", "structure"],
+				"continuous",
+				True,
+				True,
+				"amd",
+				None,
+				"ave",
+				{
+					"validity": 0.2,
+					"stability": 0.3,
+					"uniqueness": 0.2,
+					"novelty": 0.3,
+				},
+				True,
+				None,
+				{},
+			),
+			(
+				["smact"],
+				"binary",
+				True,
+				True,
+				"elmd",
+				"mp20",
+				"prod",
+				None,
+				False,
+				None,
+				{},
+			),
+			(
+				["smact", "structure"],
+				"continuous",
+				True,
+				True,
+				"amd",
+				None,
+				"ave",
+				None,
+				True,
+				N_PROCESSES,
+				{
+					"args_validity": {
+						"structure": {
+							"threshold_distance": 0.5,
+							"threshold_volume": 0.1,
+						}
+					},
+					"args_stability": {
+						"diagram": "mp_250618",
+						"mace_model": "mace-mh-1",
+						"intercept": 1.215,
+					},
+					"args_emb": {"k": 100},
+					"args_dist": {"metric": "chebyshev", "low_memory": False},
+				},
+			),
 		],
 	)
-	def test_novelty(
+	def test_init_evaluate(
 		self,
 		tmpdir: str,
 		prepare_gen_xtals: list[Crystal],
 		prepare_train_xtals: list[Crystal],
-		download: bool,
-		distance: str,
-		normalize: bool | None,
 		validity: list[str] | None,
 		stability: str | None,
+		uniqueness: bool,
+		novelty: bool,
+		distance: str | None,
+		ref_xtals: list[Crystal | Structure] | str | None,
+		agg_func: Literal["prod", "ave"],
+		weights: dict[str, float] | None,
 		multiprocessing: bool,
 		n_processes: int | None,
 		kwargs: dict,
 	):
-		"""Test novelty."""
-		gen_xtals = prepare_gen_xtals
-		train_xtals = "mp20" if download else prepare_train_xtals
-		evaluator = Evaluator(gen_xtals)
-		novelty_1 = evaluator.novelty(
-			train_xtals,
-			distance,
-			normalize,
-			validity,
-			stability,
-			None,
-			None,
-			multiprocessing,
-			n_processes,
-			False,
+		"""Test __init__ and evaluate."""
+		if novelty and ref_xtals is None:
+			ref_xtals = prepare_train_xtals
+		evaluator = Evaluator(
+			validity=validity,
+			stability=stability,
+			uniqueness=uniqueness,
+			novelty=novelty,
+			distance=distance,
+			ref_xtals=ref_xtals,
+			agg_func=agg_func,
+			weights=weights,
+			multiprocessing=multiprocessing,
+			n_processes=n_processes,
 			**kwargs,
 		)
-		novelty_2, times = evaluator.novelty(
-			train_xtals,
-			distance,
-			normalize,
-			validity,
-			stability,
-			tmpdir,
-			tmpdir,
-			multiprocessing,
-			n_processes,
-			True,
-			**kwargs,
+		vsun_1, scores_1, times_1 = evaluator.evaluate(
+			xtals=prepare_gen_xtals,
+			dir_intermediate=tmpdir,
+			multiprocessing=multiprocessing,
+			n_processes=n_processes,
 		)
-		assert os.path.exists(os.path.join(tmpdir, f"gen_{distance}.pkl.gz"))
-		if not download:
-			assert os.path.exists(os.path.join(tmpdir, f"train_{distance}.pkl.gz"))
-		assert os.path.exists(os.path.join(tmpdir, f"mtx_nov_{distance}.pkl.gz"))
+		vsun_2, scores_2, times_2 = evaluator.evaluate(
+			xtals=prepare_gen_xtals,
+			dir_intermediate=tmpdir,
+			multiprocessing=multiprocessing,
+			n_processes=n_processes,
+		)
+		times_key = set()
 		if validity is not None and "smact" in validity:
-			assert os.path.exists(os.path.join(tmpdir, "valid_smact.pkl.gz"))
-		if validity is not None and "structure" in validity:
-			assert os.path.exists(os.path.join(tmpdir, "valid_structure.pkl.gz"))
+			for method in validity:
+				assert os.path.exists(os.path.join(tmpdir, f"val_{method}.pkl.gz"))
+				times_key.add(f"val_{method}")
 		if stability is not None:
 			assert os.path.exists(os.path.join(tmpdir, "ehull.pkl.gz"))
-		assert novelty_1 == novelty_2
-		for key in [
-			"nov_emb_gen",
-			"nov_emb_train",
-			"nov_d_mtx",
-			"nov_metric",
-			"nov_total",
-		]:
-			assert key in times
-			assert times[key] >= 0
-
-	@pytest.mark.parametrize(
-		"download, distance, validity, stability, multiprocessing, n_processes, kwargs",
-		[
-			(False, "smat", None, None, False, None, {}),
-			(False, "smat", None, None, True, N_PROCESSES, {}),
-			(False, "comp", None, None, False, None, {}),
-			(False, "comp", None, None, True, None, {}),
-			(False, "wyckoff", None, None, False, None, {}),
-			(False, "wyckoff", None, None, True, N_PROCESSES, {}),
-			(False, "magpie", None, None, False, None, {}),
-			(False, "magpie", None, None, True, None, {}),
-			(False, "pdd", None, None, False, None, {}),
-			(False, "pdd", None, None, True, N_PROCESSES, {}),
-			(False, "amd", None, None, False, None, {}),
-			(False, "amd", None, None, True, None, {}),
-			(
-				False,
-				"smat",
-				None,
-				None,
-				False,
-				None,
-				{"args_dist": {"ltol": 0.3, "stol": 0.4, "angle_tol": 6}},
-			),
-			(
-				False,
-				"smat",
-				None,
-				None,
-				True,
-				N_PROCESSES,
-				{"args_dist": {"ltol": 0.3, "stol": 0.4, "angle_tol": 6}},
-			),
-			(
-				False,
-				"pdd",
-				None,
-				None,
-				False,
-				None,
-				{
-					"args_emb": {"k": 200, "return_row_data": True},
-					"args_dist": {
-						"metric": "chebyshev",
-						"backend": "multiprocessing",
-						"n_jobs": 2,
-						"verbose": True,
-					},
-				},
-			),
-			(
-				False,
-				"pdd",
-				None,
-				None,
-				True,
-				None,
-				{
-					"args_emb": {"k": 100},
-					"args_dist": {
-						"metric": "chebyshev",
-						"backend": "multiprocessing",
-						"n_jobs": None,
-						"verbose": False,
-					},
-				},
-			),
-			(
-				False,
-				"amd",
-				None,
-				None,
-				False,
-				None,
-				{
-					"args_emb": {"k": 200},
-					"args_dist": {"metric": "chebyshev", "low_memory": False},
-				},
-			),
-			(
-				False,
-				"amd",
-				None,
-				None,
-				True,
-				N_PROCESSES,
-				{
-					"args_emb": {"k": 100},
-					"args_dist": {"metric": "chebyshev", "low_memory": False},
-				},
-			),
-			(True, "smat", None, "continuous", False, None, {}),
-			(True, "comp", None, "binary", True, None, {}),
-			(True, "wyckoff", None, "continuous", False, None, {}),
-			(
-				True,
-				"magpie",
-				None,
-				"continuous",
-				True,
-				N_PROCESSES,
-				{
-					"args_stability": {
-						"diagram": "mp_250618",
-						"mace_model": "mace-mh-1",
-						"intercept": 1.215,
-					}
-				},
-			),
-			(
-				True,
-				"pdd",
-				None,
-				"binary",
-				False,
-				None,
-				{
-					"args_stability": {
-						"diagram": "mp_250618",
-						"mace_model": "medium-mpa-0",
-						"threshold": 0.1,
-					}
-				},
-			),
-			(
-				True,
-				"amd",
-				None,
-				"continuous",
-				True,
-				None,
-				{
-					"args_stability": {
-						"diagram": "mp_250618",
-						"mace_model": "mace-mh-1",
-						"intercept": 1.0,
-					}
-				},
-			),
-			(
-				False,
-				"smat",
-				["smact"],
-				None,
-				False,
-				None,
-				{},
-			),
-			(
-				False,
-				"comp",
-				["structure"],
-				"binary",
-				True,
-				N_PROCESSES,
-				{
-					"args_validity": {
-						"structure": {
-							"threshold_distance": 0.5,
-							"threshold_volume": 0.1,
-						}
-					},
-					"args_stability": {
-						"diagram": "mp_250618",
-						"mace_model": "mace-mh-1",
-						"threshold": 0.1,
-					},
-				},
-			),
-			(
-				False,
-				"wyckoff",
-				["smact", "structure"],
-				"continuous",
-				False,
-				None,
-				{
-					"args_validity": {
-						"structure": {
-							"threshold_distance": 0.6,
-							"threshold_volume": 0.2,
-						}
-					},
-					"args_stability": {
-						"diagram": "mp_250618",
-						"mace_model": "medium-mpa-0",
-						"intercept": 1.0,
-					},
-				},
-			),
-			(False, "magpie", ["smact"], None, True, None, {}),
-			(False, "pdd", ["structure"], "binary", False, None, {}),
-			(
-				False,
-				"amd",
-				["smact", "structure"],
-				"continuous",
-				True,
-				N_PROCESSES,
-				{},
-			),
-		],
-	)
-	def test_vsun(
-		self,
-		tmpdir: str,
-		prepare_gen_xtals: list[Crystal],
-		prepare_train_xtals: list[Crystal],
-		download: bool,
-		distance: str,
-		validity: list[str] | None,
-		stability: str | None,
-		multiprocessing: bool,
-		n_processes: int | None,
-		kwargs: dict,
-	):
-		"""Test vsun."""
-		gen_xtals = prepare_gen_xtals
-		train_xtals = "mp20" if download else prepare_train_xtals
-		evaluator = Evaluator(gen_xtals)
-		vsun_1 = evaluator.vsun(
-			train_xtals,
-			distance,
-			validity,
-			stability,
-			None,
-			None,
-			multiprocessing,
-			n_processes,
-			False,
-			**kwargs,
-		)
-		vsun_2, times = evaluator.vsun(
-			train_xtals,
-			distance,
-			validity,
-			stability,
-			tmpdir,
-			tmpdir,
-			multiprocessing,
-			n_processes,
-			True,
-			**kwargs,
-		)
-		assert os.path.exists(os.path.join(tmpdir, f"gen_{distance}.pkl.gz"))
-		if not download:
-			assert os.path.exists(os.path.join(tmpdir, f"train_{distance}.pkl.gz"))
-		assert os.path.exists(os.path.join(tmpdir, f"mtx_uni_{distance}.pkl.gz"))
-		assert os.path.exists(os.path.join(tmpdir, f"mtx_nov_{distance}.pkl.gz"))
-		if validity is not None and "smact" in validity:
-			assert os.path.exists(os.path.join(tmpdir, "valid_smact.pkl.gz"))
-		if validity is not None and "structure" in validity:
-			assert os.path.exists(os.path.join(tmpdir, "valid_structure.pkl.gz"))
-		if stability is not None:
-			assert os.path.exists(os.path.join(tmpdir, "ehull.pkl.gz"))
+			times_key.add("stab")
+		if uniqueness:
+			assert os.path.exists(os.path.join(tmpdir, f"emb_{distance}.pkl.gz"))
+			assert os.path.exists(os.path.join(tmpdir, f"mtx_uni_{distance}.pkl.gz"))
+			times_key.add("uni_emb")
+			times_key.add("uni_d_mtx")
+		if novelty:
+			assert os.path.exists(os.path.join(tmpdir, f"emb_{distance}.pkl.gz"))
+			assert os.path.exists(os.path.join(tmpdir, f"mtx_nov_{distance}.pkl.gz"))
+			times_key.add("nov_emb")
+			times_key.add("nov_d_mtx")
+		times_key.add("aggregation")
+		times_key.add("total")
 		assert vsun_1 == vsun_2
-		for key in [
-			"uni_emb",
-			"uni_d_mtx",
-			"nov_emb_gen",
-			"nov_emb_train",
-			"nov_d_mtx",
-			"vsun_metric",
-			"vsun_total",
-		]:
-			assert key in times
-			assert times[key] >= 0
+		assert all(scores_1 == scores_2)
+		for times in [times_1, times_2]:
+			for key in times_key:
+				assert key in times
+				assert times[key] >= 0

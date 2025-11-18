@@ -1,6 +1,5 @@
-"""Test screening functions."""
+"""Test StabilityCalculator."""
 
-import datetime
 import gzip
 import os
 import pickle
@@ -8,7 +7,7 @@ import pickle
 import pytest
 
 from xtalmet.crystal import Crystal
-from xtalmet.stability import compute_ehull, compute_stability_scores
+from xtalmet.stability import StabilityCalculator
 
 
 @pytest.fixture(scope="module")
@@ -19,59 +18,88 @@ def prepare_gen_xtals() -> list[Crystal]:
 	return gen_xtals
 
 
-@pytest.mark.parametrize(
-	"diagram, mace_model",
-	[("mp_250618", "mace-mh-1"), ("mp_250618", "medium-mpa-0"), ("mp", "mace-mh-1")],
-)
-def test_compute_ehull(
-	tmpdir: str, prepare_gen_xtals: list[Crystal], diagram: str, mace_model: str
-):
-	"""Test compute_ehull."""
-	gen_xtals = prepare_gen_xtals
+class TestStabilityCalculator:
+	"""Test StabilityCalculator class."""
 
-	if diagram == "mp" and os.getenv("MP_API_KEY") is None:
-		pytest.skip("MP_API_KEY is not set.")
-
-	ehull_1 = compute_ehull(gen_xtals, diagram, mace_model)
-	ehull_2 = compute_ehull(gen_xtals, diagram, mace_model, tmpdir)
-	assert all(ehull_1 == ehull_2)
-	assert os.path.exists(os.path.join(tmpdir, "ehull.pkl.gz"))
-	if diagram == "mp":
-		now = datetime.datetime.now()
-		year = str(now.year)[-2:]
-		month = f"{now.month:02d}"
-		day = f"{now.day:02d}"
-		assert os.path.exists(
-			os.path.join(
-				tmpdir,
-				f"ppd-mp_all_entries_uncorrected_{year}{month}{day}.pkl.gz",
-			)
+	@pytest.mark.parametrize(
+		"diagram, mace_model, binary, threshold, intercept",
+		[
+			("mp_250618", "mace-mh-1", True, 0.1, None),
+			("mp_250618", "medium-mpa-0", False, None, 1.215),
+			("mp", "mace-mh-1", True, 0.2, None),
+		],
+	)
+	def test_init(
+		self,
+		diagram: str,
+		mace_model: str,
+		binary: bool,
+		threshold: float,
+		intercept: float,
+	):
+		"""Test initialization of StabilityCalculator."""
+		if diagram == "mp" and os.getenv("MP_API_KEY") is None:
+			pytest.skip("MP_API_KEY is not set.")
+		calculator = StabilityCalculator(
+			diagram=diagram,
+			mace_model=mace_model,
+			binary=binary,
+			threshold=threshold,
+			intercept=intercept,
 		)
+		assert isinstance(calculator, StabilityCalculator)
 
-
-@pytest.mark.parametrize(
-	"diagram, mace_model, binary, kwargs",
-	[
-		("mp_250618", "mace-mh-1", True, {"threshold": 0.2}),
-		("mp_250618", "medium-mpa-0", False, {"intercept": 0.4}),
-	],
-)
-def test_compute_stability_scores(
-	tmpdir: str,
-	prepare_gen_xtals: list[Crystal],
-	diagram: str,
-	mace_model: str,
-	binary: bool,
-	kwargs: dict,
-):
-	"""Test compute_stability_scores."""
-	gen_xtals = prepare_gen_xtals
-
-	scores_1 = compute_stability_scores(
-		gen_xtals, diagram, mace_model, dir_intermediate=tmpdir, binary=binary, **kwargs
+	@pytest.mark.parametrize(
+		"diagram, mace_model",
+		[
+			("mp_250618", "mace-mh-1"),
+			("mp_250618", "medium-mpa-0"),
+		],
 	)
-	scores_2 = compute_stability_scores(
-		gen_xtals, diagram, mace_model, dir_intermediate=tmpdir, binary=binary, **kwargs
+	def test_ehull(
+		self, prepare_gen_xtals: list[Crystal], diagram: str, mace_model: str
+	):
+		"""Test ehull calculation."""
+		gen_xtals = prepare_gen_xtals
+		calculator = StabilityCalculator(diagram=diagram, mace_model=mace_model)
+		ehulls = calculator._ehull(gen_xtals)
+		assert len(ehulls) == len(gen_xtals)
+		assert all(isinstance(ehull, float) for ehull in ehulls)
+
+	@pytest.mark.parametrize(
+		"diagram, mace_model, binary, threshold, intercept",
+		[
+			("mp_250618", "mace-mh-1", True, 0.1, None),
+			("mp_250618", "medium-mpa-0", False, None, 1.215),
+		],
 	)
-	assert all(scores_1 == scores_2)
-	assert all(scores_1 >= 0) and all(scores_1 <= 1)
+	def test_compute_stability_scores(
+		self,
+		prepare_gen_xtals: list[Crystal],
+		diagram: str,
+		mace_model: str,
+		binary: bool,
+		threshold: float,
+		intercept: float,
+	):
+		"""Test compute_stability_scores method."""
+		gen_xtals = prepare_gen_xtals
+		calculator = StabilityCalculator(
+			diagram, mace_model, binary, threshold, intercept
+		)
+		scores_1, e_above_hulls_1, time_1 = calculator.compute_stability_scores(
+			xtals=gen_xtals
+		)
+		scores_2, e_above_hulls_2, time_2 = calculator.compute_stability_scores(
+			xtals=gen_xtals, e_above_hulls_precomputed=e_above_hulls_1
+		)
+		assert all(scores_1 == scores_2)
+		assert all(e_above_hulls_1 == e_above_hulls_2)
+		assert len(scores_1) == len(gen_xtals)
+		assert all(isinstance(score, float) for score in scores_1)
+		if binary:
+			assert all(score in (0.0, 1.0) for score in scores_1)
+		else:
+			assert all(0.0 <= score <= 1.0 for score in scores_1)
+		assert time_1 >= 0.0
+		assert time_2 >= 0.0
