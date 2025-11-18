@@ -12,9 +12,7 @@ Submodules
 .. toctree::
    :maxdepth: 4
 
-   xtalmet.constants
    xtalmet.crystal
    xtalmet.distance
    xtalmet.evaluator
-   xtalmet.stability
-   xtalmet.validity
+   xtalmet.screen

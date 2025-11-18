@@ -1,7 +1,0 @@
-xtalmet.constants module
-========================
-
-.. automodule:: xtalmet.constants
-   :members:
-   :show-inheritance:
-   :undoc-members:

@@ -1,7 +1,0 @@
-xtalmet.validity module
-=======================
-
-.. automodule:: xtalmet.validity
-   :members:
-   :show-inheritance:
-   :undoc-members:

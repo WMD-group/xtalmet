@@ -1,7 +1,0 @@
-xtalmet.stability module
-========================
-
-.. automodule:: xtalmet.stability
-   :members:
-   :show-inheritance:
-   :undoc-members:
