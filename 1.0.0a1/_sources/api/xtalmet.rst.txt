@@ -1,0 +1,18 @@
+xtalmet package
+===============
+
+.. automodule:: xtalmet
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   xtalmet.crystal
+   xtalmet.distance
+   xtalmet.evaluator
+   xtalmet.screen
