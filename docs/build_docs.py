@@ -14,7 +14,7 @@ os.environ["PYTHONPATH"] = src_path + os.pathsep + os.environ.get("PYTHONPATH", 
 # and runs the build as we did locally
 def build_doc(version, tag):
 	os.environ["current_version"] = version
-	subprocess.run("git checkout -f" + tag, shell=True)
+	subprocess.run("git checkout -f " + tag, shell=True)
 	subprocess.run("git checkout main -- source/conf.py", shell=True)
 	subprocess.run("git checkout main -- source/versions.yaml", shell=True)
 	subprocess.run("git checkout main -- source/_templates/", shell=True)
