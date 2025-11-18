@@ -82,10 +82,8 @@
  | <a href="#G"><strong>G</strong></a>
  | <a href="#H"><strong>H</strong></a>
  | <a href="#M"><strong>M</strong></a>
- | <a href="#N"><strong>N</strong></a>
  | <a href="#S"><strong>S</strong></a>
  | <a href="#T"><strong>T</strong></a>
- | <a href="#U"><strong>U</strong></a>
  | <a href="#V"><strong>V</strong></a>
  | <a href="#X"><strong>X</strong></a>
  
@@ -101,14 +99,12 @@
 <h2 id="C">C</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/xtalmet.stability.html#xtalmet.stability.compute_ehull">compute_ehull() (in module xtalmet.stability)</a>
+      <li><a href="api/xtalmet.stability.html#xtalmet.stability.StabilityCalculator.compute_stability_scores">compute_stability_scores() (xtalmet.stability.StabilityCalculator method)</a>
 </li>
-      <li><a href="api/xtalmet.stability.html#xtalmet.stability.compute_stability_scores">compute_stability_scores() (in module xtalmet.stability)</a>
+      <li><a href="api/xtalmet.constants.html#xtalmet.constants.CONTINUOUS_DISTANCES">CONTINUOUS_DISTANCES (in module xtalmet.constants)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/xtalmet.constants.html#xtalmet.constants.CONTINUOUS_DISTANCES">CONTINUOUS_DISTANCES (in module xtalmet.constants)</a>
-</li>
       <li><a href="api/xtalmet.constants.html#xtalmet.constants.CONTINUOUS_UNNORMALIZED_DISTANCES">CONTINUOUS_UNNORMALIZED_DISTANCES (in module xtalmet.constants)</a>
 </li>
       <li><a href="api/xtalmet.crystal.html#xtalmet.crystal.Crystal">Crystal (class in xtalmet.crystal)</a>
@@ -132,6 +128,10 @@
 
 <h2 id="E">E</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/xtalmet.evaluator.html#xtalmet.evaluator.Evaluator.evaluate">evaluate() (xtalmet.evaluator.Evaluator method)</a>
+</li>
+  </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/xtalmet.evaluator.html#xtalmet.evaluator.Evaluator">Evaluator (class in xtalmet.evaluator)</a>
 </li>
@@ -193,21 +193,21 @@
   </ul></td>
 </tr></table>
 
-<h2 id="N">N</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/xtalmet.evaluator.html#xtalmet.evaluator.Evaluator.novelty">novelty() (xtalmet.evaluator.Evaluator method)</a>
-</li>
-  </ul></td>
-</tr></table>
-
 <h2 id="S">S</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/xtalmet.constants.html#xtalmet.constants.SUPPORTED_DISTANCES">SUPPORTED_DISTANCES (in module xtalmet.constants)</a>
+      <li><a href="api/xtalmet.validity.html#xtalmet.validity.SingleValidator">SingleValidator (class in xtalmet.validity)</a>
+</li>
+      <li><a href="api/xtalmet.validity.html#xtalmet.validity.SMACTValidator">SMACTValidator (class in xtalmet.validity)</a>
+</li>
+      <li><a href="api/xtalmet.stability.html#xtalmet.stability.StabilityCalculator">StabilityCalculator (class in xtalmet.stability)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/xtalmet.validity.html#xtalmet.validity.StructureValidator">StructureValidator (class in xtalmet.validity)</a>
+</li>
+      <li><a href="api/xtalmet.constants.html#xtalmet.constants.SUPPORTED_DISTANCES">SUPPORTED_DISTANCES (in module xtalmet.constants)</a>
+</li>
       <li><a href="api/xtalmet.constants.html#xtalmet.constants.SUPPORTED_VALIDITY">SUPPORTED_VALIDITY (in module xtalmet.constants)</a>
 </li>
   </ul></td>
@@ -237,24 +237,22 @@
   </ul></td>
 </tr></table>
 
-<h2 id="U">U</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/xtalmet.evaluator.html#xtalmet.evaluator.Evaluator.uniqueness">uniqueness() (xtalmet.evaluator.Evaluator method)</a>
-</li>
-  </ul></td>
-</tr></table>
-
 <h2 id="V">V</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/xtalmet.validity.html#xtalmet.validity.validity_smact">validity_smact() (in module xtalmet.validity)</a>
+      <li><a href="api/xtalmet.validity.html#xtalmet.validity.SingleValidator.validate">validate() (xtalmet.validity.SingleValidator method)</a>
+
+      <ul>
+        <li><a href="api/xtalmet.validity.html#xtalmet.validity.SMACTValidator.validate">(xtalmet.validity.SMACTValidator method)</a>
 </li>
+        <li><a href="api/xtalmet.validity.html#xtalmet.validity.StructureValidator.validate">(xtalmet.validity.StructureValidator method)</a>
+</li>
+        <li><a href="api/xtalmet.validity.html#xtalmet.validity.Validator.validate">(xtalmet.validity.Validator method)</a>
+</li>
+      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/xtalmet.validity.html#xtalmet.validity.validity_structure">validity_structure() (in module xtalmet.validity)</a>
-</li>
-      <li><a href="api/xtalmet.evaluator.html#xtalmet.evaluator.Evaluator.vsun">vsun() (xtalmet.evaluator.Evaluator method)</a>
+      <li><a href="api/xtalmet.validity.html#xtalmet.validity.Validator">Validator (class in xtalmet.validity)</a>
 </li>
   </ul></td>
 </tr></table>
