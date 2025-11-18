@@ -5,7 +5,7 @@
 
 Welcome to xtalmet documentation!
 =================================
-**xtalmet** (Crystal Metrics) is a Python library that contains a variety of distance metrics for crystal structures. It also supports the evaluation of the uniqueness or novelty of a set of crystals using these metrics.
+**xtalmet** (Crystal Metrics) is a Python library that contains a variety of distance metrics for crystal structures. It also supports evaluating the validity, stability, uniqueness, and novelty (VSUN) of a set of crystals. The uniqueness and novelty depend on the selected distance metric.
 
 
 .. toctree::
