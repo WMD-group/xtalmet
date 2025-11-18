@@ -439,7 +439,7 @@ class Evaluator:
 			...     multiprocessing=True,
 			...     n_processes=10,
 			... )
-			>>> TODO
+			>>> 0.0316, np.array([...]), {"aggregation": ..., ...}
 			>>> # Evaluate the VSUN metric using the ElMD distance against a custom
 			>>> # reference dataset, with average aggregation.
 			>>> evaluator = Evaluator(
@@ -465,7 +465,7 @@ class Evaluator:
 			...     multiprocessing=False,
 			...     n_processes=None,
 			... )
-			>>> TODO
+			>>> 0.017467859079216795, np.array([...]), {"aggregation": ..., ...}
 			>>> # Evaluate the VSUN metric using the AMD distance against the MP20
 			>>> # dataset, with custom kwargs.
 			>>> evaluator = Evaluator(
@@ -498,7 +498,7 @@ class Evaluator:
 			...     multiprocessing=True,
 			...     n_processes=10,
 			... )
-			>>> TODO
+			>>> 0.0268044218595296, np.array([...]), {"aggregation": ..., ...}
 
 		Note:
 			Here, I demonstrate how VSUN (or its subsets) is computed. Validity
