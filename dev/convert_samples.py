@@ -118,6 +118,9 @@ def convert():
 		"chemeleon": os.path.join(
 			os.path.dirname(__file__), "raw/mp20/chemeleon/generated_structures.json"
 		),
+		"chemeleon2": os.path.join(
+			os.path.dirname(__file__), "raw/mp20/chemeleon2/generated_structures.json"
+		),
 		"diffcsp": os.path.join(
 			os.path.dirname(__file__), "raw/mp20/diffcsp/diffcsp_dng_mp_20.json"
 		),
@@ -129,16 +132,26 @@ def convert():
 		),
 	}
 
-	for model in ["adit", "cdvae", "chemeleon", "diffcsp", "diffcsppp", "mattergen"]:
-		if model in ["cdvae", "diffcsppp"]:
-			gen_xtals = convert_cdvae_diffcsppp_format(paths_raw[model], model)
-		elif model in ["diffcsp", "adit", "chemeleon"]:
-			gen_xtals = convert_diffcsp_format(paths_raw[model])
-		else:  # mattergen
-			gen_xtals = convert_mattergen_format(paths_raw[model])
+	for model in [
+		"adit",
+		"cdvae",
+		"chemeleon",
+		"chemeleon2",
+		"diffcsp",
+		"diffcsppp",
+		"mattergen",
+	]:
 		path_processed = os.path.join(
 			os.path.dirname(__file__), f"hf/mp20/model/{model}.pkl.gz"
 		)
+		if os.path.exists(path_processed):
+			continue
+		if model in ["cdvae", "diffcsppp"]:
+			gen_xtals = convert_cdvae_diffcsppp_format(paths_raw[model], model)
+		elif model in ["diffcsp", "adit", "chemeleon", "chemeleon2"]:
+			gen_xtals = convert_diffcsp_format(paths_raw[model])
+		else:  # mattergen
+			gen_xtals = convert_mattergen_format(paths_raw[model])
 		os.makedirs(os.path.dirname(path_processed), exist_ok=True)
 		with gzip.open(path_processed, "wb") as f:
 			pickle.dump(gen_xtals, f)
