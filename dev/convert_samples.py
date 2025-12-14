@@ -1,12 +1,15 @@
 """Convert samples from various models to a list of Crystal objects."""
 
 import gzip
+import io
 import json
 import os
 import pickle
 import zipfile
 from typing import Literal
 
+import pandas as pd
+import requests
 import torch
 from pymatgen.core import Lattice, Structure
 from pymatgen.io.cif import CifParser
@@ -108,6 +111,22 @@ def convert_mattergen_format(path: str) -> list[Crystal]:
 	return gen_xtals
 
 
+def convert_mp20_test() -> list[Crystal]:
+	"""Download the MP20 test set and convert to a list of Crystal objects.
+
+	Returns:
+		list[Crystal]: A list of Crystal objects.
+	"""
+	url = "https://raw.githubusercontent.com/txie-93/cdvae/refs/heads/main/data/mp_20/test.csv"
+	response = requests.get(url)
+	test_xtals_raw = pd.read_csv(io.StringIO(response.content.decode("utf-8")))
+	gen_xtals = []
+	for _, row in test_xtals_raw.iterrows():
+		structure = CifParser.from_str(row["cif"]).parse_structures(primitive=True)[0]
+		gen_xtals.append(Crystal.from_Structure(structure))
+	return gen_xtals
+
+
 def convert():
 	"""Convert samples from various models to a list of Crystal objects."""
 	paths_raw = {
@@ -140,6 +159,7 @@ def convert():
 		"diffcsp",
 		"diffcsppp",
 		"mattergen",
+		"test",
 	]:
 		path_processed = os.path.join(
 			os.path.dirname(__file__), f"hf/mp20/model/{model}.pkl.gz"
@@ -150,8 +170,10 @@ def convert():
 			gen_xtals = convert_cdvae_diffcsppp_format(paths_raw[model], model)
 		elif model in ["diffcsp", "adit", "chemeleon", "chemeleon2"]:
 			gen_xtals = convert_diffcsp_format(paths_raw[model])
-		else:  # mattergen
+		elif model == "mattergen":
 			gen_xtals = convert_mattergen_format(paths_raw[model])
+		else:
+			gen_xtals = convert_mp20_test()
 		os.makedirs(os.path.dirname(path_processed), exist_ok=True)
 		with gzip.open(path_processed, "wb") as f:
 			pickle.dump(gen_xtals, f)
