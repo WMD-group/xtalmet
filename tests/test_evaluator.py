@@ -120,8 +120,8 @@ class TestEvaluator:
 				{
 					"args_stability": {
 						"diagram": "mp_250618",
-						"mace_model": "mace-mh-1",
-						"intercept": 1.215,
+						"mace_model": "mh-1",
+						"intercept": 0.4289,
 					}
 				},
 			),
@@ -437,8 +437,8 @@ class TestEvaluator:
 					},
 					"args_stability": {
 						"diagram": "mp_250618",
-						"mace_model": "mace-mh-1",
-						"intercept": 1.215,
+						"mace_model": "mh-1",
+						"intercept": 0.4289,
 					},
 					"args_emb": {"k": 100},
 					"args_dist": {"metric": "chebyshev", "low_memory": False},

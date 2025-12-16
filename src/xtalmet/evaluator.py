@@ -143,8 +143,8 @@ class Evaluator:
 			...         },
 			...         "args_stability": {
 			...             "diagram": "mp_250618",
-			...             "mace_model": "mace-mh-1",
-			...             "intercept": 1.215,
+			...             "mace_model": "medium-mpa-0",
+			...             "intercept": 0.4289,
 			...         },
 			...         "args_emb": {"k": 100},
 			...         "args_dist": {"metric": "chebyshev", "low_memory": False},
@@ -439,7 +439,7 @@ class Evaluator:
 			...     multiprocessing=True,
 			...     n_processes=10,
 			... )
-			>>> 0.0316, np.array([...]), {"aggregation": ..., ...}
+			>>> 0.28, np.array([...]), {"aggregation": ..., ...}
 			>>> # Evaluate the VSUN metric using the ElMD distance against a custom
 			>>> # reference dataset, with average aggregation.
 			>>> evaluator = Evaluator(
@@ -465,7 +465,7 @@ class Evaluator:
 			...     multiprocessing=False,
 			...     n_processes=None,
 			... )
-			>>> 0.017467859079216795, np.array([...]), {"aggregation": ..., ...}
+			>>> 0.6119424269941065, np.array([...]), {"aggregation": ..., ...}
 			>>> # Evaluate the VSUN metric using the AMD distance against the MP20
 			>>> # dataset, with custom kwargs.
 			>>> evaluator = Evaluator(
@@ -485,8 +485,8 @@ class Evaluator:
 			...         },
 			...         "args_stability": {
 			...             "diagram": "mp_250618",
-			...             "mace_model": "mace-mh-1",
-			...             "intercept": 1.215,
+			...             "mace_model": "medium-mpa-0",
+			...             "intercept": 0.4289,
 			...         },
 			...         "args_emb": {"k": 100},
 			...         "args_dist": {"metric": "chebyshev", "low_memory": False},
@@ -498,7 +498,7 @@ class Evaluator:
 			...     multiprocessing=True,
 			...     n_processes=10,
 			... )
-			>>> 0.0268044218595296, np.array([...]), {"aggregation": ..., ...}
+			>>> 0.019558713928249892, np.array([...]), {"aggregation": ..., ...}
 
 		Note:
 			Here, I demonstrate how VSUN (or its subsets) is computed. Validity
@@ -535,7 +535,7 @@ class Evaluator:
 					\end{cases}
 
 			"intercept" can be specified in kwargs when initializing the Evaluator. The
-			default value is 1.215 [eV/atom]. In both cases, a higher score closer to 1
+			default value 0.4289 [eV/atom]. In both cases, a higher score closer to 1
 			indicates a more stable structure. The definition of uniqueness :math:`U(x)`
 			depends on the chosen distance metric. For a binary distance :math:`d_b`,
 			uniqueness of the i-th crystal :math:`x_i` in the set of crystals

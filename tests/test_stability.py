@@ -24,9 +24,9 @@ class TestStabilityCalculator:
 	@pytest.mark.parametrize(
 		"diagram, mace_model, binary, threshold, intercept",
 		[
-			("mp_250618", "mace-mh-1", True, 0.1, None),
-			("mp_250618", "medium-mpa-0", False, None, 1.215),
-			("mp", "mace-mh-1", True, 0.2, None),
+			("mp_250618", "mh-1", True, 0.1, None),
+			("mp_250618", "medium-mpa-0", False, None, 0.4289),
+			("mp", "mh-1", True, 0.2, None),
 		],
 	)
 	def test_init(
@@ -52,7 +52,7 @@ class TestStabilityCalculator:
 	@pytest.mark.parametrize(
 		"diagram, mace_model",
 		[
-			("mp_250618", "mace-mh-1"),
+			("mp_250618", "mh-1"),
 			("mp_250618", "medium-mpa-0"),
 		],
 	)
@@ -69,8 +69,8 @@ class TestStabilityCalculator:
 	@pytest.mark.parametrize(
 		"diagram, mace_model, binary, threshold, intercept",
 		[
-			("mp_250618", "mace-mh-1", True, 0.1, None),
-			("mp_250618", "medium-mpa-0", False, None, 1.215),
+			("mp_250618", "mh-1", True, 0.1, None),
+			("mp_250618", "medium-mpa-0", False, None, 0.4289),
 		],
 	)
 	def test_compute_stability_scores(

@@ -26,10 +26,10 @@ class StabilityCalculator:
 	def __init__(
 		self,
 		diagram: Literal["mp_250618", "mp"] | PatchedPhaseDiagram | str = "mp_250618",
-		mace_model: str = "mace-mh-1",
+		mace_model: str = "medium-mpa-0",
 		binary=True,
 		threshold: float = 0.1,
-		intercept: float = 1.215,
+		intercept: float = 0.4289,
 	) -> None:
 		"""Initialize StabilityCalculator.
 
@@ -40,16 +40,16 @@ class StabilityCalculator:
 				"mp" is specified, the diagram will be constructed on the spot. You can
 				also pass your own diagram or a path to it.
 			mace_model (str): The MACE model to use for energy prediction. Default is
-				"mace-mh-1".
+				"medium-mpa-0".
 			binary (bool): If True, compute binary stability scores (1 for stable, 0 for
 				unstable). If False, compute continuous stability scores between 0 and
 				1. Default is True.
 			threshold (float): Energy above hull threshold for stability in eV/atom.
 				Only used if binary is True. Default is 0.1 eV/atom.
 			intercept (float): Intercept for linear scaling of stability scores in
-				eV/atom. Only used if binary is False. Default is 1.215 eV/atom, which
-				is the 99th percentile of the energy above hull values for the MP data
-				with theoretical=False.
+				eV/atom. Only used if binary is False. Default is 0.4289 eV/atom, which
+				is the 99.9th percentile of the energy above hull values for the MP20
+				test data.
 		"""
 		# load or construct a phase diagram
 		if isinstance(diagram, PatchedPhaseDiagram):
@@ -92,7 +92,7 @@ class StabilityCalculator:
 		else:
 			raise ValueError(f"Unsupported diagram: {diagram}")
 		# prepare mace model
-		if mace_model == "mace-mh-1":
+		if mace_model == "mh-1":
 			calculator = mace_mp(
 				model="https://github.com/ACEsuit/mace-foundations/releases/download/mace_mh_1/mace-mh-1.model",
 				default_dtype="float64",
