@@ -1,6 +1,6 @@
 [project]
 name = "xtalmet"
-version = "1.0.0a1"
+version = "1.0.0a2"
 description = "Python package containing a variety of distance functions for crystals, as well as evaluation metrics for crystal generation."
 readme = "README.md"
 authors = [
