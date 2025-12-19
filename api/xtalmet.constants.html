@@ -56,6 +56,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#xtalmet.constants.TYPE_EMB_PDD"><code class="docutils literal notranslate"><span class="pre">TYPE_EMB_PDD</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#xtalmet.constants.TYPE_EMB_AMD"><code class="docutils literal notranslate"><span class="pre">TYPE_EMB_AMD</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#xtalmet.constants.TYPE_EMB_ELMD"><code class="docutils literal notranslate"><span class="pre">TYPE_EMB_ELMD</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#xtalmet.constants.TYPE_EMB_ELMD_AMD"><code class="docutils literal notranslate"><span class="pre">TYPE_EMB_ELMD_AMD</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#xtalmet.constants.TYPE_EMB_ALL"><code class="docutils literal notranslate"><span class="pre">TYPE_EMB_ALL</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#xtalmet.constants.DIST_WO_EMB"><code class="docutils literal notranslate"><span class="pre">DIST_WO_EMB</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#xtalmet.constants.BINARY_DISTANCES"><code class="docutils literal notranslate"><span class="pre">BINARY_DISTANCES</span></code></a></li>
@@ -146,8 +147,15 @@
 </dd></dl>
 
 <dl class="py data">
+<dt class="sig sig-object py" id="xtalmet.constants.TYPE_EMB_ELMD_AMD">
+<span class="sig-prename descclassname"><span class="pre">xtalmet.constants.</span></span><span class="sig-name descname"><span class="pre">TYPE_EMB_ELMD_AMD</span></span><a class="headerlink" href="#xtalmet.constants.TYPE_EMB_ELMD_AMD" title="Link to this definition"></a></dt>
+<dd><p>Type of embeddings for d_elmd+amd. A tuple containing elmd and amd embeddings.</p>
+<p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float32</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">float64</span></code>]]</p>
+</dd></dl>
+
+<dl class="py data">
 <dt class="sig sig-object py" id="xtalmet.constants.TYPE_EMB_ALL">
-<span class="sig-prename descclassname"><span class="pre">xtalmet.constants.</span></span><span class="sig-name descname"><span class="pre">TYPE_EMB_ALL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">tuple[tuple[str,</span> <span class="pre">int]]</span> <span class="pre">|</span> <span class="pre">tuple[int,</span> <span class="pre">tuple[str]]</span> <span class="pre">|</span> <span class="pre">list[float]</span> <span class="pre">|</span> <span class="pre">numpy.ndarray[numpy.float32</span> <span class="pre">|</span> <span class="pre">numpy.float64]</span> <span class="pre">|</span> <span class="pre">str</span></em><a class="headerlink" href="#xtalmet.constants.TYPE_EMB_ALL" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">xtalmet.constants.</span></span><span class="sig-name descname"><span class="pre">TYPE_EMB_ALL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">tuple[tuple[str,</span> <span class="pre">int]]</span> <span class="pre">|</span> <span class="pre">tuple[int,</span> <span class="pre">tuple[str]]</span> <span class="pre">|</span> <span class="pre">list[float]</span> <span class="pre">|</span> <span class="pre">numpy.ndarray[numpy.float32</span> <span class="pre">|</span> <span class="pre">numpy.float64]</span> <span class="pre">|</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">tuple[str,</span> <span class="pre">numpy.ndarray[numpy.float32</span> <span class="pre">|</span> <span class="pre">numpy.float64]]</span></em><a class="headerlink" href="#xtalmet.constants.TYPE_EMB_ALL" title="Link to this definition"></a></dt>
 <dd><p>Union type of all embeddings.</p>
 </dd></dl>
 
@@ -165,7 +173,7 @@
 
 <dl class="py data">
 <dt class="sig sig-object py" id="xtalmet.constants.CONTINUOUS_DISTANCES">
-<span class="sig-prename descclassname"><span class="pre">xtalmet.constants.</span></span><span class="sig-name descname"><span class="pre">CONTINUOUS_DISTANCES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['magpie',</span> <span class="pre">'pdd',</span> <span class="pre">'amd',</span> <span class="pre">'elmd']</span></em><a class="headerlink" href="#xtalmet.constants.CONTINUOUS_DISTANCES" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">xtalmet.constants.</span></span><span class="sig-name descname"><span class="pre">CONTINUOUS_DISTANCES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['magpie',</span> <span class="pre">'pdd',</span> <span class="pre">'amd',</span> <span class="pre">'elmd',</span> <span class="pre">'elmd+amd']</span></em><a class="headerlink" href="#xtalmet.constants.CONTINUOUS_DISTANCES" title="Link to this definition"></a></dt>
 <dd><p>Continuous distance metrics.</p>
 </dd></dl>
 
@@ -177,7 +185,7 @@
 
 <dl class="py data">
 <dt class="sig sig-object py" id="xtalmet.constants.SUPPORTED_DISTANCES">
-<span class="sig-prename descclassname"><span class="pre">xtalmet.constants.</span></span><span class="sig-name descname"><span class="pre">SUPPORTED_DISTANCES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['smat',</span> <span class="pre">'comp',</span> <span class="pre">'wyckoff',</span> <span class="pre">'magpie',</span> <span class="pre">'pdd',</span> <span class="pre">'amd',</span> <span class="pre">'elmd']</span></em><a class="headerlink" href="#xtalmet.constants.SUPPORTED_DISTANCES" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">xtalmet.constants.</span></span><span class="sig-name descname"><span class="pre">SUPPORTED_DISTANCES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['smat',</span> <span class="pre">'comp',</span> <span class="pre">'wyckoff',</span> <span class="pre">'magpie',</span> <span class="pre">'pdd',</span> <span class="pre">'amd',</span> <span class="pre">'elmd',</span> <span class="pre">'elmd+amd']</span></em><a class="headerlink" href="#xtalmet.constants.SUPPORTED_DISTANCES" title="Link to this definition"></a></dt>
 <dd><p>Supported distance metrics.</p>
 </dd></dl>
 
