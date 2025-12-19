@@ -694,6 +694,25 @@ def distance(
 		d = _d_amd(emb_1, emb_2, **(kwargs.get("args_dist", {})))
 	elif distance == "elmd":
 		d = _d_elmd(emb_1, emb_2, **(kwargs.get("args_dist", {})))
+	elif distance == "elmd+amd":
+		d_elmd_unnorm = _d_elmd(
+			emb_1[0], emb_2[0], **(kwargs.get("args_dist", {}).get("elmd", {}))
+		)
+		d_amd_unnorm = _d_amd(
+			emb_1[1], emb_2[1], **(kwargs.get("args_dist", {}).get("amd", {}))
+		)
+		d_elmd = d_elmd_unnorm / (1 + d_elmd_unnorm)
+		d_amd = d_amd_unnorm / (1 + d_amd_unnorm)
+		if "coefs" in kwargs.get("args_dist", {}):
+			coefs = kwargs.get("args_dist", {})["coefs"]
+			coef_elmd, coef_amd = coefs["elmd"], coefs["amd"]
+			sum_coefs = coef_elmd + coef_amd
+			coef_elmd /= sum_coefs
+			coef_amd /= sum_coefs
+		else:
+			coef_elmd = float.fromhex("0x1.8d7d565a99f87p-1")
+			coef_amd = float.fromhex("0x1.ca0aa695981e5p-3")
+		d = coef_elmd * d_elmd + coef_amd * d_amd
 	else:
 		raise ValueError(f"Unsupported distance metric: {distance}")
 
@@ -755,7 +774,8 @@ def distance_matrix(
 			contain two keys: "args_emb" and "args_dist". The value of "args_emb" is a
 			dict of arguments for the calculation of embeddings, and the value of
 			"args_dist" is a dict of arguments for the calculation of distance matrix
-			using the embeddings.
+			using the embeddings. If embeddings are pre-computed and provided as inputs,
+			the "args_emb" will be ignored.
 
 	Returns:
 		TYPE_D_MTX_RETURN: Distance matrix, the embeddings of xtals_1 (and xtals_2 if
@@ -852,6 +872,37 @@ def distance_matrix(
 			n_processes,
 			**(kwargs.get("args_dist", {})),
 		)
+	elif distance == "elmd+amd":
+		d_mtx_elmd_unnorm = _distance_matrix_d_elmd(
+			[emb[0] for emb in embs_1],
+			[emb[0] for emb in embs_2] if embs_2 is not None else None,
+			multiprocessing,
+			n_processes,
+			**(kwargs.get("args_dist", {}).get("elmd", {})),
+		)
+		if multiprocessing:
+			warnings.warn(
+				"Multiprocessing is not implemented for _distance_matrix_d_amd. "
+				"Proceeding without multiprocessing.",
+				stacklevel=2,
+			)
+		d_mtx_amd_unnorm = _distance_matrix_d_amd(
+			[emb[1] for emb in embs_1],
+			[emb[1] for emb in embs_2] if embs_2 is not None else None,
+			**(kwargs.get("args_dist", {}).get("amd", {})),
+		)
+		d_mtx_elmd = d_mtx_elmd_unnorm / (1 + d_mtx_elmd_unnorm)
+		d_mtx_amd = d_mtx_amd_unnorm / (1 + d_mtx_amd_unnorm)
+		if "coefs" in kwargs.get("args_dist", {}):
+			coefs = kwargs.get("args_dist", {})["coefs"]
+			coef_elmd, coef_amd = coefs["elmd"], coefs["amd"]
+			sum_coefs = coef_elmd + coef_amd
+			coef_elmd /= sum_coefs
+			coef_amd /= sum_coefs
+		else:
+			coef_elmd = float.fromhex("0x1.8d7d565a99f87p-1")
+			coef_amd = float.fromhex("0x1.ca0aa695981e5p-3")
+		d_mtx = coef_elmd * d_mtx_elmd + coef_amd * d_mtx_amd
 	else:
 		raise ValueError(f"Unsupported distance metric: {distance}")
 	d_mtx_end = time.time()

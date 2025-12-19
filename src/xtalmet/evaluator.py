@@ -37,7 +37,7 @@ class Evaluator:
 		uniqueness: bool = False,
 		novelty: bool = False,
 		distance: str | None = None,
-		ref_xtals: list[Crystal | Structure] | str | None = None,
+		ref_xtals: list[Crystal | Structure] | Literal["mp20"] | str | None = None,
 		agg_func: Literal["prod", "ave"] = "prod",
 		weights: dict[str, float] | None = None,
 		multiprocessing: bool = False,
@@ -62,12 +62,13 @@ class Evaluator:
 				each distance metric, please refer to the `tutorial notebook`_. If both
 				uniqueness and novelty are False, this argument is ignored. Default is
 				None.
-			ref_xtals (list[Crystal  |  Structure]  |  str  |  None): Reference crystal
-				structures (typically a training set) for novelty evaluation. This can
-				be a list of crystal structures, dataset name, or a path to the file
-				containing the pre-computed embeddings of the reference structures. If a
-				dataset name is given, its training data will be downloaded from Hugging
-				Face. If novelty is False, this argument is ignored. Default is None.
+			ref_xtals (list[Crystal | Structure] | Literal["mp20"] | str | None):
+				Reference crystal structures (typically a training set) for novelty
+				evaluation. This can be a list of crystal structures, dataset name, or a
+				path to the file containing the pre-computed embeddings of the reference
+				structures. If a dataset name is given, its training data will be
+				downloaded from Hugging Face. If novelty is False, this argument is
+				ignored. Default is None.
 			agg_func (Literal["prod", "ave"]): Aggregation function for combining V, S,
 				U, and N. "prod" means multiplication, and "ave" means (weighted)
 				average. Default is "prod".
@@ -150,6 +151,38 @@ class Evaluator:
 			...         "args_dist": {"metric": "chebyshev", "low_memory": False},
 			...     }
 			... )
+			>>> # Evaluator for the SUN metric against the MP20 dataset using the
+			>>> # ElMD+AMD distance, with custom kwargs.
+			>>> evaluator = Evaluator(
+			...     stability="continuous",
+			...     uniqueness=True,
+			...     novelty=True,
+			...     distance="elmd+amd",
+			...     ref_xtals="mp20",
+			...     agg_func="prod",
+			...     {
+			...         "args_validity": {
+			...             "structure": {
+			...                 "threshold_distance": 0.5,
+			...                 "threshold_volume": 0.1,
+			...             }
+			...         },
+			...         "args_stability": {
+			...             "diagram": "mp_250618",
+			...             "mace_model": "medium-mpa-0",
+			...             "intercept": 0.4289,
+			...         },
+			...         "args_emb": {"amd": {"k": 100}},
+			...         "args_dist": {
+			...				"elmd": {"metric": "mod_petti"},
+			...				"amd": {"metric": "chebyshev", "low_memory": False},
+			...				"coefs": {
+			...					"elmd": float.fromhex("0x1.8d7d565a99f87p-1"),
+			...					"amd": float.fromhex("0x1.ca0aa695981e5p-3")},
+			...				},
+			...			}
+			...     }
+			... )
 
 		.. _tutorial notebook: https://github.com/WMD-group/xtalmet/blob/main/examples/tutorial.ipynb
 		"""
@@ -219,7 +252,7 @@ class Evaluator:
 					revision=HF_VERSION,
 				)
 				self.ref_xtals = self._read_pickle_gz(path_embs_train)
-			elif type(ref_xtals) is str and Path(ref_xtals).is_file():
+			elif type(ref_xtals) is str:
 				self.ref_xtals = self._read_pickle_gz(ref_xtals)
 			else:
 				print("Preparing reference crystals for novelty evaluation...")
@@ -499,6 +532,45 @@ class Evaluator:
 			...     n_processes=10,
 			... )
 			>>> 0.019558713928249892, np.array([...]), {"aggregation": ..., ...}
+			>>> # Evaluator for the SUN metric against the MP20 dataset using the
+			>>> # ElMD+AMD distance, with custom kwargs.
+			>>> evaluator = Evaluator(
+			...     stability="continuous",
+			...     uniqueness=True,
+			...     novelty=True,
+			...     distance="elmd+amd",
+			...     ref_xtals="mp20",
+			...     agg_func="prod",
+			...     {
+			...         "args_validity": {
+			...             "structure": {
+			...                 "threshold_distance": 0.5,
+			...                 "threshold_volume": 0.1,
+			...             }
+			...         },
+			...         "args_stability": {
+			...             "diagram": "mp_250618",
+			...             "mace_model": "medium-mpa-0",
+			...             "intercept": 0.4289,
+			...         },
+			...         "args_emb": {"amd": {"k": 100}},
+			...         "args_dist": {
+			...				"elmd": {"metric": "mod_petti"},
+			...				"amd": {"metric": "chebyshev", "low_memory": False},
+			...				"coefs": {
+			...					"elmd": float.fromhex("0x1.8d7d565a99f87p-1"),
+			...					"amd": float.fromhex("0x1.ca0aa695981e5p-3")},
+			...				},
+			...			}
+			...     }
+			... )
+			>>> evaluator.evaluate(
+			...     xtals=xtals,  # list[Crystal | Structure]
+			...     dir_intermediate="intermediate_results/",
+			...     multiprocessing=True,
+			...     n_processes=10,
+			... )
+			>>> 0.16403383975840835, np.array([...]), {"aggregation": ..., ...}
 
 		Note:
 			Here, I demonstrate how VSUN (or its subsets) is computed. Validity

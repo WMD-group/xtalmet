@@ -32,6 +32,8 @@ from xtalmet.distance import (
 )
 
 N_PROCESSES = max(cpu_count() // 2 - 1, 1)
+COEF_ELMD = float.fromhex("0x1.8d7d565a99f87p-1")
+COEF_AMD = float.fromhex("0x1.ca0aa695981e5p-3")
 
 
 @pytest.fixture(
@@ -48,6 +50,8 @@ N_PROCESSES = max(cpu_count() // 2 - 1, 1)
 				"amd": 1.042e00,
 				"pdd": 1.042e00,
 				"elmd": 0.0,
+				"elmd+amd": COEF_ELMD * (0.0 / (1 + 0.0))
+				+ COEF_AMD * (1.042e00 / (1 + 1.042e00)),
 			},
 		),
 		(
@@ -61,6 +65,8 @@ N_PROCESSES = max(cpu_count() // 2 - 1, 1)
 				"amd": 9.684e-02,
 				"pdd": 9.684e-02,
 				"elmd": 7.0,
+				"elmd+amd": COEF_ELMD * (7.0 / (1 + 7.0))
+				+ COEF_AMD * (9.684e-02 / (1 + 9.684e-02)),
 			},
 		),
 		(
@@ -74,6 +80,8 @@ N_PROCESSES = max(cpu_count() // 2 - 1, 1)
 				"amd": 3.240e00,
 				"pdd": 3.276e00,
 				"elmd": 10.7,
+				"elmd+amd": COEF_ELMD * (10.7 / (1 + 10.7))
+				+ COEF_AMD * (3.240e00 / (1 + 3.240e00)),
 			},
 		),
 	],
@@ -145,6 +153,9 @@ def prepare_d_mtx() -> tuple[Structure, Structure, Structure, Structure, dict]:
 			for j in range(4):
 				d_mtx[i, j] = func(embs[i], embs[j])
 		expected[dist] = d_mtx
+	expected["elmd+amd"] = COEF_ELMD * expected["elmd"] / (
+		1 + expected["elmd"]
+	) + COEF_AMD * expected["amd"] / (1 + expected["amd"])
 	return (struc_1, struc_2, struc_3, struc_4, expected)
 
 
@@ -488,6 +499,8 @@ class TestDistance:
 			("amd", False, None, {"k": 100}),
 			("elmd", False, None, {}),
 			("elmd", True, N_PROCESSES, {}),
+			("elmd+amd", False, None, {}),
+			("elmd+amd", True, None, {"amd": {"k": 100}}),
 		],
 	)
 	def test_compute_embeddings(
@@ -570,6 +583,31 @@ class TestDistance:
 				"elmd",
 				False,
 				{"args_dist": {"metric": "fast", "return_assignments": True}},
+			),
+			("elmd+amd", None, {}),
+			("elmd+amd", None, {"args_emb": {"amd": {"k": 100}}}),
+			(
+				"elmd+amd",
+				None,
+				{
+					"args_dist": {
+						"elmd": {"metric": "mod_petti"},
+						"amd": {"metric": "chebyshev", "low_memory": False},
+						"coefs": {"elmd": COEF_ELMD, "amd": COEF_AMD},
+					}
+				},
+			),
+			(
+				"elmd+amd",
+				None,
+				{
+					"args_emb": {"amd": {"k": 100}},
+					"args_dist": {
+						"elmd": {"metric": "fast", "return_assignments": True},
+						"amd": {"metric": "chebyshev", "low_memory": False},
+						"coefs": {"elmd": 2 * COEF_ELMD, "amd": 2 * COEF_AMD},
+					},
+				},
 			),
 		],
 	)
@@ -692,6 +730,35 @@ class TestDistance:
 				False,
 				None,
 				{"args_dist": {"metric": "fast", "return_assignments": True}},
+			),
+			("elmd+amd", None, False, None, {}),
+			("elmd+amd", None, True, None, {"args_emb": {"amd": {"k": 100}}}),
+			(
+				"elmd+amd",
+				None,
+				False,
+				None,
+				{
+					"args_dist": {
+						"elmd": {"metric": "mod_petti"},
+						"amd": {"metric": "chebyshev", "low_memory": False},
+						"coefs": {"elmd": COEF_ELMD, "amd": COEF_AMD},
+					}
+				},
+			),
+			(
+				"elmd+amd",
+				None,
+				True,
+				N_PROCESSES,
+				{
+					"args_emb": {"amd": {"k": 100}},
+					"args_dist": {
+						"elmd": {"metric": "fast", "return_assignments": True},
+						"amd": {"metric": "chebyshev", "low_memory": False},
+						"coefs": {"elmd": 2 * COEF_ELMD, "amd": 2 * COEF_AMD},
+					},
+				},
 			),
 		],
 	)

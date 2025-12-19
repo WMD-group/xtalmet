@@ -149,6 +149,33 @@ class TestCrystal:
 		assert elmd == structure.composition.reduced_formula
 
 	@pytest.mark.parametrize(
+		"kwargs",
+		[
+			{},
+			{"k": 200},
+		],
+	)
+	def test_get_emb_d_elmd_amd(self, prepare_Structure: Structure, kwargs: dict):
+		"""Test _get_emb_d_elmd_amd."""
+		structure = prepare_Structure
+		crystal = Crystal.from_Structure(structure)
+		try:
+			elmd_amd = crystal._get_emb_d_elmd_amd(**kwargs)
+			assert isinstance(elmd_amd, tuple)
+			assert len(elmd_amd) == 2
+			elmd, amd = elmd_amd
+			assert isinstance(elmd, str)
+			assert elmd == structure.composition.reduced_formula
+			assert amd.ndim == 1
+			if "k" in kwargs:
+				assert amd.size == kwargs["k"]
+			else:
+				assert amd.size == 100
+		except Exception as e:
+			# If an exception is raised, ensure it's a known issue.
+			assert isinstance(e, SymmetryUndeterminedError)
+
+	@pytest.mark.parametrize(
 		"distance, kwargs",
 		[
 			("smat", {}),
@@ -160,6 +187,8 @@ class TestCrystal:
 			("amd", {}),
 			("amd", {"k": 150}),
 			("elmd", {}),
+			("elmd+amd", {}),
+			("elmd+amd", {"amd": {"k": 150}}),
 		],
 	)
 	def test_get_embedding(

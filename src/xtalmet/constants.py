@@ -24,6 +24,10 @@ TYPE_EMB_AMD = np.ndarray[
 
 TYPE_EMB_ELMD = str  #: Type of embeddings for d_elmd. A string (compositional formula).
 
+TYPE_EMB_ELMD_AMD = tuple[
+	TYPE_EMB_ELMD, TYPE_EMB_AMD
+]  #: Type of embeddings for d_elmd+amd. A tuple containing elmd and amd embeddings.
+
 TYPE_EMB_ALL = (
 	TYPE_EMB_COMP
 	| TYPE_EMB_WYCKOFF
@@ -31,12 +35,19 @@ TYPE_EMB_ALL = (
 	| TYPE_EMB_PDD
 	| TYPE_EMB_AMD
 	| TYPE_EMB_ELMD
+	| TYPE_EMB_ELMD_AMD
 )  #: Union type of all embeddings.
 
 DIST_WO_EMB = ["smat"]  #: Distance metrics that do not use embeddings.
 
 BINARY_DISTANCES = ["smat", "comp", "wyckoff"]  #: Binary distance metrics.
-CONTINUOUS_DISTANCES = ["magpie", "pdd", "amd", "elmd"]  #: Continuous distance metrics.
+CONTINUOUS_DISTANCES = [
+	"magpie",
+	"pdd",
+	"amd",
+	"elmd",
+	"elmd+amd",
+]  #: Continuous distance metrics.
 CONTINUOUS_UNNORMALIZED_DISTANCES = [
 	"magpie",
 	"pdd",

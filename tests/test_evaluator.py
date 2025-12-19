@@ -13,6 +13,8 @@ from xtalmet.crystal import Crystal
 from xtalmet.evaluator import Evaluator
 
 N_PROCESSES = max(cpu_count() // 2 - 1, 1)
+COEF_ELMD = float.fromhex("0x1.8d7d565a99f87p-1")
+COEF_AMD = float.fromhex("0x1.ca0aa695981e5p-3")
 
 
 @pytest.fixture(scope="module")
@@ -220,6 +222,39 @@ class TestEvaluator:
 				None,
 				{"args_dist": {"metric": "mod_petti"}},
 			),
+			(
+				None,
+				None,
+				True,
+				False,
+				"elmd+amd",
+				None,
+				"ave",
+				None,
+				False,
+				None,
+				{},
+			),
+			(
+				None,
+				None,
+				True,
+				False,
+				"elmd+amd",
+				None,
+				"prod",
+				None,
+				False,
+				None,
+				{
+					"args_emb": {"amd": {"k": 100}},
+					"args_dist": {
+						"elmd": {"metric": "mod_petti"},
+						"amd": {"metric": "chebyshev", "low_memory": False},
+						"coefs": {"elmd": COEF_ELMD, "amd": COEF_AMD},
+					},
+				},
+			),
 			# only novelty
 			(None, None, False, True, "smat", "mp20", "prod", None, False, None, {}),
 			(
@@ -314,6 +349,39 @@ class TestEvaluator:
 				False,
 				None,
 				{"args_dist": {"metric": "mod_petti"}},
+			),
+			(
+				None,
+				None,
+				False,
+				True,
+				"elmd+amd",
+				None,
+				"ave",
+				None,
+				False,
+				None,
+				{},
+			),
+			(
+				None,
+				None,
+				False,
+				True,
+				"elmd+amd",
+				None,
+				"prod",
+				None,
+				True,
+				N_PROCESSES,
+				{
+					"args_emb": {"amd": {"k": 100}},
+					"args_dist": {
+						"elmd": {"metric": "mod_petti"},
+						"amd": {"metric": "chebyshev", "low_memory": False},
+						"coefs": {"elmd": COEF_ELMD, "amd": COEF_AMD},
+					},
+				},
 			),
 			# vsun
 			(
@@ -418,7 +486,7 @@ class TestEvaluator:
 				{},
 			),
 			(
-				["smact", "structure"],
+				["structure"],
 				"continuous",
 				True,
 				True,
@@ -442,6 +510,37 @@ class TestEvaluator:
 					},
 					"args_emb": {"k": 100},
 					"args_dist": {"metric": "chebyshev", "low_memory": False},
+				},
+			),
+			(
+				["smact", "structure"],
+				"binary",
+				True,
+				True,
+				"elmd+amd",
+				"mp20",
+				"prod",
+				None,
+				False,
+				None,
+				{
+					"args_validity": {
+						"structure": {
+							"threshold_distance": 0.5,
+							"threshold_volume": 0.1,
+						}
+					},
+					"args_stability": {
+						"diagram": "mp_250618",
+						"mace_model": "medium-mpa-0",
+						"intercept": 0.4289,
+					},
+					"args_emb": {"amd": {"k": 100}},
+					"args_dist": {
+						"elmd": {"metric": "mod_petti"},
+						"amd": {"metric": "chebyshev", "low_memory": False},
+						"coefs": {"elmd": COEF_ELMD, "amd": COEF_AMD},
+					},
 				},
 			),
 		],

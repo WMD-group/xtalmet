@@ -20,6 +20,7 @@ from .constants import (
 	TYPE_EMB_AMD,
 	TYPE_EMB_COMP,
 	TYPE_EMB_ELMD,
+	TYPE_EMB_ELMD_AMD,
 	TYPE_EMB_MAGPIE,
 	TYPE_EMB_PDD,
 	TYPE_EMB_WYCKOFF,
@@ -245,6 +246,19 @@ class Crystal(Structure):
 		"""
 		return self.composition.reduced_formula
 
+	def _get_emb_d_elmd_amd(self, k: int = 100) -> TYPE_EMB_ELMD_AMD:
+		"""Get the embedding for d_elmd+amd.
+
+		Embedding for d_elmd+amd.
+
+		Args:
+			k (int): Number of nearest neighbors to consider for AMD.
+
+		Returns:
+			TYPE_EMB_ELMD_AMD: A tuple containing elmd and amd embeddings.
+		"""
+		return (self._get_emb_d_elmd(), self._get_emb_d_amd(k=k))
+
 	def get_embedding(self, distance: str, **kwargs) -> TYPE_EMB_ALL:
 		"""Get the embedding of the crystal based on the specified distance metric.
 
@@ -274,6 +288,8 @@ class Crystal(Structure):
 			return self._get_emb_d_amd(**kwargs)
 		elif distance == "elmd":
 			return self._get_emb_d_elmd()
+		elif distance == "elmd+amd":
+			return self._get_emb_d_elmd_amd(**kwargs.get("amd", {}))
 		elif distance in DIST_WO_EMB:
 			return self
 		else:
