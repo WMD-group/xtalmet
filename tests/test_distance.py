@@ -187,7 +187,9 @@ class TestDistance:
 		"""Test _d_wyckoff."""
 		_, _, xtal_1, xtal_2, expected = prepare
 		assert (
-			_d_wyckoff(xtal_1._get_emb_d_wyckoff(**kwargs), xtal_2._get_emb_d_wyckoff(**kwargs))
+			_d_wyckoff(
+				xtal_1._get_emb_d_wyckoff(**kwargs), xtal_2._get_emb_d_wyckoff(**kwargs)
+			)
 			== expected["wyckoff"]
 		)
 
@@ -330,7 +332,10 @@ class TestDistance:
 	):
 		"""Test _distance_matrix_d_wyckoff."""
 		xtals = prepare_four_xtals
-		embs = [xtal.get_embedding("wyckoff", **kwargs.get("args_emb", {})) for xtal in xtals]
+		embs = [
+			xtal.get_embedding("wyckoff", **kwargs.get("args_emb", {}))
+			for xtal in xtals
+		]
 		expected = np.zeros((4, 4))
 		for i in range(4):
 			for j in range(4):
@@ -667,7 +672,13 @@ class TestDistance:
 			("comp", None, False, None, {}),
 			("comp", None, True, None, {}),
 			("wyckoff", None, False, None, {}),
-			("wyckoff", None, True, N_PROCESSES, {"args_emb": {"symprec": 0.1, "angle_tolerance": 10}}),
+			(
+				"wyckoff",
+				None,
+				True,
+				N_PROCESSES,
+				{"args_emb": {"symprec": 0.1, "angle_tolerance": 10}},
+			),
 			("magpie", False, False, None, {}),
 			("magpie", True, True, None, {}),
 			("pdd", False, False, None, {}),

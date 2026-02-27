@@ -146,14 +146,22 @@ class Crystal(Structure):
 		composition = tuple((elem, count // gcd) for elem, count in composition_unnorm)
 		return composition
 
-	def _get_emb_d_wyckoff(self, symprec: float = 0.01, angle_tolerance: float = 5) -> TYPE_EMB_WYCKOFF:
+	def _get_emb_d_wyckoff(
+		self, symprec: float = 0.01, angle_tolerance: float = 5
+	) -> TYPE_EMB_WYCKOFF:
 		"""Get the Wyckoff representation of the crystal.
 
 		Embedding for d_wyckoff.
 
 		Args:
-			symprec (float): Tolerance for symmetry finding. Defaults to 0.01, which is fairly strict and works well for properly refined structures with atoms in the proper symmetry coordinates. For structures with slight deviations from their proper atomic positions (e.g., structures relaxed with electronic structure codes), a looser tolerance of 0.1 (the value used in Materials Project) is often needed.
-			angle_tolerance (float): Angle tolerance for symmetry finding. Defaults to 5 degrees.
+			symprec (float): Tolerance for symmetry finding. Defaults to 0.01, which is
+				fairly strict and works well for properly refined structures with atoms
+				in the proper symmetry coordinates. For structures with slight
+				deviations from their proper atomic positions (e.g., structures relaxed
+				with electronic structure codes), a looser tolerance of 0.1 (the value
+				used in Materials Project) is often needed.
+			angle_tolerance (float): Angle tolerance for symmetry finding. Defaults to 5
+				degrees.
 
 		Returns:
 			TYPE_EMB_WYCKOFF: A tuple containing the space group number and a tuple of

@@ -32,6 +32,7 @@ dev = [
     "sphinx",
     "sphinx-rtd-theme",
     "sphinx-github-style",
+    "ruff",
 ]
 
 [build-system]

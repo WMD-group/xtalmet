@@ -294,8 +294,8 @@ class Evaluator:
 				self.weights["novelty"] = 1.0 if weights is None else weights["novelty"]
 			total_weight = sum(self.weights.values())
 			self.weights = {k: v / total_weight for k, v in self.weights.items()}
-			self.agg_func = (
-				lambda v, s, u, n: self.weights["validity"] * v
+			self.agg_func = lambda v, s, u, n: (
+				self.weights["validity"] * v
 				+ self.weights["stability"] * s
 				+ self.weights["uniqueness"] * u
 				+ self.weights["novelty"] * n
