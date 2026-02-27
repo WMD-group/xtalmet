@@ -180,13 +180,14 @@ class TestDistance:
 			== expected["comp"]
 		)
 
+	@pytest.mark.parametrize("kwargs", [{}, {"symprec": 0.1, "angle_tolerance": 10}])
 	def test_d_wyckoff(
-		self, prepare: tuple[Structure, Structure, Crystal, Crystal, dict]
+		self, prepare: tuple[Structure, Structure, Crystal, Crystal, dict], kwargs: dict
 	):
 		"""Test _d_wyckoff."""
 		_, _, xtal_1, xtal_2, expected = prepare
 		assert (
-			_d_wyckoff(xtal_1._get_emb_d_wyckoff(), xtal_2._get_emb_d_wyckoff())
+			_d_wyckoff(xtal_1._get_emb_d_wyckoff(**kwargs), xtal_2._get_emb_d_wyckoff(**kwargs))
 			== expected["wyckoff"]
 		)
 
@@ -313,18 +314,23 @@ class TestDistance:
 		assert np.all(results_2 == expected)
 
 	@pytest.mark.parametrize(
-		"multiprocessing, n_processes",
-		[(False, None), (True, N_PROCESSES), (True, None)],
+		"multiprocessing, n_processes, kwargs",
+		[
+			(False, None, {}),
+			(True, N_PROCESSES, {"args_emb": {"symprec": 0.1, "angle_tolerance": 10}}),
+			(True, None, {"args_emb": {"symprec": 0.1, "angle_tolerance": 10}}),
+		],
 	)
 	def test_distance_matrix_d_wyckoff(
 		self,
 		prepare_four_xtals: tuple[Crystal, Crystal, Crystal, Crystal],
 		multiprocessing: bool,
 		n_processes: int | None,
+		kwargs: dict,
 	):
 		"""Test _distance_matrix_d_wyckoff."""
 		xtals = prepare_four_xtals
-		embs = [xtal.get_embedding("wyckoff") for xtal in xtals]
+		embs = [xtal.get_embedding("wyckoff", **kwargs.get("args_emb", {})) for xtal in xtals]
 		expected = np.zeros((4, 4))
 		for i in range(4):
 			for j in range(4):
@@ -489,7 +495,7 @@ class TestDistance:
 			("comp", False, None, {}),
 			("comp", True, None, {}),
 			("wyckoff", False, None, {}),
-			("wyckoff", True, N_PROCESSES, {}),
+			("wyckoff", True, N_PROCESSES, {"symprec": 0.1, "angle_tolerance": 10}),
 			("magpie", False, None, {}),
 			("magpie", True, None, {}),
 			("pdd", False, None, {}),
@@ -530,6 +536,7 @@ class TestDistance:
 			("smat", None, {"args_dist": {"ltol": 0.3, "stol": 0.4, "angle_tol": 6}}),
 			("comp", None, {}),
 			("wyckoff", None, {}),
+			("wyckoff", None, {"args_emb": {"symprec": 0.1, "angle_tolerance": 10}}),
 			("magpie", False, {}),
 			("magpie", True, {}),
 			("pdd", True, {}),
@@ -655,12 +662,12 @@ class TestDistance:
 				None,
 				True,
 				N_PROCESSES,
-				{"ltol": 0.3, "stol": 0.4, "angle_tol": 6},
+				{"args_dist": {"ltol": 0.3, "stol": 0.4, "angle_tol": 6}},
 			),
 			("comp", None, False, None, {}),
 			("comp", None, True, None, {}),
 			("wyckoff", None, False, None, {}),
-			("wyckoff", None, True, N_PROCESSES, {}),
+			("wyckoff", None, True, N_PROCESSES, {"args_emb": {"symprec": 0.1, "angle_tolerance": 10}}),
 			("magpie", False, False, None, {}),
 			("magpie", True, True, None, {}),
 			("pdd", False, False, None, {}),

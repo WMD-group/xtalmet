@@ -71,12 +71,19 @@ class TestCrystal:
 			isinstance(item, tuple) and len(item) == 2 for item in composition_tuple
 		)
 
-	def test_get_emb_d_wyckoff(self, prepare_Structure: Structure):
+	@pytest.mark.parametrize(
+		"kwargs",
+		[
+			{},
+			{"symprec": 0.1, "angle_tolerance": 10},
+		],
+	)
+	def test_get_emb_d_wyckoff(self, prepare_Structure: Structure, kwargs: dict):
 		"""Test _get_emb_d_wyckoff."""
 		structure = prepare_Structure
 		crystal = Crystal.from_Structure(structure)
 		try:
-			wyckoff = crystal._get_emb_d_wyckoff()
+			wyckoff = crystal._get_emb_d_wyckoff(**kwargs)
 			assert isinstance(wyckoff, tuple)
 			assert isinstance(wyckoff[0], int)
 			assert isinstance(wyckoff[1], tuple)
@@ -101,7 +108,7 @@ class TestCrystal:
 			{"k": 200, "return_row_data": True},
 		],
 	)
-	def test__get_emb_d_pdd(self, prepare_Structure: Structure, kwargs: dict):
+	def test_get_emb_d_pdd(self, prepare_Structure: Structure, kwargs: dict):
 		"""Test _get_emb_d_pdd."""
 		structure = prepare_Structure
 		crystal = Crystal.from_Structure(structure)
@@ -181,6 +188,7 @@ class TestCrystal:
 			("smat", {}),
 			("comp", {}),
 			("wyckoff", {}),
+			("wyckoff", {"symprec": 0.1, "angle_tolerance": 10}),
 			("magpie", {}),
 			("pdd", {}),
 			("pdd", {"k": 150}),
