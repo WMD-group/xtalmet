@@ -146,10 +146,14 @@ class Crystal(Structure):
 		composition = tuple((elem, count // gcd) for elem, count in composition_unnorm)
 		return composition
 
-	def _get_emb_d_wyckoff(self) -> TYPE_EMB_WYCKOFF:
+	def _get_emb_d_wyckoff(self, symprec: float = 0.01, angle_tolerance: float = 5) -> TYPE_EMB_WYCKOFF:
 		"""Get the Wyckoff representation of the crystal.
 
 		Embedding for d_wyckoff.
+
+		Args:
+			symprec (float): Tolerance for symmetry finding. Defaults to 0.01, which is fairly strict and works well for properly refined structures with atoms in the proper symmetry coordinates. For structures with slight deviations from their proper atomic positions (e.g., structures relaxed with electronic structure codes), a looser tolerance of 0.1 (the value used in Materials Project) is often needed.
+			angle_tolerance (float): Angle tolerance for symmetry finding. Defaults to 5 degrees.
 
 		Returns:
 			TYPE_EMB_WYCKOFF: A tuple containing the space group number and a tuple of
@@ -158,7 +162,7 @@ class Crystal(Structure):
 		Raises:
 			Exception: an exception from SpacegroupAnalyzer.
 		"""
-		sga = SpacegroupAnalyzer(self)
+		sga = SpacegroupAnalyzer(self, symprec=symprec, angle_tolerance=angle_tolerance)
 		sym = sga.get_symmetrized_structure()
 		sg = sga.get_space_group_number()
 		wyckoff_letters = sorted(
@@ -279,7 +283,7 @@ class Crystal(Structure):
 		if distance == "comp":
 			return self._get_emb_d_comp()
 		elif distance == "wyckoff":
-			return self._get_emb_d_wyckoff()
+			return self._get_emb_d_wyckoff(**kwargs)
 		elif distance == "magpie":
 			return self._get_emb_d_magpie()
 		elif distance == "pdd":
