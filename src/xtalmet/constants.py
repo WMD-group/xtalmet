@@ -61,3 +61,10 @@ SUPPORTED_DISTANCES = (
 SUPPORTED_VALIDITY = ["smact", "structure"]  #: Supported validity screening methods.
 
 HF_VERSION = "v1.0.0"  #: Version of Hugging Face repository to use.
+
+ELMD_AMD_COEF_ELMD: float = float.fromhex(
+	"0x1.8d7d565a99f87p-1"
+)  #: ElMD blending coefficient for elmd+amd distance (≈ 0.7665).
+ELMD_AMD_COEF_AMD: float = float.fromhex(
+	"0x1.ca0aa695981e5p-3"
+)  #: AMD blending coefficient for elmd+amd distance (≈ 0.2225).
