@@ -1,9 +1,9 @@
 {
-    "api/xtalmet": 0.02,
-    "api/xtalmet.constants": 0.11,
-    "api/xtalmet.crystal": 0.72,
-    "api/xtalmet.distance": 0.005,
-    "api/xtalmet.evaluator": 0.005,
-    "api/xtalmet.stability": 0.004,
-    "api/xtalmet.validity": 0.005
+    "api/xtalmet": 0.522,
+    "api/xtalmet.constants": 0.039,
+    "api/xtalmet.crystal": 0.496,
+    "api/xtalmet.distance": 0.304,
+    "api/xtalmet.evaluator": 0.173,
+    "api/xtalmet.stability": 0.286,
+    "api/xtalmet.validity": 0.054
 }
