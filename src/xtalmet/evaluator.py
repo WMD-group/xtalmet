@@ -72,11 +72,10 @@ class Evaluator:
 			agg_func (Literal["prod", "ave"]): Aggregation function for combining V, S,
 				U, and N. "prod" means multiplication, and "ave" means (weighted)
 				average. Default is "prod".
-			weights (dict[str, float] | None): Weights for V, S, U, and N when agg_func
-				is "ave". For example, {"validity": 0.2, "stability": 0.3, "uniqueness":
-				0.2, "novelty": 0.3}. You only need to provide weights for the metrics
-				you choose to evaluate. If the weights are not normalized, they will be
-				normalized internally. If None, equal weights are used. Default is None.
+			weights (dict[str, float] | None): Weights for V, S, U, and N. For "ave",
+				weights are coefficients (normalized internally; equal weights if None).
+				For "prod", weights are exponents (not normalized; default 1.0 per
+				active metric if None). Default is None.
 			multiprocessing (bool): Whether to use multiprocessing for computing the
 				embeddings of reference crystals. This argument is only effective when
 				novelty is True and ref_xtals is list[Crystal | Structure]. Default
@@ -213,15 +212,14 @@ class Evaluator:
 			raise ValueError(f"Unsupported ref_xtals: {ref_xtals}")
 		if agg_func not in ["prod", "ave"]:
 			raise ValueError(f"Unsupported agg_func: {agg_func}.")
-		if agg_func == "ave":
-			if not (weights is None or isinstance(weights, dict)):
-				raise TypeError("weights must be a dictionary or None.")
-			if weights is not None:
-				for key in weights:
-					if key not in ["validity", "stability", "uniqueness", "novelty"]:
-						raise ValueError(f"Unsupported weight key: {key}.")
-					if weights[key] < 0.0:
-						raise ValueError("Weights must be non-negative.")
+		if not (weights is None or isinstance(weights, dict)):
+			raise TypeError("weights must be a dictionary or None.")
+		if weights is not None:
+			for key in weights:
+				if key not in ["validity", "stability", "uniqueness", "novelty"]:
+					raise ValueError(f"Unsupported weight key: {key}.")
+				if weights[key] < 0.0:
+					raise ValueError("Weights must be non-negative.")
 		if not (validity is not None or stability is not None or uniqueness or novelty):
 			raise ValueError(
 				"At least one of validity, stability, uniqueness, or novelty must be specified."
@@ -262,38 +260,45 @@ class Evaluator:
 			agg_func (str): Aggregation function; "prod" or "ave".
 			weights (dict[str, float] | None): Per-metric weights for "ave" mode.
 		"""
+		self.weights: dict[str, float] = {
+			"validity": 0.0,
+			"stability": 0.0,
+			"uniqueness": 0.0,
+			"novelty": 0.0,
+		}
+		if self.evaluate_validity:
+			self.weights["validity"] = (
+				1.0 if weights is None else weights.get("validity", 1.0)
+			)
+		if self.evaluate_stability:
+			self.weights["stability"] = (
+				1.0 if weights is None else weights.get("stability", 1.0)
+			)
+		if self.evaluate_uniqueness:
+			self.weights["uniqueness"] = (
+				1.0 if weights is None else weights.get("uniqueness", 1.0)
+			)
+		if self.evaluate_novelty:
+			self.weights["novelty"] = (
+				1.0 if weights is None else weights.get("novelty", 1.0)
+			)
 		if agg_func == "prod":
-			self.agg_func = lambda v, s, u, n: v * s * u * n
-		else:
-			self.weights: dict[str, float] = {
-				"validity": 0.0,
-				"stability": 0.0,
-				"uniqueness": 0.0,
-				"novelty": 0.0,
-			}
-			if self.evaluate_validity:
-				self.weights["validity"] = (
-					1.0 if weights is None else weights.get("validity", 1.0)
-				)
-			if self.evaluate_stability:
-				self.weights["stability"] = (
-					1.0 if weights is None else weights.get("stability", 1.0)
-				)
-			if self.evaluate_uniqueness:
-				self.weights["uniqueness"] = (
-					1.0 if weights is None else weights.get("uniqueness", 1.0)
-				)
-			if self.evaluate_novelty:
-				self.weights["novelty"] = (
-					1.0 if weights is None else weights.get("novelty", 1.0)
-				)
+			w = self.weights
+			self.agg_func = lambda v, s, u, n: (
+				v ** w["validity"]
+				* s ** w["stability"]
+				* u ** w["uniqueness"]
+				* n ** w["novelty"]
+			)
+		else:  # "ave"
 			total_weight = sum(self.weights.values())
 			self.weights = {k: v / total_weight for k, v in self.weights.items()}
+			w = self.weights
 			self.agg_func = lambda v, s, u, n: (
-				self.weights["validity"] * v
-				+ self.weights["stability"] * s
-				+ self.weights["uniqueness"] * u
-				+ self.weights["novelty"] * n
+				w["validity"] * v
+				+ w["stability"] * s
+				+ w["uniqueness"] * u
+				+ w["novelty"] * n
 			)
 
 	def _prepare_ref_xtals(
