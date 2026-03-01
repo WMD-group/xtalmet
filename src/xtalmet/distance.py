@@ -170,6 +170,19 @@ def _d_elmd(emb_1: TYPE_EMB_ELMD, emb_2: TYPE_EMB_ELMD, **kwargs) -> float:
 	return elmd(emb_1, emb_2, **kwargs)
 
 
+def _row_func_magpie(emb: np.ndarray, embs_2: np.ndarray) -> np.ndarray:
+	"""Compute one row of the d_magpie distance matrix.
+
+	Args:
+		emb (np.ndarray): Single MAGPIE feature vector.
+		embs_2 (np.ndarray): 2D array of target MAGPIE feature vectors.
+
+	Returns:
+		np.ndarray: Euclidean distances from emb to each row of embs_2.
+	"""
+	return np.sqrt(np.sum((emb[np.newaxis, :] - embs_2) ** 2, axis=1))
+
+
 def _set_n_processes(n_processes: int | None = None) -> int:
 	"""Set the number of processes for multiprocessing.
 
@@ -194,6 +207,7 @@ def _distance_matrix_template(
 	d_func: Callable | None = None,
 	initializer: Callable | None = None,
 	initargs: tuple = (),
+	row_func: Callable | None = None,
 ) -> np.ndarray:
 	"""Template to compute the distance matrix between two sets of embeddings.
 
@@ -208,10 +222,27 @@ def _distance_matrix_template(
 		d_func (Callable | None): Distance function.
 		initializer (Callable | None): Initializer function for worker processes.
 		initargs (tuple): Arguments for the initializer function.
+		row_func (Callable | None): Row function ``(emb_i, embs_2_arr) -> np.ndarray``
+			computing all distances from one source embedding to every target.
+			When provided, uses row-wise computation instead of pairwise d_func.
 
 	Returns:
 		np.ndarray: Distance matrix.
 	"""
+	if row_func is not None:
+		embs_2_local = embs_2 if embs_2 is not None else embs_1
+		embs_2_arr = np.array(embs_2_local)
+		if multiprocessing:
+			embs_1_arr = np.array(embs_1)
+			with Pool(
+				processes=_set_n_processes(n_processes),
+				initializer=_init_row_worker,
+				initargs=(row_func, embs_2_arr),
+			) as pool:
+				rows = pool.map(_row_worker, embs_1_arr)
+		else:
+			rows = [row_func(np.array(emb_i), embs_2_arr) for emb_i in embs_1]
+		return np.array(rows)
 	given_two_sets = embs_2 is not None
 	if given_two_sets:
 		if multiprocessing:
@@ -373,34 +404,33 @@ def _distance_matrix_d_wyckoff(
 	)
 
 
-_embs_2: np.ndarray | None = None
+_global_row_func: Callable | None = None
+_global_embs_2_arr: np.ndarray | None = None
 
 
-def _init_worker_distance_matrix_d_magpie(embs_2: np.ndarray):
-	"""Initialize global variables for worker processes.
+def _init_row_worker(row_func: Callable, embs_2_arr: np.ndarray):
+	"""Initialize generic row-worker processes.
 
 	Args:
-		embs_2 (np.ndarray): 2D array of embeddings.
+		row_func (Callable): Row function ``(emb_i, embs_2) -> np.ndarray``.
+		embs_2_arr (np.ndarray): 2D array of all target embeddings.
 	"""
-	global _embs_2
-	_embs_2 = embs_2
+	global _global_row_func, _global_embs_2_arr
+	_global_row_func = row_func
+	_global_embs_2_arr = embs_2_arr
 
 
-def _worker_distance_matrix_d_magpie(emb: np.ndarray) -> np.ndarray:
-	"""Worker function for computing a row of the distance matrix in multiprocessing.
-
-	Compute a row of the distance matrix based on d_magpie.
+def _row_worker(emb_i: np.ndarray) -> np.ndarray:
+	"""Generic row-worker: compute one row of the distance matrix.
 
 	Args:
-		emb (np.ndarray): 1D array of a single embedding.
+		emb_i (np.ndarray): Single source embedding.
 
 	Returns:
-		np.ndarray: A row of the d_magpie distance matrix.
+		np.ndarray: Distance row against all target embeddings.
 	"""
-	global _embs_2
-	d_sq = (emb[np.newaxis, :] - _embs_2) ** 2
-	d_euclidean = np.sqrt(np.sum(d_sq, axis=1))
-	return d_euclidean
+	global _global_row_func, _global_embs_2_arr
+	return _global_row_func(emb_i, _global_embs_2_arr)
 
 
 def _distance_matrix_d_magpie(
@@ -425,29 +455,9 @@ def _distance_matrix_d_magpie(
 	Returns:
 		np.ndarray: d_magpie distance matrix.
 	"""
-	if embs_2 is None:
-		embs_2 = embs_1
-	d_mtx = np.zeros((len(embs_1), len(embs_2)))
-	embs_1 = np.array(embs_1)
-	embs_2 = np.array(embs_2)
-	if multiprocessing:
-		with Pool(
-			processes=_set_n_processes(n_processes),
-			initializer=_init_worker_distance_matrix_d_magpie,
-			initargs=(embs_2,),
-		) as pool:
-			results = pool.map(
-				_worker_distance_matrix_d_magpie,
-				embs_1,
-			)
-			for i, row in enumerate(results):
-				d_mtx[i, :] = row
-	else:
-		for i, emb in enumerate(embs_1):
-			d_sq = (emb[np.newaxis, :] - embs_2) ** 2
-			d_euclidean = np.sqrt(np.sum(d_sq, axis=1))
-			d_mtx[i, :] = d_euclidean
-	return d_mtx
+	return _distance_matrix_template(
+		embs_1, embs_2, multiprocessing, n_processes, row_func=_row_func_magpie
+	)
 
 
 def _distance_matrix_d_pdd(
