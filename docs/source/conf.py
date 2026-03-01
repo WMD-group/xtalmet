@@ -33,6 +33,7 @@ autosummary_generate = True
 autoclass_content = "both"
 linkcode_url = "https://github.com/WMD-group/xtalmet"
 autodoc_member_order = "bysource"
+autodoc_mock_imports = ["mace", "smact", "ElMD"]
 
 
 templates_path = ["_templates"]
