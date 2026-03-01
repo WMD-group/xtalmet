@@ -1,6 +1,7 @@
 """This module offers classes to compute the validity of crystal structures."""
 
 import time
+from abc import ABC, abstractmethod
 
 import numpy as np
 from smact.screening import smact_validity
@@ -8,27 +9,20 @@ from smact.screening import smact_validity
 from .crystal import Crystal
 
 
-class SingleValidator:
-	"""Class to calculate validity of crystal structures using a single method."""
+class SingleValidator(ABC):
+	"""Abstract base class for single-method validity validators."""
 
-	def __init__(self, **kwargs) -> None:
-		"""Initialize SingleValidator.
-
-		Args:
-			**kwargs: Additional keyword arguments for the validity evaluation method.
-		"""
-		raise NotImplementedError
-
-	def validate(self, xtals: list[Crystal]) -> np.ndarray[float]:
+	@abstractmethod
+	def validate(self, xtals: list[Crystal]) -> np.ndarray:
 		"""Validate a list of crystals.
 
 		Args:
 			xtals (list[Crystal]): List of crystals to validate.
 
 		Returns:
-			np.ndarray[float]: Array of validity scores for each crystal.
+			np.ndarray: Array of validity scores for each crystal.
 		"""
-		raise NotImplementedError
+		...
 
 
 class SMACTValidator(SingleValidator):

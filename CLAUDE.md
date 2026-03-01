@@ -30,7 +30,7 @@ Six modules in `src/xtalmet/`:
 
 | Module | Purpose |
 |---|---|
-| `crystal.py` | `Crystal` class extending `pymatgen.Structure` |
+| `crystal.py` | `Crystal` class extending `pymatgen.Structure`; `_to_crystal`/`_to_crystal_list` helpers |
 | `distance.py` | All distance functions + embedding helpers |
 | `evaluator.py` | `Evaluator` — main user-facing API for VSUN evaluation |
 | `validity.py` | `SMACTValidator`, `StructureValidator` |

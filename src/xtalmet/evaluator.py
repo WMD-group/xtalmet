@@ -17,7 +17,7 @@ from .constants import (
 	SUPPORTED_DISTANCES,
 	SUPPORTED_VALIDITY,
 )
-from .crystal import Crystal
+from .crystal import Crystal, _to_crystal_list
 from .distance import _compute_embeddings, distance_matrix
 from .stability import StabilityCalculator
 from .validity import Validator
@@ -87,7 +87,7 @@ class Evaluator:
 				number of available CPU cores to avoid out-of-memory. If multiprocessing
 				is False, this argument is ignored. Default is None.
 			**kwargs: Additional keyword arguments. It can contain four keys:
-				"args_validiity", "args_stability", "args_emb", and "args_dist".
+				"args_validity", "args_stability", "args_emb", and "args_dist".
 				"args_validity" is for the validity evaluation, while "args_stability"
 				is for the stability evaluation. "args_emb" and "args_dist" are for the
 				distance metric used in uniqueness and novelty evaluation: The former
@@ -187,42 +187,45 @@ class Evaluator:
 		.. _tutorial notebook: https://github.com/WMD-group/xtalmet/blob/main/examples/tutorial.ipynb
 		"""
 		# Argument checks
-		assert validity is None or isinstance(validity, list), (
-			"validity must be a list or None."
-		)
+		if not (validity is None or isinstance(validity, list)):
+			raise TypeError("validity must be a list or None.")
 		if validity is not None:
 			for v in validity:
-				assert v in SUPPORTED_VALIDITY, f"Unsupported validity method: {v}."
-		assert stability in [None, "binary", "continuous"], (
-			f"Unsupported stability evaluation method: {stability}."
-		)
-		assert type(uniqueness) is bool, "uniqueness must be a boolean."
-		assert type(novelty) is bool, "novelty must be a boolean."
-		if uniqueness or novelty:
-			assert distance in SUPPORTED_DISTANCES, f"Unsupported distance: {distance}."
-		if novelty:
-			assert ref_xtals is not None, (
+				if v not in SUPPORTED_VALIDITY:
+					raise ValueError(f"Unsupported validity method: {v}.")
+		if stability not in [None, "binary", "continuous"]:
+			raise ValueError(f"Unsupported stability evaluation method: {stability}.")
+		if not isinstance(uniqueness, bool):
+			raise TypeError("uniqueness must be a boolean.")
+		if not isinstance(novelty, bool):
+			raise TypeError("novelty must be a boolean.")
+		if (uniqueness or novelty) and distance not in SUPPORTED_DISTANCES:
+			raise ValueError(f"Unsupported distance: {distance}.")
+		if novelty and ref_xtals is None:
+			raise ValueError(
 				"Reference crystal structures must be provided for novelty evaluation."
 			)
-			assert (
-				ref_xtals == "mp20"
-				or (type(ref_xtals) is str and Path(ref_xtals).is_file())
-				or all(isinstance(xtal, (Crystal, Structure)) for xtal in ref_xtals)
-			), f"Unsupported ref_xtals: {ref_xtals}"
-		assert agg_func in ["prod", "ave"], f"Unsupported agg_func: {agg_func}."
+		if novelty and not (
+			ref_xtals == "mp20"
+			or (type(ref_xtals) is str and Path(ref_xtals).is_file())
+			or all(isinstance(xtal, (Crystal, Structure)) for xtal in ref_xtals)
+		):
+			raise ValueError(f"Unsupported ref_xtals: {ref_xtals}")
+		if agg_func not in ["prod", "ave"]:
+			raise ValueError(f"Unsupported agg_func: {agg_func}.")
 		if agg_func == "ave":
-			assert weights is None or isinstance(weights, dict), (
-				"weights must be a dictionary or None."
-			)
+			if not (weights is None or isinstance(weights, dict)):
+				raise TypeError("weights must be a dictionary or None.")
 			if weights is not None:
 				for key in weights:
-					assert key in ["validity", "stability", "uniqueness", "novelty"], (
-						f"Unsupported weight key: {key}."
-					)
-					assert weights[key] >= 0.0, "Weights must be non-negative."
-		assert validity is not None or stability is not None or uniqueness or novelty, (
-			"At least one of validity, stability, uniqueness, or novelty must be specified."
-		)
+					if key not in ["validity", "stability", "uniqueness", "novelty"]:
+						raise ValueError(f"Unsupported weight key: {key}.")
+					if weights[key] < 0.0:
+						raise ValueError("Weights must be non-negative.")
+		if not (validity is not None or stability is not None or uniqueness or novelty):
+			raise ValueError(
+				"At least one of validity, stability, uniqueness, or novelty must be specified."
+			)
 
 		# Initial setup
 		self.evaluate_validity = validity is not None
@@ -242,33 +245,23 @@ class Evaluator:
 		self.evaluate_uniqueness = uniqueness
 		self.evaluate_novelty = novelty
 		self.distance = distance if uniqueness or novelty else None
-		if novelty:
-			if ref_xtals == "mp20":
-				print("Downloading MP-20 training data from Hugging Face...")
-				path_embs_train = hf_hub_download(
-					repo_id="masahiro-negishi/xtalmet",
-					filename=f"mp20/train/train_{distance}.pkl.gz",
-					repo_type="dataset",
-					revision=HF_VERSION,
-				)
-				self.ref_xtals = self._read_pickle_gz(path_embs_train)
-			elif type(ref_xtals) is str:
-				self.ref_xtals = self._read_pickle_gz(ref_xtals)
-			else:
-				print("Preparing reference crystals for novelty evaluation...")
-				ref_xtals_raw = [
-					xtal if isinstance(xtal, Crystal) else Crystal.from_Structure(xtal)
-					for xtal in ref_xtals
-				]
-				self.ref_xtals = _compute_embeddings(
-					distance=distance,
-					xtals=ref_xtals_raw,
-					multiprocessing=multiprocessing,
-					n_processes=n_processes,
-					**kwargs.get("args_emb", {}),
-				)
-		else:
-			self.ref_xtals = None
+		self.args_emb = kwargs.get("args_emb", {})
+		self.args_dist = kwargs.get("args_dist", {})
+
+		self._prepare_ref_xtals(
+			ref_xtals, distance, multiprocessing, n_processes, **kwargs
+		)
+		self._setup_aggregation(agg_func, weights)
+
+	def _setup_aggregation(
+		self, agg_func: str, weights: dict[str, float] | None
+	) -> None:
+		"""Set up the aggregation function from agg_func and weights.
+
+		Args:
+			agg_func (str): Aggregation function; "prod" or "ave".
+			weights (dict[str, float] | None): Per-metric weights for "ave" mode.
+		"""
 		if agg_func == "prod":
 			self.agg_func = lambda v, s, u, n: v * s * u * n
 		else:
@@ -280,18 +273,20 @@ class Evaluator:
 			}
 			if self.evaluate_validity:
 				self.weights["validity"] = (
-					1.0 if weights is None else weights["validity"]
+					1.0 if weights is None else weights.get("validity", 1.0)
 				)
 			if self.evaluate_stability:
 				self.weights["stability"] = (
-					1.0 if weights is None else weights["stability"]
+					1.0 if weights is None else weights.get("stability", 1.0)
 				)
 			if self.evaluate_uniqueness:
 				self.weights["uniqueness"] = (
-					1.0 if weights is None else weights["uniqueness"]
+					1.0 if weights is None else weights.get("uniqueness", 1.0)
 				)
 			if self.evaluate_novelty:
-				self.weights["novelty"] = 1.0 if weights is None else weights["novelty"]
+				self.weights["novelty"] = (
+					1.0 if weights is None else weights.get("novelty", 1.0)
+				)
 			total_weight = sum(self.weights.values())
 			self.weights = {k: v / total_weight for k, v in self.weights.items()}
 			self.agg_func = lambda v, s, u, n: (
@@ -300,8 +295,48 @@ class Evaluator:
 				+ self.weights["uniqueness"] * u
 				+ self.weights["novelty"] * n
 			)
-		self.args_emb = kwargs.get("args_emb", {})
-		self.args_dist = kwargs.get("args_dist", {})
+
+	def _prepare_ref_xtals(
+		self,
+		ref_xtals: list[Crystal | Structure] | Literal["mp20"] | str | None,
+		distance: str | None,
+		multiprocessing: bool,
+		n_processes: int | None,
+		**kwargs,
+	) -> None:
+		"""Load or compute reference crystal embeddings for novelty evaluation.
+
+		Args:
+			ref_xtals: Reference crystals, dataset name, file path, or None.
+			distance (str | None): Distance metric for embedding.
+			multiprocessing (bool): Whether to use multiprocessing.
+			n_processes (int | None): Maximum number of processes.
+			**kwargs: Additional keyword arguments including "args_emb".
+		"""
+		if not self.evaluate_novelty:
+			self.ref_xtals = None
+			return
+		if ref_xtals == "mp20":
+			print("Downloading MP-20 training data from Hugging Face...")
+			path_embs_train = hf_hub_download(
+				repo_id="masahiro-negishi/xtalmet",
+				filename=f"mp20/train/train_{distance}.pkl.gz",
+				repo_type="dataset",
+				revision=HF_VERSION,
+			)
+			self.ref_xtals = self._read_pickle_gz(path_embs_train)
+		elif type(ref_xtals) is str:
+			self.ref_xtals = self._read_pickle_gz(ref_xtals)
+		else:
+			print("Preparing reference crystals for novelty evaluation...")
+			ref_xtals_raw = _to_crystal_list(ref_xtals)
+			self.ref_xtals = _compute_embeddings(
+				distance=distance,
+				xtals=ref_xtals_raw,
+				multiprocessing=multiprocessing,
+				n_processes=n_processes,
+				**kwargs.get("args_emb", {}),
+			)
 
 	def _read_pickle_gz(self, path: str) -> Any:
 		"""Load data from a pkl.gz file.
@@ -326,6 +361,37 @@ class Evaluator:
 		os.makedirs(os.path.dirname(path), exist_ok=True)
 		with gzip.open(path, "wb") as f:
 			pickle.dump(data, f)
+
+	def _load_cached(self, dir_intermediate: str | None, filename: str) -> Any:
+		"""Load cached data from dir_intermediate/filename if it exists.
+
+		Args:
+			dir_intermediate (str | None): Directory to look in. If None, returns None.
+			filename (str): Filename within the directory.
+
+		Returns:
+			Any: Loaded data, or None if not available.
+		"""
+		if dir_intermediate is None:
+			return None
+		path = os.path.join(dir_intermediate, filename)
+		if os.path.exists(path):
+			return self._read_pickle_gz(path)
+		return None
+
+	def _save_cached(
+		self, dir_intermediate: str | None, filename: str, data: Any
+	) -> None:
+		"""Save data to dir_intermediate/filename.
+
+		Args:
+			dir_intermediate (str | None): Directory to save in. If None, no-op.
+			filename (str): Filename within the directory.
+			data (Any): Data to save.
+		"""
+		if dir_intermediate is None:
+			return
+		self._write_pickle_gz(data, os.path.join(dir_intermediate, filename))
 
 	def _d_mtx(
 		self,
@@ -354,25 +420,18 @@ class Evaluator:
 		"""
 		times = {}
 		# Use pre-computed distance matrix if available
-		if dir_intermediate is not None and os.path.exists(
-			os.path.join(dir_intermediate, f"mtx_{metric}_{self.distance}.pkl.gz")
-		):
-			d_mtx = self._read_pickle_gz(
-				os.path.join(dir_intermediate, f"mtx_{metric}_{self.distance}.pkl.gz")
-			)
+		d_mtx = self._load_cached(
+			dir_intermediate, f"mtx_{metric}_{self.distance}.pkl.gz"
+		)
+		if d_mtx is not None:
 			times[f"{metric}_emb"] = 0.0
 			times[f"{metric}_d_mtx"] = 0.0
 		else:
 			# Prepare generated samples
-			if dir_intermediate is not None and os.path.exists(
-				os.path.join(dir_intermediate, f"emb_{self.distance}.pkl.gz")
-			):
-				xtals = self._read_pickle_gz(
-					os.path.join(dir_intermediate, f"emb_{self.distance}.pkl.gz")
-				)
-				embed = True
-			else:
-				embed = False
+			embs = self._load_cached(dir_intermediate, f"emb_{self.distance}.pkl.gz")
+			embed = embs is not None
+			if embed:
+				xtals = embs
 			# Distance matrix computation
 			if metric == "uni":
 				d_mtx, embs, times_matrix = distance_matrix(
@@ -406,19 +465,157 @@ class Evaluator:
 			times[f"{metric}_emb"] = times_matrix["emb_1"]
 			times[f"{metric}_d_mtx"] = times_matrix["d_mtx"]
 			# Save intermediate results
-			if dir_intermediate is not None:
-				self._write_pickle_gz(
-					d_mtx,
-					os.path.join(
-						dir_intermediate, f"mtx_{metric}_{self.distance}.pkl.gz"
-					),
-				)
-				if not embed:
-					self._write_pickle_gz(
-						embs,
-						os.path.join(dir_intermediate, f"emb_{self.distance}.pkl.gz"),
-					)
+			self._save_cached(
+				dir_intermediate, f"mtx_{metric}_{self.distance}.pkl.gz", d_mtx
+			)
+			if not embed:
+				self._save_cached(dir_intermediate, f"emb_{self.distance}.pkl.gz", embs)
 		return d_mtx, times[f"{metric}_emb"], times[f"{metric}_d_mtx"]
+
+	def _evaluate_validity(
+		self,
+		xtals: list[Crystal],
+		n_samples: int,
+		dir_intermediate: str | None,
+	) -> tuple[np.ndarray, dict[str, float]]:
+		"""Compute validity scores.
+
+		Args:
+			xtals (list[Crystal]): Crystal structures to evaluate.
+			n_samples (int): Number of samples.
+			dir_intermediate (str | None): Directory for cached intermediate results.
+
+		Returns:
+			tuple[np.ndarray, dict[str, float]]: Validity scores and timing dict.
+		"""
+		dict_individual_scores_precomputed = {}
+		for method in self.validator.validators:
+			data = self._load_cached(dir_intermediate, f"val_{method}.pkl.gz")
+			if data is not None:
+				dict_individual_scores_precomputed[method] = data
+
+		dict_individual_scores, times = self.validator.validate(
+			xtals=xtals, skip=list(dict_individual_scores_precomputed.keys())
+		)
+		all_arrays = list(dict_individual_scores_precomputed.values()) + list(
+			dict_individual_scores.values()
+		)
+		validity_scores = (
+			np.prod(np.stack(all_arrays), axis=0)
+			if all_arrays
+			else np.ones(n_samples, dtype=float)
+		)
+		for method in dict_individual_scores_precomputed:
+			times[f"val_{method}"] = 0.0
+		for method, scores in dict_individual_scores.items():
+			self._save_cached(dir_intermediate, f"val_{method}.pkl.gz", scores)
+		return validity_scores, times
+
+	def _evaluate_stability(
+		self,
+		xtals: list[Crystal],
+		dir_intermediate: str | None,
+	) -> tuple[np.ndarray, dict[str, float]]:
+		"""Compute stability scores.
+
+		Args:
+			xtals (list[Crystal]): Crystal structures to evaluate.
+			dir_intermediate (str | None): Directory for cached intermediate results.
+
+		Returns:
+			tuple[np.ndarray, dict[str, float]]: Stability scores and timing dict.
+		"""
+		e_above_hulls_precomputed = self._load_cached(dir_intermediate, "ehull.pkl.gz")
+		stability_scores, e_above_hulls, t_stab = (
+			self.stability_calculator.compute_stability_scores(
+				xtals=xtals,
+				e_above_hulls_precomputed=e_above_hulls_precomputed,
+			)
+		)
+		if e_above_hulls_precomputed is None:
+			self._save_cached(dir_intermediate, "ehull.pkl.gz", e_above_hulls)
+		return stability_scores, {"stab": t_stab}
+
+	def _evaluate_uniqueness(
+		self,
+		xtals: list[Crystal],
+		n_samples: int,
+		dir_intermediate: str | None,
+		multiprocessing: bool,
+		n_processes: int | None,
+	) -> tuple[np.ndarray, np.ndarray, dict[str, float]]:
+		"""Compute uniqueness scores.
+
+		Args:
+			xtals (list[Crystal]): Crystal structures to evaluate.
+			n_samples (int): Number of samples.
+			dir_intermediate (str | None): Directory for cached intermediate results.
+			multiprocessing (bool): Whether to use multiprocessing.
+			n_processes (int | None): Maximum number of processes.
+
+		Returns:
+			tuple[np.ndarray, np.ndarray, dict[str, float]]: Uniqueness scores,
+				embedding validity mask, and timing dict.
+		"""
+		d_mtx_uni, t_emb, t_d_mtx = self._d_mtx(
+			xtals=xtals,
+			dir_intermediate=dir_intermediate,
+			multiprocessing=multiprocessing,
+			n_processes=n_processes,
+			metric="uni",
+		)
+		emb_valid = np.array(
+			[d_mtx_i0 != float("nan") for d_mtx_i0 in d_mtx_uni[:, 0]], dtype=float
+		)
+		if self.distance in BINARY_DISTANCES:
+			uniqueness_scores = np.array(
+				[np.all(d_mtx_uni[i, :i] != 0) for i in range(n_samples)],
+				dtype=float,
+			)
+		else:
+			uniqueness_scores = np.sum(d_mtx_uni, axis=1) / (n_samples - 1)
+		return uniqueness_scores, emb_valid, {"uni_emb": t_emb, "uni_d_mtx": t_d_mtx}
+
+	def _evaluate_novelty(
+		self,
+		xtals: list[Crystal],
+		n_samples: int,
+		dir_intermediate: str | None,
+		multiprocessing: bool,
+		n_processes: int | None,
+	) -> tuple[np.ndarray, dict[str, float]]:
+		"""Compute novelty scores.
+
+		Args:
+			xtals (list[Crystal]): Crystal structures to evaluate.
+			n_samples (int): Number of samples.
+			dir_intermediate (str | None): Directory for cached intermediate results.
+			multiprocessing (bool): Whether to use multiprocessing.
+			n_processes (int | None): Maximum number of processes.
+
+		Returns:
+			tuple[np.ndarray, dict[str, float]]: Novelty scores and timing dict.
+		"""
+		d_mtx_nov, t_emb, t_d_mtx = self._d_mtx(
+			xtals=xtals,
+			dir_intermediate=dir_intermediate,
+			multiprocessing=multiprocessing,
+			n_processes=n_processes,
+			metric="nov",
+		)
+		validity_ref = np.array([d_mtx_0j != float("nan") for d_mtx_0j in d_mtx_nov[0]])
+		if self.distance in BINARY_DISTANCES:
+			novelty_scores = np.array(
+				[
+					np.all(np.logical_or(~validity_ref, d_mtx_nov[i] != 0))
+					for i in range(n_samples)
+				],
+				dtype=float,
+			)
+		else:
+			d_mtx_nov[:, ~validity_ref] = float("inf")
+			novelty_scores = np.min(d_mtx_nov, axis=1)
+		return novelty_scores, {"nov_emb": t_emb, "nov_d_mtx": t_d_mtx}
 
 	def evaluate(
 		self,
@@ -647,9 +844,9 @@ class Evaluator:
 				\text{VSUN}(x) =
 					\begin{cases}
 						V(x) S(x) U(x) N(x) &
-						\text{if agg_func = “prod"} \\
+						\text{if agg_func = "prod"} \\
 						w_V V(x) + w_S S(x) + w_U U(x) + w_N N(x) &
-						\text{if agg_func =“ave"}
+						\text{if agg_func ="ave"}
 					\end{cases}
 
 			where :math:`w_V`, :math:`w_S`, :math:`w_U`, and :math:`w_N` are the
@@ -662,13 +859,11 @@ class Evaluator:
 			.. math::
 				\text{VSUN} = \frac{1}{n} \sum_{i=1}^{n} \text{VSUN}(x_i)
 		"""
-		assert all(isinstance(xtal, (Crystal, Structure)) for xtal in xtals), (
-			"All elements in xtals must be of type Crystal or pymatgen Structure."
-		)
-		xtals = [
-			xtal if isinstance(xtal, Crystal) else Crystal.from_Structure(xtal)
-			for xtal in xtals
-		]
+		if not all(isinstance(xtal, (Crystal, Structure)) for xtal in xtals):
+			raise TypeError(
+				"All elements in xtals must be of type Crystal or pymatgen Structure."
+			)
+		xtals = _to_crystal_list(xtals)
 		n_samples = len(xtals)
 
 		if dir_intermediate is not None:
@@ -676,113 +871,33 @@ class Evaluator:
 
 		times: dict[str, float] = {}
 
-		# Validity
+		validity_scores = np.ones(n_samples, dtype=float)
+		stability_scores = np.ones(n_samples, dtype=float)
+		uniqueness_scores = np.ones(n_samples, dtype=float)
+		novelty_scores = np.ones(n_samples, dtype=float)
+
 		if self.evaluate_validity:
-			# Load pre-computed validity scores if available
-			dict_individual_scores_precomputed = {}
-			if dir_intermediate is not None:
-				for method in self.validator.validators:
-					path = os.path.join(dir_intermediate, f"val_{method}.pkl.gz")
-					if os.path.exists(path):
-						dict_individual_scores_precomputed[method] = (
-							self._read_pickle_gz(path)
-						)
-						times[f"val_{method}"] = 0.0
-			# Compute validity scores for the rest
-			dict_individual_scores, times_validity = self.validator.validate(
-				xtals=xtals, skip=list(dict_individual_scores_precomputed.keys())
+			validity_scores, v_t = self._evaluate_validity(
+				xtals, n_samples, dir_intermediate
 			)
-			validity_scores = np.ones(n_samples, dtype=float)
-			for val in dict_individual_scores_precomputed.values():
-				validity_scores *= val
-			for val in dict_individual_scores.values():
-				validity_scores *= val
-			for key, val in times_validity.items():
-				times[key] = val
-			# Save validity scores
-			if dir_intermediate is not None:
-				for method, scores in dict_individual_scores.items():
-					path = os.path.join(dir_intermediate, f"val_{method}.pkl.gz")
-					self._write_pickle_gz(scores, path)
-		else:
-			validity_scores = np.ones(n_samples, dtype=float)
+			times.update(v_t)
 
-		# Stability
 		if self.evaluate_stability:
-			# Load pre-computed e_above_hulls if available
-			if dir_intermediate is not None and os.path.exists(
-				os.path.join(dir_intermediate, "ehull.pkl.gz")
-			):
-				e_above_hulls_precomputed = self._read_pickle_gz(
-					os.path.join(dir_intermediate, "ehull.pkl.gz")
-				)
-			else:
-				e_above_hulls_precomputed = None
-			# Compute stability scores
-			stability_scores, e_above_hulls, times["stab"] = (
-				self.stability_calculator.compute_stability_scores(
-					xtals=xtals,
-					e_above_hulls_precomputed=e_above_hulls_precomputed,
-				)
-			)
-			# Save e_above_hulls values
-			if dir_intermediate is not None and e_above_hulls_precomputed is None:
-				self._write_pickle_gz(
-					e_above_hulls,
-					os.path.join(dir_intermediate, "ehull.pkl.gz"),
-				)
-		else:
-			stability_scores = np.ones(n_samples, dtype=float)
+			stability_scores, s_t = self._evaluate_stability(xtals, dir_intermediate)
+			times.update(s_t)
 
-		# Uniqueness
 		if self.evaluate_uniqueness:
-			d_mtx_uni, times["uni_emb"], times["uni_d_mtx"] = self._d_mtx(
-				xtals=xtals,
-				dir_intermediate=dir_intermediate,
-				multiprocessing=multiprocessing,
-				n_processes=n_processes,
-				metric="uni",
+			uniqueness_scores, emb_valid, u_t = self._evaluate_uniqueness(
+				xtals, n_samples, dir_intermediate, multiprocessing, n_processes
 			)
-			# Crystals are invalid if their embeddings could not be computed
-			validity_scores *= np.array(
-				[d_mtx_i0 != float("nan") for d_mtx_i0 in d_mtx_uni[:, 0]], dtype=float
-			)
-			# Compute uniqueness scores
-			if self.distance in BINARY_DISTANCES:
-				uniqueness_scores = np.array(
-					[np.all(d_mtx_uni[i, :i] != 0) for i in range(n_samples)],
-					dtype=float,
-				)
-			else:
-				uniqueness_scores = np.sum(d_mtx_uni, axis=1) / (n_samples - 1)
-		else:
-			uniqueness_scores = np.ones(n_samples, dtype=float)
+			validity_scores *= emb_valid
+			times.update(u_t)
 
-		# Novelty
 		if self.evaluate_novelty:
-			d_mtx_nov, times["nov_emb"], times["nov_d_mtx"] = self._d_mtx(
-				xtals=xtals,
-				dir_intermediate=dir_intermediate,
-				multiprocessing=multiprocessing,
-				n_processes=n_processes,
-				metric="nov",
+			novelty_scores, n_t = self._evaluate_novelty(
+				xtals, n_samples, dir_intermediate, multiprocessing, n_processes
 			)
-			validity_ref = np.array(
-				[d_mtx_0j != float("nan") for d_mtx_0j in d_mtx_nov[0]]
-			)
-			if self.distance in BINARY_DISTANCES:
-				novelty_scores = np.array(
-					[
-						np.all(np.logical_or(~validity_ref, d_mtx_nov[i] != 0))
-						for i in range(n_samples)
-					],
-					dtype=float,
-				)
-			else:
-				d_mtx_nov[:, ~validity_ref] = float("inf")
-				novelty_scores = np.min(d_mtx_nov, axis=1)
-		else:
-			novelty_scores = np.ones(n_samples, dtype=float)
+			times.update(n_t)
 
 		# Aggregation
 		start_time_metric = time.time()

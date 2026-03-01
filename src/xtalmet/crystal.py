@@ -1,4 +1,4 @@
-"""This module defines the Crystal class to store information about a single crystal."""
+"""Crystal class and Structure/Crystal conversion helpers."""
 
 import warnings
 from collections.abc import Sequence
@@ -326,3 +326,27 @@ class Crystal(Structure):
 			Atoms: ASE Atoms object.
 		"""
 		return AseAtomsAdaptor.get_atoms(self)
+
+
+def _to_crystal(x: Structure | Crystal) -> Crystal:
+	"""Convert a Structure to Crystal if needed.
+
+	Args:
+		x (Structure | Crystal): Input structure.
+
+	Returns:
+		Crystal: Crystal object.
+	"""
+	return Crystal.from_Structure(x) if isinstance(x, Structure) else x
+
+
+def _to_crystal_list(items: list) -> list[Crystal]:
+	"""Convert a list of Structures/Crystals to a list of Crystals.
+
+	Args:
+		items (list): List of Structure or Crystal objects.
+
+	Returns:
+		list[Crystal]: List of Crystal objects.
+	"""
+	return [_to_crystal(x) for x in items]
