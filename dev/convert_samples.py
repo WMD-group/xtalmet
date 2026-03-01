@@ -1,4 +1,4 @@
-"""Convert samples from various models to a list of Crystal objects."""
+"""Convert samples from various models to a list of Structure objects."""
 
 import gzip
 import io
@@ -14,20 +14,18 @@ import torch
 from pymatgen.core import Lattice, Structure
 from pymatgen.io.cif import CifParser
 
-from xtalmet.crystal import Crystal
-
 
 def convert_cdvae_diffcsppp_format(
 	path: str, format: Literal["cdvae", "diffcsppp"]
-) -> list[Crystal]:
-	"""Convert samples from CDVAE or DiffCSP++ format to a list of Crystal objects.
+) -> list[Structure]:
+	"""Convert samples from CDVAE or DiffCSP++ format to a list of Structure objects.
 
 	Args:
 		path (str): Path to the .pt file containing the samples.
 		format (Literal): The format of the file, either "cdvae" or "diffcsppp".
 
 	Returns:
-		list[Crystal]: A list of Crystal objects.
+		list[Structure]: A list of Structure objects.
 
 	Note:
 		CDVAE and DiffCSP++ formats are very similar, so we use the same function.
@@ -51,7 +49,7 @@ def convert_cdvae_diffcsppp_format(
 	gen_xtals = []
 	for batch_idx, num_atom in enumerate(all_num_atoms.tolist()):
 		gen_xtals.append(
-			Crystal(
+			Structure(
 				lattice=Lattice.from_dict(
 					{
 						"a": all_lengths[batch_idx][0].item(),
@@ -70,31 +68,29 @@ def convert_cdvae_diffcsppp_format(
 	return gen_xtals
 
 
-def convert_diffcsp_format(path: str) -> list[Crystal]:
-	"""Convert samples from DiffCSP format to a list of Crystal objects.
+def convert_diffcsp_format(path: str) -> list[Structure]:
+	"""Convert samples from DiffCSP format to a list of Structure objects.
 
 	Args:
 		path (str): Path to the .json file containing the samples.
 
 	Returns:
-		list[Crystal]: A list of Crystal objects.
+		list[Structure]: A list of Structure objects.
 	"""
 	with open(path) as f:
 		gen_xtals_raw = json.load(f)
-	gen_xtals = [
-		Crystal.from_Structure(Structure.from_dict(xtal)) for xtal in gen_xtals_raw
-	]
+	gen_xtals = [Structure.from_dict(xtal) for xtal in gen_xtals_raw]
 	return gen_xtals
 
 
-def convert_mattergen_format(path: str) -> list[Crystal]:
-	"""Convert samples from MatterGen format to a list of Crystal objects.
+def convert_mattergen_format(path: str) -> list[Structure]:
+	"""Convert samples from MatterGen format to a list of Structure objects.
 
 	Args:
 		path (str): Path to the .zip file containing the samples.
 
 	Returns:
-		list[Crystal]: A list of Crystal objects.
+		list[Structure]: A list of Structure objects.
 	"""
 	gen_xtals_raw = []
 	with zipfile.ZipFile(path, "r") as zf:
@@ -107,15 +103,15 @@ def convert_mattergen_format(path: str) -> list[Crystal]:
 	gen_xtals = []
 	for xtal in gen_xtals_raw:
 		structure = CifParser.from_str(xtal).parse_structures(primitive=True)[0]
-		gen_xtals.append(Crystal.from_Structure(structure))
+		gen_xtals.append(structure)
 	return gen_xtals
 
 
-def convert_mp20_test() -> list[Crystal]:
-	"""Download the MP20 test set and convert to a list of Crystal objects.
+def convert_mp20_test() -> list[Structure]:
+	"""Download the MP20 test set and convert to a list of Structure objects.
 
 	Returns:
-		list[Crystal]: A list of Crystal objects.
+		list[Structure]: A list of Structure objects.
 	"""
 	url = "https://raw.githubusercontent.com/txie-93/cdvae/refs/heads/main/data/mp_20/test.csv"
 	response = requests.get(url)
@@ -123,12 +119,12 @@ def convert_mp20_test() -> list[Crystal]:
 	gen_xtals = []
 	for _, row in test_xtals_raw.iterrows():
 		structure = CifParser.from_str(row["cif"]).parse_structures(primitive=True)[0]
-		gen_xtals.append(Crystal.from_Structure(structure))
+		gen_xtals.append(structure)
 	return gen_xtals
 
 
 def convert():
-	"""Convert samples from various models to a list of Crystal objects."""
+	"""Convert samples from various models to a list of Structure objects."""
 	paths_raw = {
 		"adit": os.path.join(
 			os.path.dirname(__file__), "raw/mp20/adit/adit_dng_mp_20.json"
