@@ -5,6 +5,7 @@ import time
 import warnings
 from collections.abc import Callable
 from multiprocessing import Pool, cpu_count
+from typing import Literal, overload
 
 import amd
 import numpy as np
@@ -16,6 +17,8 @@ from scipy.spatial.distance import squareform
 from .constants import (
 	CONTINUOUS_UNNORMALIZED_DISTANCES,
 	DIST_WO_EMB,
+	ELMD_AMD_COEF_AMD,
+	ELMD_AMD_COEF_ELMD,
 	TYPE_EMB_ALL,
 	TYPE_EMB_AMD,
 	TYPE_EMB_COMP,
@@ -24,7 +27,86 @@ from .constants import (
 	TYPE_EMB_PDD,
 	TYPE_EMB_WYCKOFF,
 )
-from .crystal import Crystal
+from .crystal import Crystal, _to_crystal, _to_crystal_list
+
+
+class _EmbeddingError:
+	"""Sentinel wrapping a failed embedding computation."""
+
+	def __init__(self, exc: Exception) -> None:
+		self.exc = exc
+
+
+def _normalize(d: float) -> float:
+	"""Normalize d to [0, 1] via d / (1 + d).
+
+	Args:
+		d (float): Distance value.
+
+	Returns:
+		float: Normalized distance.
+	"""
+	return d / (1 + d)
+
+
+def _resolve_elmd_amd_coefs(args_dist: dict) -> tuple[float, float]:
+	"""Read and normalize elmd+amd blending coefficients from args_dist.
+
+	Args:
+		args_dist (dict): Distance arguments dict, optionally containing "coefs".
+
+	Returns:
+		tuple[float, float]: Normalized (coef_elmd, coef_amd).
+	"""
+	if "coefs" in args_dist:
+		coefs = args_dist["coefs"]
+		coef_elmd, coef_amd = coefs["elmd"], coefs["amd"]
+		total = coef_elmd + coef_amd
+		return coef_elmd / total, coef_amd / total
+	return ELMD_AMD_COEF_ELMD, ELMD_AMD_COEF_AMD
+
+
+def _insert_nan_rows_cols(
+	d_mtx: np.ndarray,
+	error_indices_1: list,
+	error_indices_2: list | None,
+) -> np.ndarray:
+	"""Insert NaN rows and columns for failed embeddings.
+
+	Args:
+		d_mtx (np.ndarray): Distance matrix computed from valid embeddings only.
+		error_indices_1 (list): Row indices where embeddings failed.
+		error_indices_2 (list | None): Column indices where embeddings failed.
+			If None, the same indices as error_indices_1 are used (symmetric case).
+
+	Returns:
+		np.ndarray: Distance matrix with NaN rows/columns inserted.
+	"""
+	for i in error_indices_1:
+		d_mtx = np.insert(d_mtx, i, float("nan"), axis=0)
+	col_indices = error_indices_2 if error_indices_2 is not None else error_indices_1
+	for j in col_indices:
+		d_mtx = np.insert(d_mtx, j, float("nan"), axis=1)
+	return d_mtx
+
+
+def _blend_elmd_amd_distance(
+	d_elmd_unnorm: float | np.ndarray,
+	d_amd_unnorm: float | np.ndarray,
+	args_dist: dict,
+) -> float | np.ndarray:
+	"""Blend normalized elmd and amd distances.
+
+	Args:
+		d_elmd_unnorm (float | np.ndarray): Unnormalized ElMD distance(s).
+		d_amd_unnorm (float | np.ndarray): Unnormalized AMD distance(s).
+		args_dist (dict): Distance arguments, optionally containing "coefs".
+
+	Returns:
+		float | np.ndarray: Blended distance(s).
+	"""
+	coef_elmd, coef_amd = _resolve_elmd_amd_coefs(args_dist)
+	return coef_elmd * _normalize(d_elmd_unnorm) + coef_amd * _normalize(d_amd_unnorm)
 
 
 def _d_smat(
@@ -50,12 +132,13 @@ def _d_smat(
 	return 0.0 if matcher.fit(emb_1, emb_2) else 1.0
 
 
-def _d_comp(emb_1: TYPE_EMB_COMP, emb_2: TYPE_EMB_COMP) -> float:
+def _d_comp(emb_1: TYPE_EMB_COMP, emb_2: TYPE_EMB_COMP, **kwargs) -> float:
 	"""Compute the binary distance based on the match of compositions.
 
 	Args:
 		emb_1 (TYPE_EMB_COMP): Embedding 1.
 		emb_2 (TYPE_EMB_COMP): Embedding 2.
+		**kwargs: Ignored; present for uniform interface.
 
 	Returns:
 		float: Composition distance (0.0 or 1.0).
@@ -63,27 +146,29 @@ def _d_comp(emb_1: TYPE_EMB_COMP, emb_2: TYPE_EMB_COMP) -> float:
 	return 0.0 if emb_1 == emb_2 else 1.0
 
 
-def _d_wyckoff(emb_1: TYPE_EMB_WYCKOFF, emb_2: TYPE_EMB_WYCKOFF) -> float:
+def _d_wyckoff(emb_1: TYPE_EMB_WYCKOFF, emb_2: TYPE_EMB_WYCKOFF, **kwargs) -> float:
 	"""Compute the binary distance based on the match of Wyckoff representations.
 
 	Args:
 		emb_1 (TYPE_EMB_WYCKOFF): Embedding 1.
 		emb_2 (TYPE_EMB_WYCKOFF): Embedding 2.
+		**kwargs: Ignored; present for uniform interface.
 
 	Returns:
 		float: Wyckoff distance (0.0 or 1.0).
 	"""
-	if isinstance(emb_1, Exception) or isinstance(emb_2, Exception):
+	if isinstance(emb_1, _EmbeddingError) or isinstance(emb_2, _EmbeddingError):
 		return float("nan")
 	return 0.0 if emb_1 == emb_2 else 1.0
 
 
-def _d_magpie(emb_1: TYPE_EMB_MAGPIE, emb_2: TYPE_EMB_MAGPIE) -> float:
+def _d_magpie(emb_1: TYPE_EMB_MAGPIE, emb_2: TYPE_EMB_MAGPIE, **kwargs) -> float:
 	"""Compute the continuous distance using compositional Magpie fingerprints.
 
 	Args:
 		emb_1 (TYPE_EMB_MAGPIE): Embedding 1.
 		emb_2 (TYPE_EMB_MAGPIE): Embedding 2.
+		**kwargs: Ignored; present for uniform interface.
 
 	Returns:
 		float: Magpie distance.
@@ -112,7 +197,7 @@ def _d_pdd(emb_1: TYPE_EMB_PDD, emb_2: TYPE_EMB_PDD, **kwargs) -> float:
 			crystals. Advances in Neural Information Processing Systems, 35,
 			24625--24638. https://openreview.net/forum?id=4wrB7Mo9_OQ
 	"""
-	if isinstance(emb_1, Exception) or isinstance(emb_2, Exception):
+	if isinstance(emb_1, _EmbeddingError) or isinstance(emb_2, _EmbeddingError):
 		return float("nan")
 	return amd.PDD_cdist([emb_1], [emb_2], **kwargs)[0][0].item()
 
@@ -134,7 +219,7 @@ def _d_amd(emb_1: TYPE_EMB_AMD, emb_2: TYPE_EMB_AMD, **kwargs) -> float:
 			Communications in Mathematical and in Computer Chemistry, 87(3), 529-559,
 			https://doi.org/10.46793/match.87-3.529W
 	"""
-	if isinstance(emb_1, Exception) or isinstance(emb_2, Exception):
+	if isinstance(emb_1, _EmbeddingError) or isinstance(emb_2, _EmbeddingError):
 		return float("nan")
 	return amd.AMD_cdist([emb_1], [emb_2], **kwargs)[0][0].item()
 
@@ -151,7 +236,7 @@ def _d_elmd(emb_1: TYPE_EMB_ELMD, emb_2: TYPE_EMB_ELMD, **kwargs) -> float:
 		float: ElMD distance.
 
 	References:
-		- Hargreaves et al., (2020). The Earth Mover’s Distance as a Metric for the
+		- Hargreaves et al., (2020). The Earth Mover's Distance as a Metric for the
 			Space of Inorganic Compositions. Chemistry of Materials, 32(24),
 			10610-10620.
 	"""
@@ -163,6 +248,19 @@ def _d_elmd(emb_1: TYPE_EMB_ELMD, emb_2: TYPE_EMB_ELMD, **kwargs) -> float:
 		)
 		kwargs["return_assignments"] = False
 	return elmd(emb_1, emb_2, **kwargs)
+
+
+def _row_func_magpie(emb: np.ndarray, embs_2: np.ndarray) -> np.ndarray:
+	"""Compute one row of the d_magpie distance matrix.
+
+	Args:
+		emb (np.ndarray): Single MAGPIE feature vector.
+		embs_2 (np.ndarray): 2D array of target MAGPIE feature vectors.
+
+	Returns:
+		np.ndarray: Euclidean distances from emb to each row of embs_2.
+	"""
+	return np.sqrt(np.sum((emb[np.newaxis, :] - embs_2) ** 2, axis=1))
 
 
 def _set_n_processes(n_processes: int | None = None) -> int:
@@ -189,6 +287,7 @@ def _distance_matrix_template(
 	d_func: Callable | None = None,
 	initializer: Callable | None = None,
 	initargs: tuple = (),
+	row_func: Callable | None = None,
 ) -> np.ndarray:
 	"""Template to compute the distance matrix between two sets of embeddings.
 
@@ -203,10 +302,32 @@ def _distance_matrix_template(
 		d_func (Callable | None): Distance function.
 		initializer (Callable | None): Initializer function for worker processes.
 		initargs (tuple): Arguments for the initializer function.
+		row_func (Callable | None): Row function ``(emb_i, embs_2_arr) -> np.ndarray``
+			computing all distances from one source embedding to every target.
+			When provided, uses row-wise computation instead of pairwise d_func.
 
 	Returns:
 		np.ndarray: Distance matrix.
+
+	Raises:
+		ValueError: If both d_func and row_func are None.
 	"""
+	if d_func is None and row_func is None:
+		raise ValueError("Either d_func or row_func must be provided.")
+	if row_func is not None:
+		embs_2_local = embs_2 if embs_2 is not None else embs_1
+		embs_2_arr = np.array(embs_2_local)
+		if multiprocessing:
+			embs_1_arr = np.array(embs_1)
+			with Pool(
+				processes=_set_n_processes(n_processes),
+				initializer=_init_row_worker,
+				initargs=(row_func, embs_2_arr),
+			) as pool:
+				rows = pool.map(_row_worker, embs_1_arr)
+		else:
+			rows = [row_func(np.array(emb_i), embs_2_arr) for emb_i in embs_1]
+		return np.array(rows)
 	given_two_sets = embs_2 is not None
 	if given_two_sets:
 		if multiprocessing:
@@ -319,6 +440,7 @@ def _distance_matrix_d_comp(
 	embs_2: list[TYPE_EMB_COMP] | None = None,
 	multiprocessing: bool = False,
 	n_processes: int | None = None,
+	**kwargs,
 ) -> np.ndarray:
 	"""Compute the distance matrix between two sets of embeddings based on d_comp.
 
@@ -330,6 +452,7 @@ def _distance_matrix_d_comp(
 		multiprocessing (bool): Whether to use multiprocessing. Default is False.
 		n_processes (int | None): Maximum number of processes for multiprocessing. If
 			multiprocessing is False, this argument will be ignored. Default is None.
+		**kwargs: Ignored; present for uniform interface.
 
 	Returns:
 		np.ndarray: d_comp distance matrix.
@@ -344,6 +467,7 @@ def _distance_matrix_d_wyckoff(
 	embs_2: list[TYPE_EMB_WYCKOFF] | None = None,
 	multiprocessing: bool = False,
 	n_processes: int | None = None,
+	**kwargs,
 ) -> np.ndarray:
 	"""Compute the distance matrix between two sets of embeddings based on d_wyckoff.
 
@@ -355,6 +479,7 @@ def _distance_matrix_d_wyckoff(
 		multiprocessing (bool): Whether to use multiprocessing. Default is False.
 		n_processes (int | None): Maximum number of processes for multiprocessing. If
 			multiprocessing is False, this argument will be ignored. Default is None.
+		**kwargs: Ignored; present for uniform interface.
 
 	Returns:
 		np.ndarray: d_wyckoff distance matrix.
@@ -364,34 +489,33 @@ def _distance_matrix_d_wyckoff(
 	)
 
 
-_embs_2: np.ndarray | None = None
+_global_row_func: Callable | None = None
+_global_embs_2_arr: np.ndarray | None = None
 
 
-def _init_worker_distance_matrix_d_magpie(embs_2: np.ndarray):
-	"""Initialize global variables for worker processes.
+def _init_row_worker(row_func: Callable, embs_2_arr: np.ndarray):
+	"""Initialize generic row-worker processes.
 
 	Args:
-		embs_2 (np.ndarray): 2D array of embeddings.
+		row_func (Callable): Row function ``(emb_i, embs_2) -> np.ndarray``.
+		embs_2_arr (np.ndarray): 2D array of all target embeddings.
 	"""
-	global _embs_2
-	_embs_2 = embs_2
+	global _global_row_func, _global_embs_2_arr
+	_global_row_func = row_func
+	_global_embs_2_arr = embs_2_arr
 
 
-def _worker_distance_matrix_d_magpie(emb: np.ndarray) -> np.ndarray:
-	"""Worker function for computing a row of the distance matrix in multiprocessing.
-
-	Compute a row of the distance matrix based on d_magpie.
+def _row_worker(emb_i: np.ndarray) -> np.ndarray:
+	"""Generic row-worker: compute one row of the distance matrix.
 
 	Args:
-		emb (np.ndarray): 1D array of a single embedding.
+		emb_i (np.ndarray): Single source embedding.
 
 	Returns:
-		np.ndarray: A row of the d_magpie distance matrix.
+		np.ndarray: Distance row against all target embeddings.
 	"""
-	global _embs_2
-	d_sq = (emb[np.newaxis, :] - _embs_2) ** 2
-	d_euclidean = np.sqrt(np.sum(d_sq, axis=1))
-	return d_euclidean
+	global _global_row_func, _global_embs_2_arr
+	return _global_row_func(emb_i, _global_embs_2_arr)
 
 
 def _distance_matrix_d_magpie(
@@ -399,6 +523,7 @@ def _distance_matrix_d_magpie(
 	embs_2: list[TYPE_EMB_MAGPIE] | None = None,
 	multiprocessing: bool = False,
 	n_processes: int | None = None,
+	**kwargs,
 ) -> np.ndarray:
 	"""Compute the distance matrix between two sets of embeddings based on d_magpie.
 
@@ -410,33 +535,14 @@ def _distance_matrix_d_magpie(
 		multiprocessing (bool): Whether to use multiprocessing. Default is False.
 		n_processes (int | None): Maximum number of processes for multiprocessing. If
 			multiprocessing is False, this argument will be ignored. Default is None.
+		**kwargs: Ignored; present for uniform interface.
 
 	Returns:
 		np.ndarray: d_magpie distance matrix.
 	"""
-	if embs_2 is None:
-		embs_2 = embs_1
-	d_mtx = np.zeros((len(embs_1), len(embs_2)))
-	embs_1 = np.array(embs_1)
-	embs_2 = np.array(embs_2)
-	if multiprocessing:
-		with Pool(
-			processes=_set_n_processes(n_processes),
-			initializer=_init_worker_distance_matrix_d_magpie,
-			initargs=(embs_2,),
-		) as pool:
-			results = pool.map(
-				_worker_distance_matrix_d_magpie,
-				embs_1,
-			)
-			for i, row in enumerate(results):
-				d_mtx[i, :] = row
-	else:
-		for i, emb in enumerate(embs_1):
-			d_sq = (emb[np.newaxis, :] - embs_2) ** 2
-			d_euclidean = np.sqrt(np.sum(d_sq, axis=1))
-			d_mtx[i, :] = d_euclidean
-	return d_mtx
+	return _distance_matrix_template(
+		embs_1, embs_2, multiprocessing, n_processes, row_func=_row_func_magpie
+	)
 
 
 def _distance_matrix_d_pdd(
@@ -465,31 +571,28 @@ def _distance_matrix_d_pdd(
 		kwargs["n_jobs"] = _set_n_processes(n_processes)
 
 	given_two_sets = embs_2 is not None
-	valids_1 = [emb for emb in embs_1 if not isinstance(emb, Exception)]
-	error_indices_1 = [i for i, emb in enumerate(embs_1) if isinstance(emb, Exception)]
+	valids_1 = [emb for emb in embs_1 if not isinstance(emb, _EmbeddingError)]
+	error_indices_1 = [
+		i for i, emb in enumerate(embs_1) if isinstance(emb, _EmbeddingError)
+	]
 	if not given_two_sets:
 		d_mtx = squareform(amd.PDD_pdist(valids_1, **kwargs))
+		d_mtx = _insert_nan_rows_cols(d_mtx, error_indices_1, None)
 	else:
-		valids_2 = [emb for emb in embs_2 if not isinstance(emb, Exception)]
+		valids_2 = [emb for emb in embs_2 if not isinstance(emb, _EmbeddingError)]
 		error_indices_2 = [
-			i for i, emb in enumerate(embs_2) if isinstance(emb, Exception)
+			i for i, emb in enumerate(embs_2) if isinstance(emb, _EmbeddingError)
 		]
 		d_mtx = amd.PDD_cdist(valids_1, valids_2, **kwargs)
-	# insert NaN for error embeddings
-	for i in error_indices_1:
-		d_mtx = np.insert(d_mtx, i, float("nan"), axis=0)
-	if given_two_sets:
-		for j in error_indices_2:
-			d_mtx = np.insert(d_mtx, j, float("nan"), axis=1)
-	else:
-		for j in error_indices_1:
-			d_mtx = np.insert(d_mtx, j, float("nan"), axis=1)
+		d_mtx = _insert_nan_rows_cols(d_mtx, error_indices_1, error_indices_2)
 	return d_mtx
 
 
 def _distance_matrix_d_amd(
 	embs_1: list[TYPE_EMB_AMD],
 	embs_2: list[TYPE_EMB_AMD] | None = None,
+	multiprocessing: bool = False,
+	n_processes: int | None = None,
 	**kwargs,
 ) -> np.ndarray:
 	"""Compute the distance matrix between two sets of embeddings based on d_amd.
@@ -499,31 +602,38 @@ def _distance_matrix_d_amd(
 	Args:
 		embs_1 (list[TYPE_EMB_AMD]): Embeddings
 		embs_2 (list[TYPE_EMB_AMD] | None): Embeddings or None. Default is None.
+		multiprocessing (bool): Whether to use multiprocessing. Multiprocessing is
+			not implemented for AMD; if True, a warning is issued and the computation
+			proceeds without it. Default is False.
+		n_processes (int | None): Ignored (multiprocessing not supported). Default is
+			None.
 		**kwargs: Additional arguments for amd.AMD_pdist and amd.AMD_cdist.
 
 	Returns:
 		np.ndarray: d_amd distance matrix.
 	"""
+	if multiprocessing:
+		warnings.warn(
+			"Multiprocessing is not implemented for _distance_matrix_d_amd. "
+			"Proceeding without multiprocessing.",
+			stacklevel=2,
+		)
+
 	given_two_sets = embs_2 is not None
-	valids_1 = [emb for emb in embs_1 if not isinstance(emb, Exception)]
-	error_indices_1 = [i for i, emb in enumerate(embs_1) if isinstance(emb, Exception)]
+	valids_1 = [emb for emb in embs_1 if not isinstance(emb, _EmbeddingError)]
+	error_indices_1 = [
+		i for i, emb in enumerate(embs_1) if isinstance(emb, _EmbeddingError)
+	]
 	if not given_two_sets:
 		d_mtx = squareform(amd.AMD_pdist(valids_1, **kwargs))
+		d_mtx = _insert_nan_rows_cols(d_mtx, error_indices_1, None)
 	else:
-		valids_2 = [emb for emb in embs_2 if not isinstance(emb, Exception)]
+		valids_2 = [emb for emb in embs_2 if not isinstance(emb, _EmbeddingError)]
 		error_indices_2 = [
-			i for i, emb in enumerate(embs_2) if isinstance(emb, Exception)
+			i for i, emb in enumerate(embs_2) if isinstance(emb, _EmbeddingError)
 		]
 		d_mtx = amd.AMD_cdist(valids_1, valids_2, **kwargs)
-	# insert NaN for error embeddings
-	for i in error_indices_1:
-		d_mtx = np.insert(d_mtx, i, float("nan"), axis=0)
-	if given_two_sets:
-		for j in error_indices_2:
-			d_mtx = np.insert(d_mtx, j, float("nan"), axis=1)
-	else:
-		for j in error_indices_1:
-			d_mtx = np.insert(d_mtx, j, float("nan"), axis=1)
+		d_mtx = _insert_nan_rows_cols(d_mtx, error_indices_1, error_indices_2)
 	return d_mtx
 
 
@@ -569,12 +679,13 @@ def _compute_embedding_worker(xtal: Crystal, distance: str, **kwargs) -> TYPE_EM
 		**kwargs: Additional arguments for embedding methods if needed.
 
 	Returns:
-		TYPE_EMB_ALL: The embedding.
+		TYPE_EMB_ALL | _EmbeddingError: The embedding, or an _EmbeddingError
+			wrapping the exception if embedding computation failed.
 	"""
 	try:
 		return xtal.get_embedding(distance, **kwargs)
 	except Exception as e:
-		return e
+		return _EmbeddingError(e)
 
 
 def _compute_embeddings(
@@ -620,6 +731,51 @@ def _compute_embeddings(
 		return embs
 
 
+# Registry: metric name → pairwise distance function
+_DIST_FUNCS: dict[str, Callable] = {
+	"smat": _d_smat,
+	"comp": _d_comp,
+	"wyckoff": _d_wyckoff,
+	"magpie": _d_magpie,
+	"pdd": _d_pdd,
+	"amd": _d_amd,
+	"elmd": _d_elmd,
+}
+
+# Registry: metric name → distance matrix function
+_DIST_MTX_FUNCS: dict[str, Callable] = {
+	"smat": _distance_matrix_d_smat,
+	"comp": _distance_matrix_d_comp,
+	"wyckoff": _distance_matrix_d_wyckoff,
+	"magpie": _distance_matrix_d_magpie,
+	"pdd": _distance_matrix_d_pdd,
+	"amd": _distance_matrix_d_amd,
+	"elmd": _distance_matrix_d_elmd,
+}
+
+
+@overload
+def distance(
+	distance: str,
+	xtal_1: Structure | Crystal | TYPE_EMB_ALL,
+	xtal_2: Structure | Crystal | TYPE_EMB_ALL,
+	normalize: bool = ...,
+	verbose: Literal[False] = ...,
+	**kwargs,
+) -> float: ...
+
+
+@overload
+def distance(
+	distance: str,
+	xtal_1: Structure | Crystal | TYPE_EMB_ALL,
+	xtal_2: Structure | Crystal | TYPE_EMB_ALL,
+	normalize: bool = ...,
+	verbose: Literal[True] = ...,
+	**kwargs,
+) -> tuple[float, TYPE_EMB_ALL, TYPE_EMB_ALL]: ...
+
+
 def distance(
 	distance: str,
 	xtal_1: Structure | Crystal | TYPE_EMB_ALL,
@@ -662,8 +818,8 @@ def distance(
 	.. _tutorial notebook: https://github.com/WMD-group/xtalmet/blob/main/examples/tutorial.ipynb
 	"""
 	# conversions from Structure to Crystal
-	xtal_1 = Crystal.from_Structure(xtal_1) if isinstance(xtal_1, Structure) else xtal_1
-	xtal_2 = Crystal.from_Structure(xtal_2) if isinstance(xtal_2, Structure) else xtal_2
+	xtal_1 = _to_crystal(xtal_1)
+	xtal_2 = _to_crystal(xtal_2)
 
 	# compute embeddings
 	if distance not in DIST_WO_EMB and isinstance(xtal_1, Crystal):
@@ -680,45 +836,24 @@ def distance(
 		emb_2 = xtal_2
 
 	# compute distance
-	if distance == "smat":
-		d = _d_smat(emb_1, emb_2, **(kwargs.get("args_dist", {})))
-	elif distance == "comp":
-		d = _d_comp(emb_1, emb_2)
-	elif distance == "wyckoff":
-		d = _d_wyckoff(emb_1, emb_2)
-	elif distance == "magpie":
-		d = _d_magpie(emb_1, emb_2)
-	elif distance == "pdd":
-		d = _d_pdd(emb_1, emb_2, **(kwargs.get("args_dist", {})))
-	elif distance == "amd":
-		d = _d_amd(emb_1, emb_2, **(kwargs.get("args_dist", {})))
-	elif distance == "elmd":
-		d = _d_elmd(emb_1, emb_2, **(kwargs.get("args_dist", {})))
-	elif distance == "elmd+amd":
+	if distance == "elmd+amd":
 		d_elmd_unnorm = _d_elmd(
 			emb_1[0], emb_2[0], **(kwargs.get("args_dist", {}).get("elmd", {}))
 		)
 		d_amd_unnorm = _d_amd(
 			emb_1[1], emb_2[1], **(kwargs.get("args_dist", {}).get("amd", {}))
 		)
-		d_elmd = d_elmd_unnorm / (1 + d_elmd_unnorm)
-		d_amd = d_amd_unnorm / (1 + d_amd_unnorm)
-		if "coefs" in kwargs.get("args_dist", {}):
-			coefs = kwargs.get("args_dist", {})["coefs"]
-			coef_elmd, coef_amd = coefs["elmd"], coefs["amd"]
-			sum_coefs = coef_elmd + coef_amd
-			coef_elmd /= sum_coefs
-			coef_amd /= sum_coefs
-		else:
-			coef_elmd = float.fromhex("0x1.8d7d565a99f87p-1")
-			coef_amd = float.fromhex("0x1.ca0aa695981e5p-3")
-		d = coef_elmd * d_elmd + coef_amd * d_amd
+		d = _blend_elmd_amd_distance(
+			d_elmd_unnorm, d_amd_unnorm, kwargs.get("args_dist", {})
+		)
+	elif distance in _DIST_FUNCS:
+		d = _DIST_FUNCS[distance](emb_1, emb_2, **(kwargs.get("args_dist", {})))
 	else:
 		raise ValueError(f"Unsupported distance metric: {distance}")
 
 	# normalize distance if needed
 	if distance in CONTINUOUS_UNNORMALIZED_DISTANCES and normalize:
-		d = d / (1 + d)
+		d = _normalize(d)
 
 	# return results
 	if not verbose:
@@ -790,14 +925,9 @@ def distance_matrix(
 	times = {}
 
 	# conversions from Structure to Crystal
-	xtals_1 = [
-		Crystal.from_Structure(x) if isinstance(x, Structure) else x for x in xtals_1
-	]
+	xtals_1 = _to_crystal_list(xtals_1)
 	if given_two_sets:
-		xtals_2 = [
-			Crystal.from_Structure(x) if isinstance(x, Structure) else x
-			for x in xtals_2
-		]
+		xtals_2 = _to_crystal_list(xtals_2)
 
 	# compute embeddings
 	if distance not in DIST_WO_EMB and isinstance(xtals_1[0], Crystal):
@@ -834,45 +964,7 @@ def distance_matrix(
 
 	# compute distances
 	d_mtx_start = time.time()
-	if distance == "smat":
-		d_mtx = _distance_matrix_d_smat(
-			embs_1,
-			embs_2,
-			multiprocessing,
-			n_processes,
-			**(kwargs.get("args_dist", {})),
-		)
-	elif distance == "comp":
-		d_mtx = _distance_matrix_d_comp(embs_1, embs_2, multiprocessing, n_processes)
-	elif distance == "wyckoff":
-		d_mtx = _distance_matrix_d_wyckoff(embs_1, embs_2, multiprocessing, n_processes)
-	elif distance == "magpie":
-		d_mtx = _distance_matrix_d_magpie(embs_1, embs_2, multiprocessing, n_processes)
-	elif distance == "pdd":
-		d_mtx = _distance_matrix_d_pdd(
-			embs_1,
-			embs_2,
-			multiprocessing,
-			n_processes,
-			**(kwargs.get("args_dist", {})),
-		)
-	elif distance == "amd":
-		if multiprocessing:
-			warnings.warn(
-				"Multiprocessing is not implemented for _distance_matrix_d_amd. "
-				"Proceeding without multiprocessing.",
-				stacklevel=2,
-			)
-		d_mtx = _distance_matrix_d_amd(embs_1, embs_2, **(kwargs.get("args_dist", {})))
-	elif distance == "elmd":
-		d_mtx = _distance_matrix_d_elmd(
-			embs_1,
-			embs_2,
-			multiprocessing,
-			n_processes,
-			**(kwargs.get("args_dist", {})),
-		)
-	elif distance == "elmd+amd":
+	if distance == "elmd+amd":
 		d_mtx_elmd_unnorm = _distance_matrix_d_elmd(
 			[emb[0] for emb in embs_1],
 			[emb[0] for emb in embs_2] if embs_2 is not None else None,
@@ -880,29 +972,24 @@ def distance_matrix(
 			n_processes,
 			**(kwargs.get("args_dist", {}).get("elmd", {})),
 		)
-		if multiprocessing:
-			warnings.warn(
-				"Multiprocessing is not implemented for _distance_matrix_d_amd. "
-				"Proceeding without multiprocessing.",
-				stacklevel=2,
-			)
 		d_mtx_amd_unnorm = _distance_matrix_d_amd(
 			[emb[1] for emb in embs_1],
 			[emb[1] for emb in embs_2] if embs_2 is not None else None,
+			multiprocessing,
+			n_processes,
 			**(kwargs.get("args_dist", {}).get("amd", {})),
 		)
-		d_mtx_elmd = d_mtx_elmd_unnorm / (1 + d_mtx_elmd_unnorm)
-		d_mtx_amd = d_mtx_amd_unnorm / (1 + d_mtx_amd_unnorm)
-		if "coefs" in kwargs.get("args_dist", {}):
-			coefs = kwargs.get("args_dist", {})["coefs"]
-			coef_elmd, coef_amd = coefs["elmd"], coefs["amd"]
-			sum_coefs = coef_elmd + coef_amd
-			coef_elmd /= sum_coefs
-			coef_amd /= sum_coefs
-		else:
-			coef_elmd = float.fromhex("0x1.8d7d565a99f87p-1")
-			coef_amd = float.fromhex("0x1.ca0aa695981e5p-3")
-		d_mtx = coef_elmd * d_mtx_elmd + coef_amd * d_mtx_amd
+		d_mtx = _blend_elmd_amd_distance(
+			d_mtx_elmd_unnorm, d_mtx_amd_unnorm, kwargs.get("args_dist", {})
+		)
+	elif distance in _DIST_MTX_FUNCS:
+		d_mtx = _DIST_MTX_FUNCS[distance](
+			embs_1,
+			embs_2,
+			multiprocessing,
+			n_processes,
+			**(kwargs.get("args_dist", {})),
+		)
 	else:
 		raise ValueError(f"Unsupported distance metric: {distance}")
 	d_mtx_end = time.time()
@@ -910,7 +997,7 @@ def distance_matrix(
 
 	# normalize distances if needed
 	if distance in CONTINUOUS_UNNORMALIZED_DISTANCES and normalize:
-		d_mtx = d_mtx / (1 + d_mtx)
+		d_mtx = _normalize(d_mtx)
 
 	# return results
 	if not verbose:
