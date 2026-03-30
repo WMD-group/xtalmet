@@ -145,6 +145,18 @@ def convert():
 		"mattergen": os.path.join(
 			os.path.dirname(__file__), "raw/mp20/mattergen/generated_crystals_cif.zip"
 		),
+		"chemeleon2_rl_bsun": os.path.join(
+			os.path.dirname(__file__),
+			"raw/mp20/chemeleon2_rl_bsun/generated_structures.json",
+		),
+		"chemeleon2_rl_csun": os.path.join(
+			os.path.dirname(__file__),
+			"raw/mp20/chemeleon2_rl_csun/generated_structures.json",
+		),
+		"chemeleon2_rl_csun_u10": os.path.join(
+			os.path.dirname(__file__),
+			"raw/mp20/chemeleon2_rl_csun_u10/generated_structures.json",
+		),
 	}
 
 	for model in [
@@ -156,6 +168,9 @@ def convert():
 		"diffcsppp",
 		"mattergen",
 		"test",
+		"chemeleon2_rl_bsun",
+		"chemeleon2_rl_csun",
+		"chemeleon2_rl_csun_u10",
 	]:
 		path_processed = os.path.join(
 			os.path.dirname(__file__), f"hf/mp20/model/{model}.pkl.gz"
@@ -164,7 +179,15 @@ def convert():
 			continue
 		if model in ["cdvae", "diffcsppp"]:
 			gen_xtals = convert_cdvae_diffcsppp_format(paths_raw[model], model)
-		elif model in ["diffcsp", "adit", "chemeleon", "chemeleon2"]:
+		elif model in [
+			"diffcsp",
+			"adit",
+			"chemeleon",
+			"chemeleon2",
+			"chemeleon2_rl_bsun",
+			"chemeleon2_rl_csun",
+			"chemeleon2_rl_csun_u10",
+		]:
 			gen_xtals = convert_diffcsp_format(paths_raw[model])
 		elif model == "mattergen":
 			gen_xtals = convert_mattergen_format(paths_raw[model])

@@ -19,6 +19,10 @@ dev/results/
 # experimental results of the NeurIPS2025 workshop paper
 examples/workshop/results/
 
+# experimental results of the IOP journal paper
+examples/journal/results/
+examples/journal/preprocess/
+
 # documentation build files
 docs/build/
 docs/source/api/

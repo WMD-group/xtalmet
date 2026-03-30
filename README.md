@@ -13,7 +13,8 @@ It also allows you to evaluate a set of crystals based on Validity, Stability, U
 The uniqueness and novelty evaluations depend on the selected distance function. 
 
 - Documentation: https://wmd-group.github.io/xtalmet/
-- Examples: https://github.com/WMD-group/xtalmet/examples
+- Tutorial: https://github.com/WMD-group/xtalmet/examples
+- Code to reproduce results in our papers: https://github.com/WMD-group/xtalmet/examples
 
 > **Note**: This package is under active development. Please ensure that the version of the package you are using matches the version of the documentation you are referring to.
 

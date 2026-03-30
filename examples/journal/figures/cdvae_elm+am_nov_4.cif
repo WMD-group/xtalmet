@@ -1,0 +1,34 @@
+# generated using pymatgen
+data_Ba4Na2CeCd
+_symmetry_space_group_name_H-M   'P 1'
+_cell_length_a   7.54320431
+_cell_length_b   7.53866386
+_cell_length_c   7.82573414
+_cell_angle_alpha   73.79315186
+_cell_angle_beta   78.47569275
+_cell_angle_gamma   84.95153046
+_symmetry_Int_Tables_number   1
+_chemical_formula_structural   Ba4Na2CeCd
+_chemical_formula_sum   'Ba4 Na2 Ce1 Cd1'
+_cell_volume   418.47011308
+_cell_formula_units_Z   1
+loop_
+ _symmetry_equiv_pos_site_id
+ _symmetry_equiv_pos_as_xyz
+  1  'x, y, z'
+loop_
+ _atom_site_type_symbol
+ _atom_site_label
+ _atom_site_symmetry_multiplicity
+ _atom_site_fract_x
+ _atom_site_fract_y
+ _atom_site_fract_z
+ _atom_site_occupancy
+  Cd  Cd0  1  0.42489281  0.47912964  0.89910853  1
+  Na  Na1  1  0.01506344  0.61865014  0.22744638  1
+  Ba  Ba2  1  0.52341485  0.40505397  0.39164719  1
+  Ba  Ba3  1  0.95388949  0.51038212  0.75988662  1
+  Ba  Ba4  1  0.67227775  0.97422254  0.95501739  1
+  Ce  Ce5  1  0.61292452  0.87535608  0.49182254  1
+  Ba  Ba6  1  0.10977016  0.08416998  0.32129869  1
+  Na  Na7  1  0.21143156  0.00313871  0.80971622  1
