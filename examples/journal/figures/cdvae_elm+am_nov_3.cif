@@ -1,0 +1,29 @@
+# generated using pymatgen
+data_LiURu
+_symmetry_space_group_name_H-M   'P 1'
+_cell_length_a   3.99023199
+_cell_length_b   4.38715982
+_cell_length_c   4.34314823
+_cell_angle_alpha   62.59267426
+_cell_angle_beta   59.84949112
+_cell_angle_gamma   61.96469116
+_symmetry_Int_Tables_number   1
+_chemical_formula_structural   LiURu
+_chemical_formula_sum   'Li1 U1 Ru1'
+_cell_volume   55.46855106
+_cell_formula_units_Z   1
+loop_
+ _symmetry_equiv_pos_site_id
+ _symmetry_equiv_pos_as_xyz
+  1  'x, y, z'
+loop_
+ _atom_site_type_symbol
+ _atom_site_label
+ _atom_site_symmetry_multiplicity
+ _atom_site_fract_x
+ _atom_site_fract_y
+ _atom_site_fract_z
+ _atom_site_occupancy
+  U  U0  1  0.61087209  0.79046977  0.66913944  1
+  Li  Li1  1  0.10959552  0.28706592  0.16656107  1
+  Ru  Ru2  1  0.86710149  0.04453713  0.92131639  1

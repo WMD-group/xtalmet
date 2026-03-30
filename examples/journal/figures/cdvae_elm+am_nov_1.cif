@@ -1,0 +1,32 @@
+# generated using pymatgen
+data_NaSc2Tc2Pb
+_symmetry_space_group_name_H-M   'P 1'
+_cell_length_a   5.98431969
+_cell_length_b   5.82341623
+_cell_length_c   5.86146450
+_cell_angle_alpha   59.41807556
+_cell_angle_beta   60.42449188
+_cell_angle_gamma   64.54232788
+_symmetry_Int_Tables_number   1
+_chemical_formula_structural   NaSc2Tc2Pb
+_chemical_formula_sum   'Na1 Sc2 Tc2 Pb1'
+_cell_volume   148.52002169
+_cell_formula_units_Z   1
+loop_
+ _symmetry_equiv_pos_site_id
+ _symmetry_equiv_pos_as_xyz
+  1  'x, y, z'
+loop_
+ _atom_site_type_symbol
+ _atom_site_label
+ _atom_site_symmetry_multiplicity
+ _atom_site_fract_x
+ _atom_site_fract_y
+ _atom_site_fract_z
+ _atom_site_occupancy
+  Na  Na0  1  0.85289347  0.44144484  0.55035335  1
+  Sc  Sc1  1  0.47717363  0.06811231  0.66960847  1
+  Pb  Pb2  1  0.10585427  0.68843365  0.79672277  1
+  Tc  Tc3  1  0.47761106  0.06548230  0.17283928  1
+  Sc  Sc4  1  0.47813690  0.56949139  0.16729540  1
+  Tc  Tc5  1  0.97989130  0.06340957  0.17026144  1
