@@ -20,10 +20,10 @@ Below, we outline the steps to reproduce the experimental results presented in o
     uv run python examples/journal/eval.py --model MODEL_NAME
     ```
     where `MODEL_NAME` is one of `adit`, `cdvae`, `chemeleon`, `chemeleon2`, `diffcsp`, `diffcsppp`, `mattergen`, `test`, `chemeleon2_rl_bsun`, `chemeleon2_rl_csun`, and `chemeleon2_rl_csun_u10`.
-    Depending on the capabilities of your machine, each command may take hours or even a whole day to complete. 
-    Therefore, we provide pre-computed results in the `results.zip` file. 
-    To skip the above commands, simply unzip the file.
-    The samples generated from these models are available on [Hugging Face](https://huggingface.co/datasets/masahiro-negishi/xtalmet).
+    Depending on the capabilities of your machine, each command may take hours or even a whole day to complete.
+    So, we provide pre-computed evaluation results on [Hugging Face](https://huggingface.co/datasets/masahiro-negishi/xtalmet/tree/main/journal/results/mp20) under `journal/results/mp20/`. 
+    To use them, download and place them at `examples/journal/results/mp20/` before running `visualize.ipynb`.
+    The samples generated from these models are also available on [Hugging Face](https://huggingface.co/datasets/masahiro-negishi/xtalmet) under `mp20/model`.
     If you would like to sample from the models by yourself, follow the instructions in their original repositories.
     To try out reinforcement learning on Chemeleon2, please see the instructions [here](https://hspark1212.github.io/chemeleon2/index-2/).
 

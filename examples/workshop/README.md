@@ -24,8 +24,6 @@ Below, we outline the steps to reproduce the experimental results in our paper, 
     ```
     where `MODEL_NAME` is one of `adit`, `cdvae`, `chemeleon`, `diffcsp`, `diffcsppp`, and `mattergen`.
     Depending on the capabilities of your machine, each command may take hours or even a whole day to complete. 
-    Therefore, we provide pre-computed results in the `results.zip` file. 
-    To skip the above commands, simply unzip the file.
 
 3. **Visualize the results**
 
