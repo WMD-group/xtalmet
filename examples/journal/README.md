@@ -26,6 +26,7 @@ Below, we outline the steps to reproduce the experimental results presented in o
     The samples generated from these models are also available on [Hugging Face](https://huggingface.co/datasets/masahiro-negishi/xtalmet) under `mp20/model`.
     If you would like to sample from the models by yourself, follow the instructions in their original repositories.
     To try out reinforcement learning on Chemeleon2, please see the instructions [here](https://hspark1212.github.io/chemeleon2/index-2/).
+    The reinforcement-learning trajectories are available as [`rl_trajectory.csv`](https://huggingface.co/datasets/masahiro-negishi/xtalmet/blob/main/journal/results/rl_trajectory.csv), which `visualize.ipynb` downloads automatically.
 
 
 3. **Visualize the results**
