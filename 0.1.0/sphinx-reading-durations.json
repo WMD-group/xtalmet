@@ -1,9 +1,9 @@
 {
     "api/xtalmet": 0.018,
-    "api/xtalmet.crystal": 0.885,
-    "api/xtalmet.distance": 0.115,
-    "api/xtalmet.evaluator": 0.297,
-    "api/xtalmet.screen": 0.318,
+    "api/xtalmet.crystal": 0.836,
+    "api/xtalmet.distance": 0.11,
+    "api/xtalmet.evaluator": 0.286,
+    "api/xtalmet.screen": 0.31,
     "index": 0.002,
     "install": 0.002,
     "tutorial": 0.001
