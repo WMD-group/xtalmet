@@ -1,12 +1,12 @@
 {
-    "api/xtalmet": 0.741,
-    "api/xtalmet.constants": 0.057,
-    "api/xtalmet.crystal": 0.486,
-    "api/xtalmet.distance": 0.327,
-    "api/xtalmet.evaluator": 0.336,
-    "api/xtalmet.stability": 0.336,
-    "api/xtalmet.validity": 0.054,
-    "index": 0.002,
+    "api/xtalmet": 0.707,
+    "api/xtalmet.constants": 0.066,
+    "api/xtalmet.crystal": 0.487,
+    "api/xtalmet.distance": 0.459,
+    "api/xtalmet.evaluator": 0.277,
+    "api/xtalmet.stability": 0.344,
+    "api/xtalmet.validity": 0.051,
+    "index": 0.003,
     "install": 0.002,
     "tutorial": 0.001
 }
