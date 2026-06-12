@@ -32,6 +32,7 @@ dev = [
     "plotly<6.0.0",
     "mp_api",
     "ipykernel",
+    "pre-commit>=3.0",
     "sphinx",
     "sphinx-rtd-theme",
     "sphinx-github-style",

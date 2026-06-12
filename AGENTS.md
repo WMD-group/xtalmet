@@ -29,6 +29,9 @@ uv run pytest tests/test_evaluator.py -s
 uv run ruff check .
 uv run ruff format .
 
+# Install pre-commit hooks once per clone
+uv run pre-commit install
+
 # Build docs
 cd docs && uv run python build_docs.py
 ```
