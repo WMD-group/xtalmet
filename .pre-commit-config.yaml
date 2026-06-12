@@ -4,10 +4,3 @@ repos:
     hooks:
       - id: nbstripout
         args: [--keep-id]
-
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.9
-    hooks:
-      - id: ruff
-        args: [--fix]
-      - id: ruff-format
