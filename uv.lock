@@ -2997,7 +2997,7 @@ wheels = [
 
 [[package]]
 name = "xtalmet"
-version = "1.0.0a4"
+version = "1.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "average-minimum-distance" },
