@@ -83,13 +83,13 @@ These include the work of Onwuli et al. [7] on distances between elements.
 [7] A. Onwuli et al. Element similarity in high-dimensional materials representations. Digital Discovery 2023.
 
 ## Citation
-If you find xtalmet useful in your research, please consider citing:
+If you find xtalmet useful in your research, please consider citing our journal paper:
 ```bibtex
-@inproceedings{negishi2025continuous,
-      title={Continuous Uniqueness and Novelty Metrics for Generative Modeling of Inorganic Crystals},
-      author={Masahiro Negishi and Hyunsoo Park and Kinga O. Mastej and Aron Walsh},
-      booktitle={AI for Accelerated Materials Design - NeurIPS 2025},
-      year={2025},
-      url={https://openreview.net/forum?id=PiKMmLHbEH}
+@article{10.1088/2632-2153/ae7d85,
+	author={Negishi, Masahiro and Park, Hyunsoo and Mastej, Kinga Oliwia and Walsh, Aron},
+	title={Continuous SUN (stable, unique, and novel) metric for generative modeling of inorganic crystals},
+	journal={Machine Learning: Science and Technology},
+	url={http://iopscience.iop.org/article/10.1088/2632-2153/ae7d85},
+	year={2026},
 }
 ```

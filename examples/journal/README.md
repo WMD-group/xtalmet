@@ -2,7 +2,7 @@
 
 Below, we outline the steps to reproduce the experimental results presented in
 our paper, "Continuous SUN (Stable, Unique, and Novel) Metric for Generative
-Modeling of Inorganic Crystals," submitted to IOP Machine Learning: Science and
+Modeling of Inorganic Crystals," accepted by IOPscience Machine Learning: Science and
 Technology.
 
 1. **Set up the environment**
