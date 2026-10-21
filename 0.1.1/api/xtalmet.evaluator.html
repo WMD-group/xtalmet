@@ -129,29 +129,29 @@ the screening function.</p></li>
 </dl>
 <p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">evaluator</span><span class="o">.</span><span class="n">uniqueness</span><span class="p">(</span>
-<span class="gp">... </span>    <span class="n">distance</span><span class="o">=</span><span class="s2">&quot;smat&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">distance</span><span class="o">=</span><span class="s2">"smat"</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">screen</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="n">dir_intermediate</span><span class="o">=</span><span class="s2">&quot;./intermediate&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">dir_intermediate</span><span class="o">=</span><span class="s2">"./intermediate"</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">return_time</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="gp">... </span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="p">(</span>
 <span class="gp">... </span>    <span class="mf">0.9945</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="p">{</span>
-<span class="gp">... </span>        <span class="s2">&quot;uni_emb&quot;</span><span class="p">:</span> <span class="mf">0.003</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;uni_d_mtx&quot;</span><span class="p">:</span> <span class="mf">16953.978</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;uni_metric&quot;</span><span class="p">:</span> <span class="mf">0.152</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;uni_total&quot;</span><span class="p">:</span> <span class="mf">16954.133</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"uni_emb"</span><span class="p">:</span> <span class="mf">0.003</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"uni_d_mtx"</span><span class="p">:</span> <span class="mf">16953.978</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"uni_metric"</span><span class="p">:</span> <span class="mf">0.152</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"uni_total"</span><span class="p">:</span> <span class="mf">16954.133</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="p">},</span>
 <span class="gp">... </span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">evaluator</span><span class="o">.</span><span class="n">uniqueness</span><span class="p">(</span>
-<span class="gp">... </span>    <span class="n">distance</span><span class="o">=</span><span class="s2">&quot;amd&quot;</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="n">screen</span><span class="o">=</span><span class="s2">&quot;ehull&quot;</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="n">dir_intermediate</span><span class="o">=</span><span class="s2">&quot;./intermediate&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">distance</span><span class="o">=</span><span class="s2">"amd"</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">screen</span><span class="o">=</span><span class="s2">"ehull"</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">dir_intermediate</span><span class="o">=</span><span class="s2">"./intermediate"</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">return_time</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">kwargs</span><span class="o">=</span><span class="p">{</span>
-<span class="gp">... </span>        <span class="s2">&quot;args_emb&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mi">200</span><span class="p">},</span>
-<span class="gp">... </span>        <span class="s2">&quot;args_mtx&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;metric&quot;</span><span class="p">:</span> <span class="s2">&quot;chebyshev&quot;</span><span class="p">,</span> <span class="s2">&quot;low_memory&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
-<span class="gp">... </span>        <span class="s2">&quot;args_screen&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;diagram&quot;</span><span class="p">:</span> <span class="s2">&quot;mp_250618&quot;</span><span class="p">},</span>
+<span class="gp">... </span>        <span class="s2">"args_emb"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"k"</span><span class="p">:</span> <span class="mi">200</span><span class="p">},</span>
+<span class="gp">... </span>        <span class="s2">"args_mtx"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"metric"</span><span class="p">:</span> <span class="s2">"chebyshev"</span><span class="p">,</span> <span class="s2">"low_memory"</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
+<span class="gp">... </span>        <span class="s2">"args_screen"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"diagram"</span><span class="p">:</span> <span class="s2">"mp_250618"</span><span class="p">},</span>
 <span class="gp">... </span>    <span class="p">},</span>
 <span class="gp">... </span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="mf">0.0016</span>
@@ -202,32 +202,32 @@ the screening function.</p></li>
 </dl>
 <p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">evaluator</span><span class="o">.</span><span class="n">novelty</span><span class="p">(</span>
-<span class="gp">... </span>    <span class="n">train_xtals</span><span class="o">=</span><span class="s2">&quot;mp20&quot;</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="n">distance</span><span class="o">=</span><span class="s2">&quot;smat&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">train_xtals</span><span class="o">=</span><span class="s2">"mp20"</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">distance</span><span class="o">=</span><span class="s2">"smat"</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">screen</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="n">dir_intermediate</span><span class="o">=</span><span class="s2">&quot;./intermediate&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">dir_intermediate</span><span class="o">=</span><span class="s2">"./intermediate"</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">return_time</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="gp">... </span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="p">(</span>
 <span class="gp">... </span>    <span class="mf">0.9892</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="p">{</span>
-<span class="gp">... </span>        <span class="s2">&quot;nov_emb_gen&quot;</span><span class="p">:</span> <span class="mf">1.693</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;nov_emb_train&quot;</span><span class="p">:</span> <span class="mf">5.790</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;nov_d_mtx&quot;</span><span class="p">:</span> <span class="mf">42784.921</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;nov_metric&quot;</span><span class="p">:</span> <span class="mf">0.628</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;nov_total&quot;</span><span class="p">:</span> <span class="mf">42793.032</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"nov_emb_gen"</span><span class="p">:</span> <span class="mf">1.693</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"nov_emb_train"</span><span class="p">:</span> <span class="mf">5.790</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"nov_d_mtx"</span><span class="p">:</span> <span class="mf">42784.921</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"nov_metric"</span><span class="p">:</span> <span class="mf">0.628</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"nov_total"</span><span class="p">:</span> <span class="mf">42793.032</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="p">},</span>
 <span class="gp">... </span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">evaluator</span><span class="o">.</span><span class="n">novelty</span><span class="p">(</span>
 <span class="gp">... </span>    <span class="n">train_xtals</span><span class="o">=</span><span class="n">list_of_train_xtals</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="n">distance</span><span class="o">=</span><span class="s2">&quot;amd&quot;</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="n">screen</span><span class="o">=</span><span class="s2">&quot;ehull&quot;</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="n">dir_intermediate</span><span class="o">=</span><span class="s2">&quot;./intermediate&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">distance</span><span class="o">=</span><span class="s2">"amd"</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">screen</span><span class="o">=</span><span class="s2">"ehull"</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">dir_intermediate</span><span class="o">=</span><span class="s2">"./intermediate"</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">return_time</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">kwargs</span><span class="o">=</span><span class="p">{</span>
-<span class="gp">... </span>        <span class="s2">&quot;args_emb&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mi">200</span><span class="p">},</span>
-<span class="gp">... </span>        <span class="s2">&quot;args_mtx&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;metric&quot;</span><span class="p">:</span> <span class="s2">&quot;chebyshev&quot;</span><span class="p">,</span> <span class="s2">&quot;low_memory&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
-<span class="gp">... </span>        <span class="s2">&quot;args_screen&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;diagram&quot;</span><span class="p">:</span> <span class="s2">&quot;mp_250618&quot;</span><span class="p">},</span>
+<span class="gp">... </span>        <span class="s2">"args_emb"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"k"</span><span class="p">:</span> <span class="mi">200</span><span class="p">},</span>
+<span class="gp">... </span>        <span class="s2">"args_mtx"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"metric"</span><span class="p">:</span> <span class="s2">"chebyshev"</span><span class="p">,</span> <span class="s2">"low_memory"</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
+<span class="gp">... </span>        <span class="s2">"args_screen"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"diagram"</span><span class="p">:</span> <span class="s2">"mp_250618"</span><span class="p">},</span>
 <span class="gp">... </span>    <span class="p">},</span>
 <span class="gp">... </span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="mf">0.0075</span>

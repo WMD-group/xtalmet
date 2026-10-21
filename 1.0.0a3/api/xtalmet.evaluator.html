@@ -156,28 +156,28 @@ the <a class="reference external" href="https://github.com/WMD-group/xtalmet/blo
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Evaluator for the conventional SUN metric against the MP20 dataset</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="c1"># using the StructureMatcher distance.</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">evaluator</span> <span class="o">=</span> <span class="n">Evaluator</span><span class="p">(</span>
-<span class="gp">... </span>    <span class="n">stability</span><span class="o">=</span><span class="s2">&quot;binary&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">stability</span><span class="o">=</span><span class="s2">"binary"</span><span class="p">,</span>
 <span class="gp">... </span>            <span class="n">uniqueness</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="gp">... </span>            <span class="n">novelty</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<span class="gp">... </span>            <span class="n">distance</span><span class="o">=</span><span class="s2">&quot;smat&quot;</span><span class="p">,</span>
-<span class="gp">... </span>            <span class="n">ref_xtals</span><span class="o">=</span><span class="s2">&quot;mp20&quot;</span><span class="p">,</span>
-<span class="gp">... </span>            <span class="n">agg_func</span><span class="o">=</span><span class="s2">&quot;prod&quot;</span><span class="p">,</span>
+<span class="gp">... </span>            <span class="n">distance</span><span class="o">=</span><span class="s2">"smat"</span><span class="p">,</span>
+<span class="gp">... </span>            <span class="n">ref_xtals</span><span class="o">=</span><span class="s2">"mp20"</span><span class="p">,</span>
+<span class="gp">... </span>            <span class="n">agg_func</span><span class="o">=</span><span class="s2">"prod"</span><span class="p">,</span>
 <span class="gp">... </span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="c1"># Evaluator for the VSUN metric against a custom reference dataset using</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="c1"># the ElMD distance, with average aggregation.</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">evaluator</span> <span class="o">=</span> <span class="n">Evaluator</span><span class="p">(</span>
-<span class="gp">... </span>    <span class="n">validity</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;smact&quot;</span><span class="p">,</span> <span class="s2">&quot;structure&quot;</span><span class="p">],</span>
-<span class="gp">... </span>    <span class="n">stability</span><span class="o">=</span><span class="s2">&quot;continuous&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">validity</span><span class="o">=</span><span class="p">[</span><span class="s2">"smact"</span><span class="p">,</span> <span class="s2">"structure"</span><span class="p">],</span>
+<span class="gp">... </span>    <span class="n">stability</span><span class="o">=</span><span class="s2">"continuous"</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">uniqueness</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">novelty</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="n">distance</span><span class="o">=</span><span class="s2">&quot;elmd&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">distance</span><span class="o">=</span><span class="s2">"elmd"</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">ref_xtals</span><span class="o">=</span><span class="n">ref_xtals</span><span class="p">,</span>  <span class="c1"># list[Crystal | Structure]</span>
-<span class="gp">... </span>    <span class="n">agg_func</span><span class="o">=</span><span class="s2">&quot;ave&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">agg_func</span><span class="o">=</span><span class="s2">"ave"</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">weights</span><span class="o">=</span><span class="p">{</span>
-<span class="gp">... </span>        <span class="s2">&quot;validity&quot;</span><span class="p">:</span> <span class="mf">0.25</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;stability&quot;</span><span class="p">:</span> <span class="mf">0.25</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;uniqueness&quot;</span><span class="p">:</span> <span class="mf">0.25</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;novelty&quot;</span><span class="p">:</span> <span class="mf">0.25</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"validity"</span><span class="p">:</span> <span class="mf">0.25</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"stability"</span><span class="p">:</span> <span class="mf">0.25</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"uniqueness"</span><span class="p">:</span> <span class="mf">0.25</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"novelty"</span><span class="p">:</span> <span class="mf">0.25</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="p">},</span>
 <span class="gp">... </span>    <span class="n">multiprocessing</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">n_processes</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
@@ -185,57 +185,57 @@ the <a class="reference external" href="https://github.com/WMD-group/xtalmet/blo
 <span class="gp">&gt;&gt;&gt; </span><span class="c1"># Evaluator for the VSUN metric against the MP20 dataset using the AMD</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="c1"># distance, with custom kwargs.</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">evaluator</span> <span class="o">=</span> <span class="n">Evaluator</span><span class="p">(</span>
-<span class="gp">... </span>    <span class="n">validity</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;smact&quot;</span><span class="p">,</span> <span class="s2">&quot;structure&quot;</span><span class="p">],</span>
-<span class="gp">... </span>    <span class="n">stability</span><span class="o">=</span><span class="s2">&quot;continuous&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">validity</span><span class="o">=</span><span class="p">[</span><span class="s2">"smact"</span><span class="p">,</span> <span class="s2">"structure"</span><span class="p">],</span>
+<span class="gp">... </span>    <span class="n">stability</span><span class="o">=</span><span class="s2">"continuous"</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">uniqueness</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">novelty</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="n">distance</span><span class="o">=</span><span class="s2">&quot;amd&quot;</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="n">ref_xtals</span><span class="o">=</span><span class="s2">&quot;mp20&quot;</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="n">agg_func</span><span class="o">=</span><span class="s2">&quot;prod&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">distance</span><span class="o">=</span><span class="s2">"amd"</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">ref_xtals</span><span class="o">=</span><span class="s2">"mp20"</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">agg_func</span><span class="o">=</span><span class="s2">"prod"</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="p">{</span>
-<span class="gp">... </span>        <span class="s2">&quot;args_validity&quot;</span><span class="p">:</span> <span class="p">{</span>
-<span class="gp">... </span>            <span class="s2">&quot;structure&quot;</span><span class="p">:</span> <span class="p">{</span>
-<span class="gp">... </span>                <span class="s2">&quot;threshold_distance&quot;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span>
-<span class="gp">... </span>                <span class="s2">&quot;threshold_volume&quot;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"args_validity"</span><span class="p">:</span> <span class="p">{</span>
+<span class="gp">... </span>            <span class="s2">"structure"</span><span class="p">:</span> <span class="p">{</span>
+<span class="gp">... </span>                <span class="s2">"threshold_distance"</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span>
+<span class="gp">... </span>                <span class="s2">"threshold_volume"</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
 <span class="gp">... </span>            <span class="p">}</span>
 <span class="gp">... </span>        <span class="p">},</span>
-<span class="gp">... </span>        <span class="s2">&quot;args_stability&quot;</span><span class="p">:</span> <span class="p">{</span>
-<span class="gp">... </span>            <span class="s2">&quot;diagram&quot;</span><span class="p">:</span> <span class="s2">&quot;mp_250618&quot;</span><span class="p">,</span>
-<span class="gp">... </span>            <span class="s2">&quot;mace_model&quot;</span><span class="p">:</span> <span class="s2">&quot;medium-mpa-0&quot;</span><span class="p">,</span>
-<span class="gp">... </span>            <span class="s2">&quot;intercept&quot;</span><span class="p">:</span> <span class="mf">0.4289</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"args_stability"</span><span class="p">:</span> <span class="p">{</span>
+<span class="gp">... </span>            <span class="s2">"diagram"</span><span class="p">:</span> <span class="s2">"mp_250618"</span><span class="p">,</span>
+<span class="gp">... </span>            <span class="s2">"mace_model"</span><span class="p">:</span> <span class="s2">"medium-mpa-0"</span><span class="p">,</span>
+<span class="gp">... </span>            <span class="s2">"intercept"</span><span class="p">:</span> <span class="mf">0.4289</span><span class="p">,</span>
 <span class="gp">... </span>        <span class="p">},</span>
-<span class="gp">... </span>        <span class="s2">&quot;args_emb&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">},</span>
-<span class="gp">... </span>        <span class="s2">&quot;args_dist&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;metric&quot;</span><span class="p">:</span> <span class="s2">&quot;chebyshev&quot;</span><span class="p">,</span> <span class="s2">&quot;low_memory&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
+<span class="gp">... </span>        <span class="s2">"args_emb"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"k"</span><span class="p">:</span> <span class="mi">100</span><span class="p">},</span>
+<span class="gp">... </span>        <span class="s2">"args_dist"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"metric"</span><span class="p">:</span> <span class="s2">"chebyshev"</span><span class="p">,</span> <span class="s2">"low_memory"</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
 <span class="gp">... </span>    <span class="p">}</span>
 <span class="gp">... </span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="c1"># Evaluator for the SUN metric against the MP20 dataset using the</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="c1"># ElMD+AMD distance, with custom kwargs.</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">evaluator</span> <span class="o">=</span> <span class="n">Evaluator</span><span class="p">(</span>
-<span class="gp">... </span>    <span class="n">stability</span><span class="o">=</span><span class="s2">&quot;continuous&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">stability</span><span class="o">=</span><span class="s2">"continuous"</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">uniqueness</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">novelty</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="n">distance</span><span class="o">=</span><span class="s2">&quot;elmd+amd&quot;</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="n">ref_xtals</span><span class="o">=</span><span class="s2">&quot;mp20&quot;</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="n">agg_func</span><span class="o">=</span><span class="s2">&quot;prod&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">distance</span><span class="o">=</span><span class="s2">"elmd+amd"</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">ref_xtals</span><span class="o">=</span><span class="s2">"mp20"</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">agg_func</span><span class="o">=</span><span class="s2">"prod"</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="p">{</span>
-<span class="gp">... </span>        <span class="s2">&quot;args_validity&quot;</span><span class="p">:</span> <span class="p">{</span>
-<span class="gp">... </span>            <span class="s2">&quot;structure&quot;</span><span class="p">:</span> <span class="p">{</span>
-<span class="gp">... </span>                <span class="s2">&quot;threshold_distance&quot;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span>
-<span class="gp">... </span>                <span class="s2">&quot;threshold_volume&quot;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"args_validity"</span><span class="p">:</span> <span class="p">{</span>
+<span class="gp">... </span>            <span class="s2">"structure"</span><span class="p">:</span> <span class="p">{</span>
+<span class="gp">... </span>                <span class="s2">"threshold_distance"</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span>
+<span class="gp">... </span>                <span class="s2">"threshold_volume"</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
 <span class="gp">... </span>            <span class="p">}</span>
 <span class="gp">... </span>        <span class="p">},</span>
-<span class="gp">... </span>        <span class="s2">&quot;args_stability&quot;</span><span class="p">:</span> <span class="p">{</span>
-<span class="gp">... </span>            <span class="s2">&quot;diagram&quot;</span><span class="p">:</span> <span class="s2">&quot;mp_250618&quot;</span><span class="p">,</span>
-<span class="gp">... </span>            <span class="s2">&quot;mace_model&quot;</span><span class="p">:</span> <span class="s2">&quot;medium-mpa-0&quot;</span><span class="p">,</span>
-<span class="gp">... </span>            <span class="s2">&quot;intercept&quot;</span><span class="p">:</span> <span class="mf">0.4289</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"args_stability"</span><span class="p">:</span> <span class="p">{</span>
+<span class="gp">... </span>            <span class="s2">"diagram"</span><span class="p">:</span> <span class="s2">"mp_250618"</span><span class="p">,</span>
+<span class="gp">... </span>            <span class="s2">"mace_model"</span><span class="p">:</span> <span class="s2">"medium-mpa-0"</span><span class="p">,</span>
+<span class="gp">... </span>            <span class="s2">"intercept"</span><span class="p">:</span> <span class="mf">0.4289</span><span class="p">,</span>
 <span class="gp">... </span>        <span class="p">},</span>
-<span class="gp">... </span>        <span class="s2">&quot;args_emb&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;amd&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">}},</span>
-<span class="gp">... </span>        <span class="s2">&quot;args_dist&quot;</span><span class="p">:</span> <span class="p">{</span>
-<span class="gp">... </span>                            <span class="s2">&quot;elmd&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;metric&quot;</span><span class="p">:</span> <span class="s2">&quot;mod_petti&quot;</span><span class="p">},</span>
-<span class="gp">... </span>                            <span class="s2">&quot;amd&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;metric&quot;</span><span class="p">:</span> <span class="s2">&quot;chebyshev&quot;</span><span class="p">,</span> <span class="s2">&quot;low_memory&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
-<span class="gp">... </span>                            <span class="s2">&quot;coefs&quot;</span><span class="p">:</span> <span class="p">{</span>
-<span class="gp">... </span>                                    <span class="s2">&quot;elmd&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="o">.</span><span class="n">fromhex</span><span class="p">(</span><span class="s2">&quot;0x1.8d7d565a99f87p-1&quot;</span><span class="p">),</span>
-<span class="gp">... </span>                                    <span class="s2">&quot;amd&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="o">.</span><span class="n">fromhex</span><span class="p">(</span><span class="s2">&quot;0x1.ca0aa695981e5p-3&quot;</span><span class="p">)},</span>
+<span class="gp">... </span>        <span class="s2">"args_emb"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"amd"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"k"</span><span class="p">:</span> <span class="mi">100</span><span class="p">}},</span>
+<span class="gp">... </span>        <span class="s2">"args_dist"</span><span class="p">:</span> <span class="p">{</span>
+<span class="gp">... </span>                            <span class="s2">"elmd"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"metric"</span><span class="p">:</span> <span class="s2">"mod_petti"</span><span class="p">},</span>
+<span class="gp">... </span>                            <span class="s2">"amd"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"metric"</span><span class="p">:</span> <span class="s2">"chebyshev"</span><span class="p">,</span> <span class="s2">"low_memory"</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
+<span class="gp">... </span>                            <span class="s2">"coefs"</span><span class="p">:</span> <span class="p">{</span>
+<span class="gp">... </span>                                    <span class="s2">"elmd"</span><span class="p">:</span> <span class="nb">float</span><span class="o">.</span><span class="n">fromhex</span><span class="p">(</span><span class="s2">"0x1.8d7d565a99f87p-1"</span><span class="p">),</span>
+<span class="gp">... </span>                                    <span class="s2">"amd"</span><span class="p">:</span> <span class="nb">float</span><span class="o">.</span><span class="n">fromhex</span><span class="p">(</span><span class="s2">"0x1.ca0aa695981e5p-3"</span><span class="p">)},</span>
 <span class="gp">... </span>                            <span class="p">},</span>
 <span class="gp">... </span>                    <span class="p">}</span>
 <span class="gp">... </span>    <span class="p">}</span>
@@ -281,37 +281,37 @@ dictionary of computation times for each evaluation component.</p>
 </dl>
 <p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Evaluate the conventional SUN metric using the StructureMatcher</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="c1"># distance (&quot;smat&quot;) against the MP20 dataset.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># distance ("smat") against the MP20 dataset.</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">evaluator</span> <span class="o">=</span> <span class="n">Evaluator</span><span class="p">(</span>
-<span class="gp">... </span>    <span class="n">stability</span><span class="o">=</span><span class="s2">&quot;binary&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">stability</span><span class="o">=</span><span class="s2">"binary"</span><span class="p">,</span>
 <span class="gp">... </span>            <span class="n">uniqueness</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="gp">... </span>            <span class="n">novelty</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<span class="gp">... </span>            <span class="n">distance</span><span class="o">=</span><span class="s2">&quot;smat&quot;</span><span class="p">,</span>
-<span class="gp">... </span>            <span class="n">ref_xtals</span><span class="o">=</span><span class="s2">&quot;mp20&quot;</span><span class="p">,</span>
-<span class="gp">... </span>            <span class="n">agg_func</span><span class="o">=</span><span class="s2">&quot;prod&quot;</span><span class="p">,</span>
+<span class="gp">... </span>            <span class="n">distance</span><span class="o">=</span><span class="s2">"smat"</span><span class="p">,</span>
+<span class="gp">... </span>            <span class="n">ref_xtals</span><span class="o">=</span><span class="s2">"mp20"</span><span class="p">,</span>
+<span class="gp">... </span>            <span class="n">agg_func</span><span class="o">=</span><span class="s2">"prod"</span><span class="p">,</span>
 <span class="gp">... </span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">evaluator</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span>
 <span class="gp">... </span>    <span class="n">xtals</span><span class="o">=</span><span class="n">xtals</span><span class="p">,</span>  <span class="c1"># list[Crystal | Structure]</span>
-<span class="gp">... </span>    <span class="n">dir_intermediate</span><span class="o">=</span><span class="s2">&quot;intermediate_results/&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">dir_intermediate</span><span class="o">=</span><span class="s2">"intermediate_results/"</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">multiprocessing</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">n_processes</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
 <span class="gp">... </span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="mf">0.28</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">]),</span> <span class="p">{</span><span class="s2">&quot;aggregation&quot;</span><span class="p">:</span> <span class="o">...</span><span class="p">,</span> <span class="o">...</span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="mf">0.28</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">]),</span> <span class="p">{</span><span class="s2">"aggregation"</span><span class="p">:</span> <span class="o">...</span><span class="p">,</span> <span class="o">...</span><span class="p">}</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="c1"># Evaluate the VSUN metric using the ElMD distance against a custom</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="c1"># reference dataset, with average aggregation.</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">evaluator</span> <span class="o">=</span> <span class="n">Evaluator</span><span class="p">(</span>
-<span class="gp">... </span>    <span class="n">validity</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;smact&quot;</span><span class="p">,</span> <span class="s2">&quot;structure&quot;</span><span class="p">],</span>
-<span class="gp">... </span>    <span class="n">stability</span><span class="o">=</span><span class="s2">&quot;continuous&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">validity</span><span class="o">=</span><span class="p">[</span><span class="s2">"smact"</span><span class="p">,</span> <span class="s2">"structure"</span><span class="p">],</span>
+<span class="gp">... </span>    <span class="n">stability</span><span class="o">=</span><span class="s2">"continuous"</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">uniqueness</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">novelty</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="n">distance</span><span class="o">=</span><span class="s2">&quot;elmd&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">distance</span><span class="o">=</span><span class="s2">"elmd"</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">ref_xtals</span><span class="o">=</span><span class="n">ref_xtals</span><span class="p">,</span>  <span class="c1"># list[Crystal | Structure]</span>
-<span class="gp">... </span>    <span class="n">agg_func</span><span class="o">=</span><span class="s2">&quot;ave&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">agg_func</span><span class="o">=</span><span class="s2">"ave"</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">weights</span><span class="o">=</span><span class="p">{</span>
-<span class="gp">... </span>        <span class="s2">&quot;validity&quot;</span><span class="p">:</span> <span class="mf">0.25</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;stability&quot;</span><span class="p">:</span> <span class="mf">0.25</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;uniqueness&quot;</span><span class="p">:</span> <span class="mf">0.25</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;novelty&quot;</span><span class="p">:</span> <span class="mf">0.25</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"validity"</span><span class="p">:</span> <span class="mf">0.25</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"stability"</span><span class="p">:</span> <span class="mf">0.25</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"uniqueness"</span><span class="p">:</span> <span class="mf">0.25</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"novelty"</span><span class="p">:</span> <span class="mf">0.25</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="p">},</span>
 <span class="gp">... </span>    <span class="n">multiprocessing</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">n_processes</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
@@ -322,79 +322,79 @@ dictionary of computation times for each evaluation component.</p>
 <span class="gp">... </span>    <span class="n">multiprocessing</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">n_processes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
 <span class="gp">... </span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="mf">0.6119424269941065</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">]),</span> <span class="p">{</span><span class="s2">&quot;aggregation&quot;</span><span class="p">:</span> <span class="o">...</span><span class="p">,</span> <span class="o">...</span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="mf">0.6119424269941065</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">]),</span> <span class="p">{</span><span class="s2">"aggregation"</span><span class="p">:</span> <span class="o">...</span><span class="p">,</span> <span class="o">...</span><span class="p">}</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="c1"># Evaluate the VSUN metric using the AMD distance against the MP20</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="c1"># dataset, with custom kwargs.</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">evaluator</span> <span class="o">=</span> <span class="n">Evaluator</span><span class="p">(</span>
-<span class="gp">... </span>    <span class="n">validity</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;smact&quot;</span><span class="p">,</span> <span class="s2">&quot;structure&quot;</span><span class="p">],</span>
-<span class="gp">... </span>    <span class="n">stability</span><span class="o">=</span><span class="s2">&quot;continuous&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">validity</span><span class="o">=</span><span class="p">[</span><span class="s2">"smact"</span><span class="p">,</span> <span class="s2">"structure"</span><span class="p">],</span>
+<span class="gp">... </span>    <span class="n">stability</span><span class="o">=</span><span class="s2">"continuous"</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">uniqueness</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">novelty</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="n">distance</span><span class="o">=</span><span class="s2">&quot;amd&quot;</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="n">ref_xtals</span><span class="o">=</span><span class="s2">&quot;mp20&quot;</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="n">agg_func</span><span class="o">=</span><span class="s2">&quot;prod&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">distance</span><span class="o">=</span><span class="s2">"amd"</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">ref_xtals</span><span class="o">=</span><span class="s2">"mp20"</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">agg_func</span><span class="o">=</span><span class="s2">"prod"</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="p">{</span>
-<span class="gp">... </span>        <span class="s2">&quot;args_validity&quot;</span><span class="p">:</span> <span class="p">{</span>
-<span class="gp">... </span>            <span class="s2">&quot;structure&quot;</span><span class="p">:</span> <span class="p">{</span>
-<span class="gp">... </span>                <span class="s2">&quot;threshold_distance&quot;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span>
-<span class="gp">... </span>                <span class="s2">&quot;threshold_volume&quot;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"args_validity"</span><span class="p">:</span> <span class="p">{</span>
+<span class="gp">... </span>            <span class="s2">"structure"</span><span class="p">:</span> <span class="p">{</span>
+<span class="gp">... </span>                <span class="s2">"threshold_distance"</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span>
+<span class="gp">... </span>                <span class="s2">"threshold_volume"</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
 <span class="gp">... </span>            <span class="p">}</span>
 <span class="gp">... </span>        <span class="p">},</span>
-<span class="gp">... </span>        <span class="s2">&quot;args_stability&quot;</span><span class="p">:</span> <span class="p">{</span>
-<span class="gp">... </span>            <span class="s2">&quot;diagram&quot;</span><span class="p">:</span> <span class="s2">&quot;mp_250618&quot;</span><span class="p">,</span>
-<span class="gp">... </span>            <span class="s2">&quot;mace_model&quot;</span><span class="p">:</span> <span class="s2">&quot;medium-mpa-0&quot;</span><span class="p">,</span>
-<span class="gp">... </span>            <span class="s2">&quot;intercept&quot;</span><span class="p">:</span> <span class="mf">0.4289</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"args_stability"</span><span class="p">:</span> <span class="p">{</span>
+<span class="gp">... </span>            <span class="s2">"diagram"</span><span class="p">:</span> <span class="s2">"mp_250618"</span><span class="p">,</span>
+<span class="gp">... </span>            <span class="s2">"mace_model"</span><span class="p">:</span> <span class="s2">"medium-mpa-0"</span><span class="p">,</span>
+<span class="gp">... </span>            <span class="s2">"intercept"</span><span class="p">:</span> <span class="mf">0.4289</span><span class="p">,</span>
 <span class="gp">... </span>        <span class="p">},</span>
-<span class="gp">... </span>        <span class="s2">&quot;args_emb&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">},</span>
-<span class="gp">... </span>        <span class="s2">&quot;args_dist&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;metric&quot;</span><span class="p">:</span> <span class="s2">&quot;chebyshev&quot;</span><span class="p">,</span> <span class="s2">&quot;low_memory&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
+<span class="gp">... </span>        <span class="s2">"args_emb"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"k"</span><span class="p">:</span> <span class="mi">100</span><span class="p">},</span>
+<span class="gp">... </span>        <span class="s2">"args_dist"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"metric"</span><span class="p">:</span> <span class="s2">"chebyshev"</span><span class="p">,</span> <span class="s2">"low_memory"</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
 <span class="gp">... </span>    <span class="p">}</span>
 <span class="gp">... </span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">evaluator</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span>
 <span class="gp">... </span>    <span class="n">xtals</span><span class="o">=</span><span class="n">xtals</span><span class="p">,</span>  <span class="c1"># list[Crystal | Structure]</span>
-<span class="gp">... </span>    <span class="n">dir_intermediate</span><span class="o">=</span><span class="s2">&quot;intermediate_results/&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">dir_intermediate</span><span class="o">=</span><span class="s2">"intermediate_results/"</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">multiprocessing</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">n_processes</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
 <span class="gp">... </span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="mf">0.019558713928249892</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">]),</span> <span class="p">{</span><span class="s2">&quot;aggregation&quot;</span><span class="p">:</span> <span class="o">...</span><span class="p">,</span> <span class="o">...</span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="mf">0.019558713928249892</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">]),</span> <span class="p">{</span><span class="s2">"aggregation"</span><span class="p">:</span> <span class="o">...</span><span class="p">,</span> <span class="o">...</span><span class="p">}</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="c1"># Evaluator for the SUN metric against the MP20 dataset using the</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="c1"># ElMD+AMD distance, with custom kwargs.</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">evaluator</span> <span class="o">=</span> <span class="n">Evaluator</span><span class="p">(</span>
-<span class="gp">... </span>    <span class="n">stability</span><span class="o">=</span><span class="s2">&quot;continuous&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">stability</span><span class="o">=</span><span class="s2">"continuous"</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">uniqueness</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">novelty</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="n">distance</span><span class="o">=</span><span class="s2">&quot;elmd+amd&quot;</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="n">ref_xtals</span><span class="o">=</span><span class="s2">&quot;mp20&quot;</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="n">agg_func</span><span class="o">=</span><span class="s2">&quot;prod&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">distance</span><span class="o">=</span><span class="s2">"elmd+amd"</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">ref_xtals</span><span class="o">=</span><span class="s2">"mp20"</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">agg_func</span><span class="o">=</span><span class="s2">"prod"</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="p">{</span>
-<span class="gp">... </span>        <span class="s2">&quot;args_validity&quot;</span><span class="p">:</span> <span class="p">{</span>
-<span class="gp">... </span>            <span class="s2">&quot;structure&quot;</span><span class="p">:</span> <span class="p">{</span>
-<span class="gp">... </span>                <span class="s2">&quot;threshold_distance&quot;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span>
-<span class="gp">... </span>                <span class="s2">&quot;threshold_volume&quot;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"args_validity"</span><span class="p">:</span> <span class="p">{</span>
+<span class="gp">... </span>            <span class="s2">"structure"</span><span class="p">:</span> <span class="p">{</span>
+<span class="gp">... </span>                <span class="s2">"threshold_distance"</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span>
+<span class="gp">... </span>                <span class="s2">"threshold_volume"</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
 <span class="gp">... </span>            <span class="p">}</span>
 <span class="gp">... </span>        <span class="p">},</span>
-<span class="gp">... </span>        <span class="s2">&quot;args_stability&quot;</span><span class="p">:</span> <span class="p">{</span>
-<span class="gp">... </span>            <span class="s2">&quot;diagram&quot;</span><span class="p">:</span> <span class="s2">&quot;mp_250618&quot;</span><span class="p">,</span>
-<span class="gp">... </span>            <span class="s2">&quot;mace_model&quot;</span><span class="p">:</span> <span class="s2">&quot;medium-mpa-0&quot;</span><span class="p">,</span>
-<span class="gp">... </span>            <span class="s2">&quot;intercept&quot;</span><span class="p">:</span> <span class="mf">0.4289</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"args_stability"</span><span class="p">:</span> <span class="p">{</span>
+<span class="gp">... </span>            <span class="s2">"diagram"</span><span class="p">:</span> <span class="s2">"mp_250618"</span><span class="p">,</span>
+<span class="gp">... </span>            <span class="s2">"mace_model"</span><span class="p">:</span> <span class="s2">"medium-mpa-0"</span><span class="p">,</span>
+<span class="gp">... </span>            <span class="s2">"intercept"</span><span class="p">:</span> <span class="mf">0.4289</span><span class="p">,</span>
 <span class="gp">... </span>        <span class="p">},</span>
-<span class="gp">... </span>        <span class="s2">&quot;args_emb&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;amd&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">}},</span>
-<span class="gp">... </span>        <span class="s2">&quot;args_dist&quot;</span><span class="p">:</span> <span class="p">{</span>
-<span class="gp">... </span>                            <span class="s2">&quot;elmd&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;metric&quot;</span><span class="p">:</span> <span class="s2">&quot;mod_petti&quot;</span><span class="p">},</span>
-<span class="gp">... </span>                            <span class="s2">&quot;amd&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;metric&quot;</span><span class="p">:</span> <span class="s2">&quot;chebyshev&quot;</span><span class="p">,</span> <span class="s2">&quot;low_memory&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
-<span class="gp">... </span>                            <span class="s2">&quot;coefs&quot;</span><span class="p">:</span> <span class="p">{</span>
-<span class="gp">... </span>                                    <span class="s2">&quot;elmd&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="o">.</span><span class="n">fromhex</span><span class="p">(</span><span class="s2">&quot;0x1.8d7d565a99f87p-1&quot;</span><span class="p">),</span>
-<span class="gp">... </span>                                    <span class="s2">&quot;amd&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="o">.</span><span class="n">fromhex</span><span class="p">(</span><span class="s2">&quot;0x1.ca0aa695981e5p-3&quot;</span><span class="p">)},</span>
+<span class="gp">... </span>        <span class="s2">"args_emb"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"amd"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"k"</span><span class="p">:</span> <span class="mi">100</span><span class="p">}},</span>
+<span class="gp">... </span>        <span class="s2">"args_dist"</span><span class="p">:</span> <span class="p">{</span>
+<span class="gp">... </span>                            <span class="s2">"elmd"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"metric"</span><span class="p">:</span> <span class="s2">"mod_petti"</span><span class="p">},</span>
+<span class="gp">... </span>                            <span class="s2">"amd"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"metric"</span><span class="p">:</span> <span class="s2">"chebyshev"</span><span class="p">,</span> <span class="s2">"low_memory"</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
+<span class="gp">... </span>                            <span class="s2">"coefs"</span><span class="p">:</span> <span class="p">{</span>
+<span class="gp">... </span>                                    <span class="s2">"elmd"</span><span class="p">:</span> <span class="nb">float</span><span class="o">.</span><span class="n">fromhex</span><span class="p">(</span><span class="s2">"0x1.8d7d565a99f87p-1"</span><span class="p">),</span>
+<span class="gp">... </span>                                    <span class="s2">"amd"</span><span class="p">:</span> <span class="nb">float</span><span class="o">.</span><span class="n">fromhex</span><span class="p">(</span><span class="s2">"0x1.ca0aa695981e5p-3"</span><span class="p">)},</span>
 <span class="gp">... </span>                            <span class="p">},</span>
 <span class="gp">... </span>                    <span class="p">}</span>
 <span class="gp">... </span>    <span class="p">}</span>
 <span class="gp">... </span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">evaluator</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span>
 <span class="gp">... </span>    <span class="n">xtals</span><span class="o">=</span><span class="n">xtals</span><span class="p">,</span>  <span class="c1"># list[Crystal | Structure]</span>
-<span class="gp">... </span>    <span class="n">dir_intermediate</span><span class="o">=</span><span class="s2">&quot;intermediate_results/&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">dir_intermediate</span><span class="o">=</span><span class="s2">"intermediate_results/"</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">multiprocessing</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">n_processes</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
 <span class="gp">... </span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="mf">0.16403383975840835</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">]),</span> <span class="p">{</span><span class="s2">&quot;aggregation&quot;</span><span class="p">:</span> <span class="o">...</span><span class="p">,</span> <span class="o">...</span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="mf">0.16403383975840835</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">]),</span> <span class="p">{</span><span class="s2">"aggregation"</span><span class="p">:</span> <span class="o">...</span><span class="p">,</span> <span class="o">...</span><span class="p">}</span>
 </pre></div>
 </div>
 <div class="admonition note">
