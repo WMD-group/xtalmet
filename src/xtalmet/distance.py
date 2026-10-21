@@ -38,6 +38,26 @@ class _EmbeddingError:
 		self.exc = exc
 
 
+def _embedding_is_valid(distance: str, embedding: object) -> bool:
+	"""Identify embedding failures without inferring them from pairwise results."""
+	if isinstance(embedding, _EmbeddingError):
+		return False
+	if distance == "elmd+amd":
+		return _embedding_is_valid("elmd", embedding[0]) and _embedding_is_valid(
+			"amd", embedding[1]
+		)
+	if distance in ("magpie", "amd", "pdd"):
+		return bool(np.isfinite(embedding).all())
+	return True
+
+
+def _embedding_mask(distance: str, embeddings: list) -> np.ndarray:
+	"""Return validity in the original input order."""
+	return np.array(
+		[_embedding_is_valid(distance, emb) for emb in embeddings], dtype=bool
+	)
+
+
 def _normalize(d: float) -> float:
 	"""Normalize d to [0, 1] via d / (1 + d).
 
@@ -65,30 +85,6 @@ def _resolve_elmd_amd_coefs(args_dist: dict) -> tuple[float, float]:
 		total = coef_elmd + coef_amd
 		return coef_elmd / total, coef_amd / total
 	return ELMD_AMD_COEF_ELMD, ELMD_AMD_COEF_AMD
-
-
-def _insert_nan_rows_cols(
-	d_mtx: np.ndarray,
-	error_indices_1: list,
-	error_indices_2: list | None,
-) -> np.ndarray:
-	"""Insert NaN rows and columns for failed embeddings.
-
-	Args:
-		d_mtx (np.ndarray): Distance matrix computed from valid embeddings only.
-		error_indices_1 (list): Row indices where embeddings failed.
-		error_indices_2 (list | None): Column indices where embeddings failed.
-			If None, the same indices as error_indices_1 are used (symmetric case).
-
-	Returns:
-		np.ndarray: Distance matrix with NaN rows/columns inserted.
-	"""
-	for i in error_indices_1:
-		d_mtx = np.insert(d_mtx, i, float("nan"), axis=0)
-	col_indices = error_indices_2 if error_indices_2 is not None else error_indices_1
-	for j in col_indices:
-		d_mtx = np.insert(d_mtx, j, float("nan"), axis=1)
-	return d_mtx
 
 
 def _blend_elmd_amd_distance(
@@ -668,22 +664,11 @@ def _distance_matrix_d_pdd(
 	if multiprocessing and "n_jobs" not in kwargs:
 		kwargs["n_jobs"] = _set_n_processes(n_processes)
 
-	given_two_sets = embs_2 is not None
-	valids_1 = [emb for emb in embs_1 if not isinstance(emb, _EmbeddingError)]
-	error_indices_1 = [
-		i for i, emb in enumerate(embs_1) if isinstance(emb, _EmbeddingError)
-	]
-	if not given_two_sets:
-		d_mtx = squareform(amd.PDD_pdist(valids_1, **kwargs))
-		d_mtx = _insert_nan_rows_cols(d_mtx, error_indices_1, None)
-	else:
-		valids_2 = [emb for emb in embs_2 if not isinstance(emb, _EmbeddingError)]
-		error_indices_2 = [
-			i for i, emb in enumerate(embs_2) if isinstance(emb, _EmbeddingError)
-		]
-		d_mtx = amd.PDD_cdist(valids_1, valids_2, **kwargs)
-		d_mtx = _insert_nan_rows_cols(d_mtx, error_indices_1, error_indices_2)
-	return d_mtx
+	if embs_2 is None:
+		if len(embs_1) < 2:
+			return np.zeros((len(embs_1), len(embs_1)))
+		return squareform(amd.PDD_pdist(embs_1, **kwargs))
+	return amd.PDD_cdist(embs_1, embs_2, **kwargs)
 
 
 def _distance_matrix_d_amd(
@@ -717,22 +702,11 @@ def _distance_matrix_d_amd(
 			stacklevel=2,
 		)
 
-	given_two_sets = embs_2 is not None
-	valids_1 = [emb for emb in embs_1 if not isinstance(emb, _EmbeddingError)]
-	error_indices_1 = [
-		i for i, emb in enumerate(embs_1) if isinstance(emb, _EmbeddingError)
-	]
-	if not given_two_sets:
-		d_mtx = squareform(amd.AMD_pdist(valids_1, **kwargs))
-		d_mtx = _insert_nan_rows_cols(d_mtx, error_indices_1, None)
-	else:
-		valids_2 = [emb for emb in embs_2 if not isinstance(emb, _EmbeddingError)]
-		error_indices_2 = [
-			i for i, emb in enumerate(embs_2) if isinstance(emb, _EmbeddingError)
-		]
-		d_mtx = amd.AMD_cdist(valids_1, valids_2, **kwargs)
-		d_mtx = _insert_nan_rows_cols(d_mtx, error_indices_1, error_indices_2)
-	return d_mtx
+	if embs_2 is None:
+		if len(embs_1) == 0:
+			return np.zeros((0, 0))
+		return squareform(amd.AMD_pdist(embs_1, **kwargs))
+	return amd.AMD_cdist(embs_1, embs_2, **kwargs)
 
 
 def _distance_matrix_d_elmd(
@@ -884,6 +858,9 @@ def distance(
 ) -> float | tuple[float, TYPE_EMB_ALL, TYPE_EMB_ALL]:
 	"""Compute the distance between two crystals.
 
+	Failed embeddings, including nonfinite numerical features, yield NaN. For
+	"elmd+amd", failure of either component invalidates the whole embedding.
+
 	Args:
 		distance (str): The distance metric to use. Currently supported metrics are
 			listed in SUPPORTED_DISTANCES in constants.py. For more detailed information
@@ -915,6 +892,8 @@ def distance(
 
 	.. _tutorial notebook: https://github.com/WMD-group/xtalmet/blob/main/examples/tutorial.ipynb
 	"""
+	if distance not in _DIST_FUNCS and distance != "elmd+amd":
+		raise ValueError(f"Unsupported distance metric: {distance}")
 	# conversions from Structure to Crystal
 	xtal_1 = _to_crystal(xtal_1)
 	xtal_2 = _to_crystal(xtal_2)
@@ -934,7 +913,11 @@ def distance(
 		emb_2 = xtal_2
 
 	# compute distance
-	if distance == "elmd+amd":
+	if not _embedding_is_valid(distance, emb_1) or not _embedding_is_valid(
+		distance, emb_2
+	):
+		d = float("nan")
+	elif distance == "elmd+amd":
 		d_elmd_unnorm = _d_elmd(
 			emb_1[0], emb_2[0], **(kwargs.get("args_dist", {}).get("elmd", {}))
 		)
@@ -1015,6 +998,14 @@ def distance_matrix(
 		xtals_2 is not None) and the computing time.
 
 	Notes:
+		Failed embeddings, including nonfinite numerical features, produce NaN rows
+		and columns, including the diagonal. For "elmd+amd", either component's
+		failure invalidates the whole embedding. Only valid inputs reach the backend;
+		their matrix is restored to the original positions in one NaN-filled matrix.
+		When failures occur, this temporarily holds both matrices in memory. All-valid
+		inputs do not allocate a restoration matrix. Verbose embeddings retain input
+		order and failures. AMD's "out" buffer retains raw, unnormalized distances.
+
 		For "smat", the dense matrix uses 0 for matches and 1 for mismatches.
 		Composition-incompatible pairs are skipped using the configured comparator
 		and ignored species; subset matching compares all pairs. Serial and parallel
@@ -1037,10 +1028,14 @@ def distance_matrix(
 		embeddings and other evaluation data.
 
 	Raises:
-		ValueError: If an unsupported distance metric is provided.
+		ValueError: If a distance metric is unsupported or an input set is empty.
 
 	.. _tutorial notebook: https://github.com/WMD-group/xtalmet/blob/main/examples/tutorial.ipynb
 	"""
+	if distance not in _DIST_MTX_FUNCS and distance != "elmd+amd":
+		raise ValueError(f"Unsupported distance metric: {distance}")
+	if len(xtals_1) == 0 or (xtals_2 is not None and len(xtals_2) == 0):
+		raise ValueError("Distance matrix input sets must contain at least one input.")
 	given_two_sets = xtals_2 is not None
 	times = {}
 
@@ -1084,34 +1079,92 @@ def distance_matrix(
 
 	# compute distances
 	d_mtx_start = time.time()
-	if distance == "elmd+amd":
+	valid_1 = _embedding_mask(distance, embs_1)
+	valid_2 = _embedding_mask(distance, embs_2) if given_two_sets else valid_1
+	all_valid = valid_1.all() and valid_2.all()
+	valids_1 = (
+		embs_1
+		if all_valid
+		else [e for e, ok in zip(embs_1, valid_1, strict=True) if ok]
+	)
+	valids_2 = None
+	if given_two_sets:
+		valids_2 = (
+			embs_2
+			if all_valid
+			else [e for e, ok in zip(embs_2, valid_2, strict=True) if ok]
+		)
+	shape = len(valid_1), len(valid_2)
+	args_dist = kwargs.get("args_dist", {})
+	out = None
+	# AMD's caller-owned buffer has the original shape, even after filtering.
+	amd_args = args_dist if distance == "amd" else args_dist.get("amd", {})
+	if distance in ("amd", "elmd+amd") and not all_valid:
+		if not amd_args.get("low_memory", False):
+			out = amd_args.get("out")
+		if out is not None:
+			out_shape = shape if given_two_sets else (shape[0] * (shape[0] - 1) // 2,)
+			if (
+				out.shape != out_shape
+				or out.dtype != np.float64
+				or not out.flags.c_contiguous
+				or not out.flags.writeable
+			):
+				raise ValueError(
+					"AMD out must be a writable C-contiguous float64 array "
+					"of the original shape."
+				)
+			n1, n2 = int(valid_1.sum()), int(valid_2.sum())
+			compact_shape = (n1, n2) if given_two_sets else (n1 * (n1 - 1) // 2,)
+			compact_out = np.empty(compact_shape)
+			amd_args = {**amd_args, "out": compact_out}
+			args_dist = (
+				amd_args if distance == "amd" else {**args_dist, "amd": amd_args}
+			)
+	if not valid_1.any() or not valid_2.any():
+		d_mtx = np.full(shape, np.nan)
+	elif distance == "elmd+amd":
 		d_mtx_elmd_unnorm = _distance_matrix_d_elmd(
-			[emb[0] for emb in embs_1],
-			[emb[0] for emb in embs_2] if embs_2 is not None else None,
+			[emb[0] for emb in valids_1],
+			[emb[0] for emb in valids_2] if valids_2 is not None else None,
 			multiprocessing,
 			n_processes,
-			**(kwargs.get("args_dist", {}).get("elmd", {})),
+			**args_dist.get("elmd", {}),
 		)
 		d_mtx_amd_unnorm = _distance_matrix_d_amd(
-			[emb[1] for emb in embs_1],
-			[emb[1] for emb in embs_2] if embs_2 is not None else None,
+			[emb[1] for emb in valids_1],
+			[emb[1] for emb in valids_2] if valids_2 is not None else None,
 			multiprocessing,
 			n_processes,
-			**(kwargs.get("args_dist", {}).get("amd", {})),
+			**args_dist.get("amd", {}),
 		)
-		d_mtx = _blend_elmd_amd_distance(
-			d_mtx_elmd_unnorm, d_mtx_amd_unnorm, kwargs.get("args_dist", {})
-		)
+		d_mtx = _blend_elmd_amd_distance(d_mtx_elmd_unnorm, d_mtx_amd_unnorm, args_dist)
 	elif distance in _DIST_MTX_FUNCS:
 		d_mtx = _DIST_MTX_FUNCS[distance](
-			embs_1,
-			embs_2,
+			valids_1,
+			valids_2,
 			multiprocessing,
 			n_processes,
-			**(kwargs.get("args_dist", {})),
+			**args_dist,
 		)
 	else:
 		raise ValueError(f"Unsupported distance metric: {distance}")
+	if out is not None:
+		out.fill(np.nan)
+		if given_two_sets:
+			out[np.ix_(valid_1, valid_2)] = compact_out
+		else:
+			indices = np.flatnonzero(valid_1)
+			start = 0
+			for k, i in enumerate(indices[:-1]):
+				columns = indices[k + 1 :]
+				positions = shape[0] * i - i * (i + 1) // 2 + columns - i - 1
+				out[positions] = compact_out[start : start + len(columns)]
+				start += len(columns)
+	if not all_valid and valid_1.any() and valid_2.any():
+		restored = np.full(shape, np.nan)
+		restored[np.ix_(valid_1, valid_2)] = d_mtx
+		d_mtx = restored
 	d_mtx_end = time.time()
 	times["d_mtx"] = d_mtx_end - d_mtx_start
 

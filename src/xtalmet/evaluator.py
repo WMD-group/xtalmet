@@ -13,12 +13,13 @@ from pymatgen.core import Structure
 
 from .constants import (
 	BINARY_DISTANCES,
+	DIST_WO_EMB,
 	HF_VERSION,
 	SUPPORTED_DISTANCES,
 	SUPPORTED_VALIDITY,
 )
 from .crystal import Crystal, _to_crystal_list
-from .distance import _compute_embeddings, distance_matrix
+from .distance import _compute_embeddings, _embedding_mask, distance_matrix
 from .stability import StabilityCalculator
 from .validity import Validator
 
@@ -74,6 +75,8 @@ class Evaluator:
 				average. Default is "prod".
 			weights (dict[str, float] | None): Weights for V, S, U, and N. For "ave",
 				weights are coefficients (normalized internally; equal weights if None).
+				Enabled components must have a positive total weight; weights for
+				disabled components do not contribute to this total.
 				For "prod", weights are exponents (not normalized; default 1.0 per
 				active metric if None). Default is None.
 			multiprocessing (bool): Whether to use multiprocessing for computing the
@@ -93,6 +96,10 @@ class Evaluator:
 				is for the embedding calculation, and the latter is for the distance
 				matrix calculation between embeddings. For more details, please refer to
 				the `tutorial notebook`_.
+
+		Raises:
+			ValueError: If novelty has an empty reference set or no valid reference
+				embeddings, or average aggregation has zero total enabled weight.
 
 		Examples:
 			>>> # Evaluator for the conventional SUN metric against the MP20 dataset
@@ -204,6 +211,10 @@ class Evaluator:
 			raise ValueError(
 				"Reference crystal structures must be provided for novelty evaluation."
 			)
+		if novelty and not isinstance(ref_xtals, str) and len(ref_xtals) == 0:
+			raise ValueError(
+				"Reference set must contain at least one reference crystal."
+			)
 		if novelty and not (
 			ref_xtals == "mp20"
 			or (type(ref_xtals) is str and Path(ref_xtals).is_file())
@@ -227,21 +238,15 @@ class Evaluator:
 
 		# Initial setup
 		self.evaluate_validity = validity is not None
+		self.evaluate_stability = stability is not None
+		self.evaluate_uniqueness = uniqueness
+		self.evaluate_novelty = novelty
+		self._setup_aggregation(agg_func, weights)
 		self.validator = (
 			Validator(methods=validity, **kwargs.get("args_validity", {}))
 			if validity is not None
 			else None
 		)
-		self.evaluate_stability = stability is not None
-		self.stability_calculator = (
-			StabilityCalculator(
-				binary=(stability == "binary"), **kwargs.get("args_stability", {})
-			)
-			if stability is not None
-			else None
-		)
-		self.evaluate_uniqueness = uniqueness
-		self.evaluate_novelty = novelty
 		self.distance = distance if uniqueness or novelty else None
 		self.args_emb = kwargs.get("args_emb", {})
 		self.args_dist = kwargs.get("args_dist", {})
@@ -249,7 +254,13 @@ class Evaluator:
 		self._prepare_ref_xtals(
 			ref_xtals, distance, multiprocessing, n_processes, **kwargs
 		)
-		self._setup_aggregation(agg_func, weights)
+		self.stability_calculator = (
+			StabilityCalculator(
+				binary=(stability == "binary"), **kwargs.get("args_stability", {})
+			)
+			if stability is not None
+			else None
+		)
 
 	def _setup_aggregation(
 		self, agg_func: str, weights: dict[str, float] | None
@@ -292,6 +303,10 @@ class Evaluator:
 			)
 		else:  # "ave"
 			total_weight = sum(self.weights.values())
+			if total_weight == 0:
+				raise ValueError(
+					"Average aggregation requires a positive enabled weight sum."
+				)
 			self.weights = {k: v / total_weight for k, v in self.weights.items()}
 			w = self.weights
 			self.agg_func = lambda v, s, u, n: (
@@ -342,6 +357,12 @@ class Evaluator:
 				n_processes=n_processes,
 				**kwargs.get("args_emb", {}),
 			)
+		if len(self.ref_xtals) == 0:
+			raise ValueError(
+				"Reference set must contain at least one reference crystal."
+			)
+		if not _embedding_mask(distance, self.ref_xtals).any():
+			raise ValueError("Novelty requires at least one valid reference embedding.")
 
 	def _read_pickle_gz(self, path: str) -> Any:
 		"""Load data from a pkl.gz file.
@@ -405,8 +426,8 @@ class Evaluator:
 		multiprocessing: bool,
 		n_processes: int | None,
 		metric: Literal["uni", "nov"],
-	) -> tuple[np.ndarray, float, float]:
-		"""Compute distance matrix for uniqueness calculation.
+	) -> tuple[np.ndarray, np.ndarray, np.ndarray, float, float]:
+		"""Load or compute distances and recover masks from the source embeddings.
 
 		Args:
 			xtals (list[Crystal]): List of crystal structures to compute distance matrix
@@ -420,62 +441,50 @@ class Evaluator:
 			metric (Literal["uni", "nov"]): Metric type for distance matrix computation.
 
 		Returns:
-			tuple[np.ndarray, float, float]: Distance matrix, time taken for embedding
-				computation, and time taken for distance matrix computation.
+			tuple[np.ndarray, np.ndarray, np.ndarray, float, float]: Distance matrix,
+				generated and target validity masks, embedding time, and matrix time.
 		"""
-		times = {}
-		# Use pre-computed distance matrix if available
+		t_emb = 0.0
+		embs = self._load_cached(dir_intermediate, f"emb_{self.distance}.pkl.gz")
+		if embs is None:
+			if self.distance in DIST_WO_EMB:
+				embs = xtals
+			else:
+				start = time.time()
+				embs = _compute_embeddings(
+					self.distance, xtals, multiprocessing, n_processes, **self.args_emb
+				)
+				t_emb = time.time() - start
+			self._save_cached(dir_intermediate, f"emb_{self.distance}.pkl.gz", embs)
+		valid_gen = _embedding_mask(self.distance, embs)
+		target = self.ref_xtals if metric == "nov" else None
+		valid_target = (
+			_embedding_mask(self.distance, target) if target is not None else valid_gen
+		)
+		if metric == "nov" and not valid_target.any():
+			raise ValueError("Novelty requires at least one valid reference embedding.")
 		d_mtx = self._load_cached(
 			dir_intermediate, f"mtx_{metric}_{self.distance}.pkl.gz"
 		)
-		if d_mtx is not None:
-			times[f"{metric}_emb"] = 0.0
-			times[f"{metric}_d_mtx"] = 0.0
-		else:
-			# Prepare generated samples
-			embs = self._load_cached(dir_intermediate, f"emb_{self.distance}.pkl.gz")
-			embed = embs is not None
-			if embed:
-				xtals = embs
-			# Distance matrix computation
-			if metric == "uni":
-				d_mtx, embs, times_matrix = distance_matrix(
-					distance=self.distance,
-					xtals_1=xtals,
-					xtals_2=None,
-					normalize=True,
-					multiprocessing=multiprocessing,
-					n_processes=n_processes,
-					verbose=True,
-					**{
-						"args_emb": self.args_emb,
-						"args_dist": self.args_dist,
-					},
-				)
-			else:
-				d_mtx, embs, _, times_matrix = distance_matrix(
-					distance=self.distance,
-					xtals_1=xtals,
-					xtals_2=self.ref_xtals,
-					normalize=True,
-					multiprocessing=multiprocessing,
-					n_processes=n_processes,
-					verbose=True,
-					**{
-						"args_emb": self.args_emb,
-						"args_dist": self.args_dist,
-					},
-				)
-			# Record times
-			times[f"{metric}_emb"] = times_matrix["emb_1"]
-			times[f"{metric}_d_mtx"] = times_matrix["d_mtx"]
-			# Save intermediate results
+		t_d_mtx = 0.0
+		if d_mtx is None:
+			result = distance_matrix(
+				distance=self.distance,
+				xtals_1=embs,
+				xtals_2=target,
+				normalize=True,
+				multiprocessing=multiprocessing,
+				n_processes=n_processes,
+				verbose=True,
+				args_emb=self.args_emb,
+				args_dist=self.args_dist,
+			)
+			d_mtx = result[0]
+			t_d_mtx = result[-1]["d_mtx"]
 			self._save_cached(
 				dir_intermediate, f"mtx_{metric}_{self.distance}.pkl.gz", d_mtx
 			)
-			if not embed:
-				self._save_cached(dir_intermediate, f"emb_{self.distance}.pkl.gz", embs)
-		return d_mtx, times[f"{metric}_emb"], times[f"{metric}_d_mtx"]
+		return d_mtx, valid_gen, valid_target, t_emb, t_d_mtx
 
 	def _evaluate_validity(
 		self,
@@ -548,7 +557,7 @@ class Evaluator:
 		dir_intermediate: str | None,
 		multiprocessing: bool,
 		n_processes: int | None,
-	) -> tuple[np.ndarray, np.ndarray, dict[str, float]]:
+	) -> tuple[np.ndarray, dict[str, float]]:
 		"""Compute uniqueness scores.
 
 		Args:
@@ -559,27 +568,23 @@ class Evaluator:
 			n_processes (int | None): Maximum number of processes.
 
 		Returns:
-			tuple[np.ndarray, np.ndarray, dict[str, float]]: Uniqueness scores,
-				embedding validity mask, and timing dict.
+			tuple[np.ndarray, dict[str, float]]: Uniqueness scores and timing dict.
 		"""
-		d_mtx_uni, t_emb, t_d_mtx = self._d_mtx(
+		d_mtx_uni, valid_gen, _, t_emb, t_d_mtx = self._d_mtx(
 			xtals=xtals,
 			dir_intermediate=dir_intermediate,
 			multiprocessing=multiprocessing,
 			n_processes=n_processes,
 			metric="uni",
 		)
-		emb_valid = np.array(
-			[d_mtx_i0 != float("nan") for d_mtx_i0 in d_mtx_uni[:, 0]], dtype=float
-		)
+		uniqueness_scores = np.zeros(n_samples, dtype=float)
 		if self.distance in BINARY_DISTANCES:
-			uniqueness_scores = np.array(
-				[np.all(d_mtx_uni[i, :i] != 0) for i in range(n_samples)],
-				dtype=float,
-			)
+			for i in np.flatnonzero(valid_gen):
+				uniqueness_scores[i] = np.all(d_mtx_uni[i, :i][valid_gen[:i]] != 0)
 		else:
-			uniqueness_scores = np.sum(d_mtx_uni, axis=1) / (n_samples - 1)
-		return uniqueness_scores, emb_valid, {"uni_emb": t_emb, "uni_d_mtx": t_d_mtx}
+			for i in np.flatnonzero(valid_gen):
+				uniqueness_scores[i] = np.sum(d_mtx_uni[i, valid_gen]) / (n_samples - 1)
+		return uniqueness_scores, {"uni_emb": t_emb, "uni_d_mtx": t_d_mtx}
 
 	def _evaluate_novelty(
 		self,
@@ -601,25 +606,19 @@ class Evaluator:
 		Returns:
 			tuple[np.ndarray, dict[str, float]]: Novelty scores and timing dict.
 		"""
-		d_mtx_nov, t_emb, t_d_mtx = self._d_mtx(
+		d_mtx_nov, valid_gen, valid_ref, t_emb, t_d_mtx = self._d_mtx(
 			xtals=xtals,
 			dir_intermediate=dir_intermediate,
 			multiprocessing=multiprocessing,
 			n_processes=n_processes,
 			metric="nov",
 		)
-		validity_ref = np.array([d_mtx_0j != float("nan") for d_mtx_0j in d_mtx_nov[0]])
-		if self.distance in BINARY_DISTANCES:
-			novelty_scores = np.array(
-				[
-					np.all(np.logical_or(~validity_ref, d_mtx_nov[i] != 0))
-					for i in range(n_samples)
-				],
-				dtype=float,
+		novelty_scores = np.zeros(n_samples, dtype=float)
+		for i in np.flatnonzero(valid_gen):
+			row = d_mtx_nov[i, valid_ref]
+			novelty_scores[i] = (
+				np.all(row != 0) if self.distance in BINARY_DISTANCES else np.min(row)
 			)
-		else:
-			d_mtx_nov[:, ~validity_ref] = float("inf")
-			novelty_scores = np.min(d_mtx_nov, axis=1)
 		return novelty_scores, {"nov_emb": t_emb, "nov_d_mtx": t_d_mtx}
 
 	def evaluate(
@@ -630,6 +629,13 @@ class Evaluator:
 		n_processes: int | None = None,
 	) -> tuple[float, np.ndarray, dict[str, float]]:
 		r"""Evaluate the given crystal structures.
+
+		Failed embeddings (including nonfinite numerical features) have U/N scores
+		of zero, without changing V/S. Binary U compares only earlier valid samples;
+		N compares only valid references. Continuous U counts failed pairs as zero
+		while retaining the total-sample denominator n - 1. Continuous N takes the
+		minimum over valid references. Cached matrices still require embeddings to
+		recover these masks; missing embeddings are computed and cached separately.
 
 		Args:
 			xtals (list[Crystal  |  Structure]): List of crystal structures to be
@@ -656,6 +662,10 @@ class Evaluator:
 			tuple[float, np.ndarray, dict[str, float]]: A tuple containing the overall
 			score (float), individual scores for each crystal structure, and a
 			dictionary of computation times for each evaluation component.
+
+		Raises:
+			ValueError: If xtals is empty, continuous uniqueness has fewer than two
+				samples, or novelty has no valid reference embeddings.
 
 		Examples:
 			>>> # Evaluate the conventional SUN metric using the StructureMatcher
@@ -864,6 +874,16 @@ class Evaluator:
 			.. math::
 				\text{VSUN} = \frac{1}{n} \sum_{i=1}^{n} \text{VSUN}(x_i)
 		"""
+		if len(xtals) == 0:
+			raise ValueError("Evaluation requires at least one generated crystal.")
+		if (
+			self.evaluate_uniqueness
+			and self.distance not in BINARY_DISTANCES
+			and len(xtals) < 2
+		):
+			raise ValueError(
+				"Continuous uniqueness requires at least two generated crystals."
+			)
 		if not all(isinstance(xtal, (Crystal, Structure)) for xtal in xtals):
 			raise TypeError(
 				"All elements in xtals must be of type Crystal or pymatgen Structure."
@@ -892,10 +912,9 @@ class Evaluator:
 			times.update(s_t)
 
 		if self.evaluate_uniqueness:
-			uniqueness_scores, emb_valid, u_t = self._evaluate_uniqueness(
+			uniqueness_scores, u_t = self._evaluate_uniqueness(
 				xtals, n_samples, dir_intermediate, multiprocessing, n_processes
 			)
-			validity_scores *= emb_valid
 			times.update(u_t)
 
 		if self.evaluate_novelty:

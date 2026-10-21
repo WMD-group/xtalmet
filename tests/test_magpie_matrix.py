@@ -59,7 +59,7 @@ def test_magpie_matrix(embeddings, two_sets, parallel, normalize):
 @pytest.mark.parametrize("parallel", [False, True])
 @pytest.mark.parametrize("normalize", [False, True])
 def test_magpie_nonfinite_features(two_sets, parallel, normalize):
-	"""Keep NaN/inf pair results, including nonfinite self distances."""
+	"""Nonfinite features invalidate every pair involving that embedding."""
 	left = [[0.0, 1.0], [np.nan, 2.0], [np.inf, 1.0]]
 	right = [[1.0, 0.0], [np.nan, 0.0]] if two_sets else None
 	target = right if two_sets else left
@@ -67,6 +67,10 @@ def test_magpie_nonfinite_features(two_sets, parallel, normalize):
 		expected = np.array([[_d_magpie(a, b) for b in target] for a in left])
 		if normalize:
 			expected /= 1 + expected
+		for i, a in enumerate(left):
+			for j, b in enumerate(target):
+				if not np.isfinite(a).all() or not np.isfinite(b).all():
+					expected[i, j] = np.nan
 		actual = distance_matrix(
 			"magpie",
 			left,
