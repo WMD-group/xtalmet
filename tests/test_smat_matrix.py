@@ -2,6 +2,7 @@
 
 from importlib import import_module
 from multiprocessing import get_context
+from os import getpid
 from pathlib import Path
 
 import numpy as np
@@ -12,7 +13,7 @@ from pymatgen.analysis.structure_matcher import (
 	OrderDisorderElementComparator,
 	StructureMatcher,
 )
-from pymatgen.core import Composition, Lattice
+from pymatgen.core import Composition, Lattice, Structure
 
 from xtalmet.crystal import Crystal
 from xtalmet.distance import distance, distance_matrix
@@ -90,6 +91,13 @@ def test_smat_matches_exhaustive(structures, settings, two_sets, parallel):
 		{"emb_1", "emb_2", "d_mtx"} if two_sets else {"emb_1", "d_mtx"}
 	)
 	assert before == [structure.as_dict() for structure in structures]
+	assert [Crystal.from_Structure(s).as_dict() for s in structures] == [
+		s.as_dict() for s in result[1]
+	]
+	if two_sets:
+		assert [Crystal.from_Structure(s).as_dict() for s in targets] == [
+			s.as_dict() for s in result[2]
+		]
 
 
 @pytest.mark.parametrize("parallel", [False, True])
@@ -121,13 +129,14 @@ def test_smat_prunes_calls_and_reuses_matcher(monkeypatch, two_sets, expected_ca
 	matchers = []
 	fit = StructureMatcher.fit
 
-	def counted_fit(self, source, target):
+	def counted_fit(self, source, target, **kwargs):
 		assert (
 			source.composition.fractional_composition
 			== target.composition.fractional_composition
 		)
 		matchers.append(self)
-		return fit(self, source, target)
+		assert kwargs["skip_structure_reduction"] is True
+		return fit(self, source, target, **kwargs)
 
 	monkeypatch.setattr(StructureMatcher, "fit", counted_fit)
 	actual = distance_matrix("smat", structures, structures if two_sets else None)
@@ -144,6 +153,7 @@ def test_smat_no_candidates_needs_no_pool(monkeypatch):
 
 	monkeypatch.setattr(StructureMatcher, "fit", unexpected)
 	monkeypatch.setattr(distance_module, "Pool", unexpected)
+	monkeypatch.setattr(distance_module, "_smat_prepare", unexpected)
 	actual = distance_matrix(
 		"smat",
 		[_silicon()],
@@ -235,7 +245,7 @@ def test_smat_comparison_direction(monkeypatch):
 	monkeypatch.setattr(
 		StructureMatcher,
 		"fit",
-		lambda self, first, second: first.volume >= second.volume,
+		lambda self, first, second, **kwargs: first.volume >= second.volume,
 	)
 	structures = [_silicon(), _silicon(6)]
 	np.testing.assert_array_equal(distance_matrix("smat", structures), np.zeros((2, 2)))
@@ -275,3 +285,147 @@ def test_smat_evaluator_without_cache(parallel):
 	)
 	np.testing.assert_array_equal(individual, [0, 1, 0])
 	assert overall == pytest.approx(1 / 3)
+
+
+@pytest.mark.parametrize("parallel", [False, True])
+@pytest.mark.parametrize("two_sets", [False, True])
+def test_smat_reduces_participating_structures_once(monkeypatch, parallel, two_sets):
+	"""Reduction happens in the parent once per participating input position."""
+	sources = [_silicon(), _silicon(6), Crystal(Lattice.cubic(3), ["Ge"], [[0, 0, 0]])]
+	targets = (
+		[_silicon(), _silicon(5), Crystal(Lattice.cubic(3), ["Ne"], [[0, 0, 0]])]
+		if two_sets
+		else None
+	)
+	expected = _exhaustive(sources, targets)
+	parent_pid = getpid()
+	reduced = []
+	reduce = Structure.get_reduced_structure
+
+	def counted_reduce(self, *args, **kwargs):
+		assert getpid() == parent_pid, "Workers must reuse the parent's reductions"
+		reduced.append(self.composition.reduced_formula)
+		return reduce(self, *args, **kwargs)
+
+	monkeypatch.setattr(Structure, "get_reduced_structure", counted_reduce)
+	actual = distance_matrix(
+		"smat", sources, targets, multiprocessing=parallel, n_processes=2
+	)
+	np.testing.assert_array_equal(actual, expected)
+	assert reduced == (["Si"] * 4 if two_sets else ["Si", "Si", "Ge"])
+
+
+@pytest.mark.parametrize("parallel", [False, True])
+def test_smat_prunes_unequal_reduced_site_counts(monkeypatch, parallel):
+	"""Without subset/supercell matching, unequal reduced site counts cannot fit."""
+
+	def unexpected(*args, **kwargs):
+		raise AssertionError("Unequal site counts should not reach fit")
+
+	monkeypatch.setattr(StructureMatcher, "fit", unexpected)
+	actual = distance_matrix(
+		"smat",
+		[_silicon()],
+		[_silicon() * [2, 1, 1]],
+		args_dist={"primitive_cell": False},
+		multiprocessing=parallel,
+		n_processes=2,
+	)
+	np.testing.assert_array_equal(actual, [[1.0]])
+
+
+@pytest.mark.parametrize("parallel", [False, True])
+def test_smat_removes_ignored_species_before_reduction(parallel):
+	"""Removing Li exposes a smaller primitive Si cell before site-count pruning."""
+	source = Crystal(
+		Lattice.cubic(3),
+		["Si", "Si", "Li"],
+		[[0, 0, 0], [0.5, 0.5, 0.5], [0.25, 0.25, 0.25]],
+	)
+	target = source.copy()
+	target.remove_species(["Li"])
+	settings = {"ignored_species": ["Li"], "scale": False}
+	expected = _exhaustive([source], [target], **settings)
+	np.testing.assert_array_equal(expected, [[0.0]])
+	actual = distance_matrix(
+		"smat",
+		[source],
+		[target],
+		args_dist=settings,
+		multiprocessing=parallel,
+		n_processes=2,
+	)
+	np.testing.assert_array_equal(actual, expected)
+	assert len(source) == 3 and "Li" in source.composition
+
+
+def test_smat_niggli_reduction_without_primitive_cell(monkeypatch):
+	"""Disabling primitive cells must still normalize a skewed lattice basis."""
+	source = _silicon()
+	source.make_supercell([[1, 3, 0], [0, 1, 0], [0, 0, 1]])
+	fit = StructureMatcher.fit
+
+	def checked_fit(self, first, second, **kwargs):
+		np.testing.assert_allclose(first.lattice.abc, [3, 3, 3])
+		np.testing.assert_allclose(second.lattice.abc, [3, 3, 3])
+		return fit(self, first, second, **kwargs)
+
+	def unexpected(*args, **kwargs):
+		raise AssertionError("Primitive reduction was disabled")
+
+	monkeypatch.setattr(StructureMatcher, "fit", checked_fit)
+	monkeypatch.setattr(Structure, "get_primitive_structure", unexpected)
+	actual = distance_matrix(
+		"smat", [source], [_silicon()], args_dist={"primitive_cell": False}
+	)
+	np.testing.assert_array_equal(actual, [[0.0]])
+
+
+@pytest.mark.parametrize("parallel", [False, True])
+@pytest.mark.parametrize("two_sets", [False, True])
+def test_smat_falls_back_when_reduction_changes_composition(parallel, two_sets):
+	"""A second composition check after reduction must not reject an original match."""
+	delta = 2 * Composition.amount_tolerance
+	source = Structure(
+		Lattice.cubic(3),
+		[
+			{"Si": 0.5 + delta, "Ge": 0.5 - delta},
+			{"Si": 0.5 - delta, "Ge": 0.5 + delta},
+		],
+		[[0, 0, 0], [0.5, 0.5, 0.5]],
+	)
+	target = Structure(
+		Lattice.cubic(3), [{"Si": 0.5, "Ge": 0.5}] * 2, [[0, 0, 0], [0.5, 0.5, 0.5]]
+	)
+	settings = {"comparator": OrderDisorderElementComparator()}
+	matcher = StructureMatcher(**settings)
+	assert matcher.fit(source, target)
+	assert not matcher.fit(
+		source.get_reduced_structure().get_primitive_structure(),
+		target.get_reduced_structure().get_primitive_structure(),
+		skip_structure_reduction=True,
+	)
+	sources = [source, target]
+	targets = list(reversed(sources)) if two_sets else None
+	expected = _exhaustive(sources, targets, **settings)
+	# The public conversion still rejects partially occupied structures.
+	actual = distance_module._distance_matrix_d_smat(
+		sources, targets, multiprocessing=parallel, n_processes=2, **settings
+	)
+	np.testing.assert_array_equal(actual, expected)
+
+
+@pytest.mark.parametrize("parallel", [False, True])
+def test_smat_reduction_errors_propagate(monkeypatch, parallel):
+	"""Failed preparation must abort before starting a pool or producing distances."""
+
+	def failing_reduction(*args, **kwargs):
+		raise ValueError("reduction failed")
+
+	def unexpected(*args, **kwargs):
+		raise AssertionError("Preparation failed before a pool was needed")
+
+	monkeypatch.setattr(Structure, "get_reduced_structure", failing_reduction)
+	monkeypatch.setattr(distance_module, "Pool", unexpected)
+	with pytest.raises(ValueError, match="reduction failed"):
+		distance_matrix("smat", [_silicon()], multiprocessing=parallel, n_processes=2)

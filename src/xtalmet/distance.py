@@ -379,16 +379,20 @@ def _distance_matrix_template(
 _smat_worker_args: tuple = ()
 
 
-def _init_worker_distance_matrix_d_smat(embs_1, embs_2, matcher):
-	"""Keep structures and a configured matcher in each worker.
+def _init_worker_distance_matrix_d_smat(
+	prepared_1, prepared_2, matcher, subset, check_sites
+):
+	"""Keep prepared structures and a configured matcher in each worker.
 
 	Args:
-		embs_1: Source structures.
-		embs_2: Target structures.
+		prepared_1: Prepared source structures indexed by input position.
+		prepared_2: Prepared target structures indexed by input position.
 		matcher: Configured StructureMatcher.
+		subset: Whether subset matches are allowed.
+		check_sites: Whether unequal site counts rule out a match.
 	"""
 	global _smat_worker_args
-	_smat_worker_args = (embs_1, embs_2, matcher)
+	_smat_worker_args = (prepared_1, prepared_2, matcher, subset, check_sites)
 
 
 def _worker_distance_matrix_d_smat(task):
@@ -403,57 +407,110 @@ def _worker_distance_matrix_d_smat(task):
 	return _smat_row(task, *_smat_worker_args)
 
 
-def _smat_row(task, embs_1, embs_2, matcher):
+def _smat_row(task, prepared_1, prepared_2, matcher, subset, check_sites):
 	"""Compute all candidate distances in a row without stopping at a match.
 
 	Args:
 		task: Row index and candidate column indices.
-		embs_1: Source structures.
-		embs_2: Target structures.
+		prepared_1: Prepared source structures indexed by input position.
+		prepared_2: Prepared target structures indexed by input position.
 		matcher: Configured StructureMatcher.
+		subset: Whether subset matches are allowed.
+		check_sites: Whether unequal site counts rule out a match.
 
 	Returns:
 		tuple: Row index, column indices, and distances.
 	"""
 	i, columns = task
-	return i, columns, [_d_smat(embs_1[i], embs_2[j], matcher) for j in columns]
+	original_1, reduced_1, key_1 = prepared_1[i]
+	values = []
+	for j in columns:
+		original_2, reduced_2, key_2 = prepared_2[j]
+		# Primitive reduction can change fractional occupancies across a hash boundary.
+		if not subset and key_1 != key_2:
+			value = _d_smat(original_1, original_2, matcher)
+		elif check_sites and len(reduced_1) != len(reduced_2):
+			value = 1.0
+		else:
+			value = (
+				0.0
+				if matcher.fit(reduced_1, reduced_2, skip_structure_reduction=True)
+				else 1.0
+			)
+		values.append(value)
+	return i, columns, values
+
+
+def _smat_prepare(embs: list[Crystal], indices: set[int], **kwargs) -> dict:
+	"""Reduce participating structures once, retaining originals for fallback.
+
+	Args:
+		embs: Input structures.
+		indices: Positions participating in at least one candidate pair.
+		**kwargs: StructureMatcher settings.
+
+	Returns:
+		dict: Input index to original structure, reduced structure, and composition key.
+	"""
+	comparator = kwargs.get("comparator") or SpeciesComparator()
+	ignored_species = kwargs.get("ignored_species", ())
+	prepared = {}
+	for i in sorted(indices):
+		structure = Structure.from_sites(embs[i])
+		if ignored_species:
+			structure.remove_species(ignored_species)
+		structure = structure.get_reduced_structure(reduction_algo="niggli")
+		if kwargs.get("primitive_cell", True):
+			structure = structure.get_primitive_structure()
+		prepared[i] = embs[i], structure, comparator.get_hash(structure.composition)
+	return prepared
+
+
+def _smat_composition_keys(embs: list[Crystal], **kwargs) -> list:
+	"""Compute composition keys once for both candidate passes.
+
+	Args:
+		embs: Input structures.
+		**kwargs: StructureMatcher settings.
+
+	Returns:
+		list: Comparator keys, or placeholders when subset matching bypasses pruning.
+	"""
+	if kwargs.get("allow_subset", False):
+		return [None] * len(embs)
+	comparator = kwargs.get("comparator") or SpeciesComparator()
+	ignored_species = kwargs.get("ignored_species", ())
+	keys = []
+	for structure in embs:
+		processed = Structure.from_sites(structure)
+		if ignored_species:
+			processed.remove_species(ignored_species)
+		keys.append(comparator.get_hash(processed.composition))
+	return keys
 
 
 def _smat_candidate_rows(
-	embs_1: list[Crystal], embs_2: list[Crystal] | None, **kwargs
+	keys_1: list, keys_2: list | None, subset: bool
 ) -> Iterator[tuple[int, list[int]]]:
 	"""Yield row indices and columns that can pass the matcher's composition check.
 
 	Args:
-		embs_1: Source structures.
-		embs_2: Target structures, or None for a symmetric matrix.
-		**kwargs: StructureMatcher settings.
+		keys_1: Source composition keys.
+		keys_2: Target composition keys, or None for a symmetric matrix.
+		subset: Whether subset matching bypasses composition pruning.
 
 	Yields:
 		tuple[int, list[int]]: A row index and its candidate column indices.
 	"""
-	symmetric = embs_2 is None
-	targets = embs_1 if symmetric else embs_2
-	if kwargs.get("allow_subset", False):
-		for i in range(len(embs_1)):
-			columns = list(range(i + 1 if symmetric else len(targets)))
+	symmetric = keys_2 is None
+	keys_2 = keys_1 if symmetric else keys_2
+	if subset:
+		for i in range(len(keys_1)):
+			columns = list(range(i + 1 if symmetric else len(keys_2)))
 			if columns:
 				yield i, columns
 		return
 
-	comparator = kwargs.get("comparator") or SpeciesComparator()
-	ignored_species = kwargs.get("ignored_species", ())
-	keys = []
-	for structures in (embs_1,) if symmetric else (embs_1, targets):
-		structure_keys = []
-		for structure in structures:
-			processed = Structure.from_sites(structure)
-			if ignored_species:
-				processed.remove_species(ignored_species)
-			structure_keys.append(comparator.get_hash(processed.composition))
-		keys.append(structure_keys)
-	keys_1 = keys[0]
-	keys_2 = keys_1 if symmetric else keys[1]
 	# At the tolerance boundary, equal Compositions can have different element hashes.
 	hash_safe = all(
 		not isinstance(key, Composition)
@@ -500,25 +557,38 @@ def _distance_matrix_d_smat(
 	symmetric = embs_2 is None
 	targets = embs_1 if symmetric else embs_2
 	d_mtx = np.ones((len(embs_1), len(targets)))
-	rows = _smat_candidate_rows(embs_1, embs_2, **kwargs)
+	subset = kwargs.get("allow_subset", False)
+	keys_1 = _smat_composition_keys(embs_1, **kwargs)
+	keys_2 = None if symmetric else _smat_composition_keys(targets, **kwargs)
+	indices_1 = set()
+	indices_2 = indices_1 if symmetric else set()
+	for i, columns in _smat_candidate_rows(keys_1, keys_2, subset):
+		indices_1.add(i)
+		indices_2.update(columns)
+	if not indices_1:
+		return d_mtx
+	prepared_1 = _smat_prepare(embs_1, indices_1, **kwargs)
+	prepared_2 = (
+		prepared_1 if symmetric else _smat_prepare(targets, indices_2, **kwargs)
+	)
+	check_sites = not subset and not kwargs.get("attempt_supercell", False)
+	worker_args = prepared_1, prepared_2, matcher, subset, check_sites
+	rows = _smat_candidate_rows(keys_1, keys_2, subset)
 	if multiprocessing:
-		first = next(rows, None)
-		if first is None:
-			return d_mtx
 		with Pool(
 			processes=_set_n_processes(n_processes),
 			initializer=_init_worker_distance_matrix_d_smat,
-			initargs=(embs_1, targets, matcher),
+			initargs=worker_args,
 		) as pool:
 			for i, columns, values in pool.imap_unordered(
-				_worker_distance_matrix_d_smat, chain((first,), rows)
+				_worker_distance_matrix_d_smat, rows
 			):
 				d_mtx[i, columns] = values
 				if symmetric:
 					d_mtx[columns, i] = values
 	else:
 		for task in rows:
-			i, columns, values = _smat_row(task, embs_1, targets, matcher)
+			i, columns, values = _smat_row(task, *worker_args)
 			d_mtx[i, columns] = values
 			if symmetric:
 				d_mtx[columns, i] = values
@@ -1012,6 +1082,13 @@ def distance_matrix(
 		and ignored species; subset matching compares all pairs. Serial and parallel
 		calculations both honor args_dist and reuse a matcher. Parallel tasks contain
 		candidate row indices rather than a materialized list of all structure pairs.
+		Participating structures undergo Niggli and optional primitive reduction
+		once per input position in the parent process, after removing ignored species.
+		Workers reuse the reductions; volume scaling and supercell matching remain
+		pairwise. Unequal reduced site counts rule out matches unless subset or
+		supercell matching is enabled. Pairs whose reduced compositions become
+		incompatible fall back to normal matching of the original structures.
+		Input structures and returned embeddings are not replaced by reductions.
 
 	Raises:
 		ValueError: If an unsupported distance metric is provided.

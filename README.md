@@ -64,6 +64,16 @@ reuses a configured matcher. `args_dist` applies in both serial and parallel
 execution. Candidate filtering respects the comparator and ignored species;
 subset matching falls back to all pairs. Parallel execution uses
 `multiprocessing=True, n_processes=...` and streams candidate rows to workers.
+Participating structures are reduced once per input position in the parent
+process: ignored species are removed before Niggli reduction and optional
+primitive-cell reduction. Workers reuse these structures; volume scaling and
+supercell handling remain pairwise. Unequal reduced site counts skip matching
+when neither subset nor supercell matching is enabled. If reduction changes
+composition compatibility, the affected pair uses the original structures and
+normal matching. Inputs and returned embeddings remain unchanged.
+Sharing reductions helps when structures participate in many comparisons. With
+few candidate pairs, serial preparation in the parent can make parallel matrix
+calculations slower; more workers do not necessarily improve throughput.
 The dense output still requires memory proportional to the number of pairs.
 
 Earlier serial matrix calculations ignored `args_dist`. If you used non-default
