@@ -3,15 +3,16 @@
 import functools
 import time
 import warnings
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from itertools import chain
 from multiprocessing import Pool, cpu_count
 from typing import Literal, overload
 
 import amd
 import numpy as np
 from ElMD import elmd
-from pymatgen.analysis.structure_matcher import StructureMatcher
-from pymatgen.core import Structure
+from pymatgen.analysis.structure_matcher import SpeciesComparator, StructureMatcher
+from pymatgen.core import Composition, Structure
 from scipy.spatial.distance import squareform
 
 from .constants import (
@@ -375,31 +376,102 @@ def _distance_matrix_template(
 	return d_mtx
 
 
-_global_matcher: StructureMatcher | None = None
+_smat_worker_args: tuple = ()
 
 
-def _init_worker_distance_matrix_d_smat(kwargs_dict: dict):
-	"""Initialize global StructureMatcher for worker processes.
+def _init_worker_distance_matrix_d_smat(embs_1, embs_2, matcher):
+	"""Keep structures and a configured matcher in each worker.
 
 	Args:
-		kwargs_dict (dict): Additional keyword arguments for StructureMatcher.
+		embs_1: Source structures.
+		embs_2: Target structures.
+		matcher: Configured StructureMatcher.
 	"""
-	global _global_matcher
-	_global_matcher = StructureMatcher(**kwargs_dict)
+	global _smat_worker_args
+	_smat_worker_args = (embs_1, embs_2, matcher)
 
 
-def _worker_distance_matrix_d_smat(emb_i, emb_j):
-	"""Worker function for computing d_smat in multiprocessing.
+def _worker_distance_matrix_d_smat(task):
+	"""Evaluate one candidate row using worker-local structures and matcher.
 
 	Args:
-		emb_i: Embedding i.
-		emb_j: Embedding j.
+		task: Row index and candidate column indices.
 
 	Returns:
-		float: d_smat distance between emb_i and emb_j.
+		tuple: Row index, column indices, and distances.
 	"""
-	global _global_matcher
-	return _d_smat(emb_i, emb_j, matcher=_global_matcher)
+	return _smat_row(task, *_smat_worker_args)
+
+
+def _smat_row(task, embs_1, embs_2, matcher):
+	"""Compute all candidate distances in a row without stopping at a match.
+
+	Args:
+		task: Row index and candidate column indices.
+		embs_1: Source structures.
+		embs_2: Target structures.
+		matcher: Configured StructureMatcher.
+
+	Returns:
+		tuple: Row index, column indices, and distances.
+	"""
+	i, columns = task
+	return i, columns, [_d_smat(embs_1[i], embs_2[j], matcher) for j in columns]
+
+
+def _smat_candidate_rows(
+	embs_1: list[Crystal], embs_2: list[Crystal] | None, **kwargs
+) -> Iterator[tuple[int, list[int]]]:
+	"""Yield row indices and columns that can pass the matcher's composition check.
+
+	Args:
+		embs_1: Source structures.
+		embs_2: Target structures, or None for a symmetric matrix.
+		**kwargs: StructureMatcher settings.
+
+	Yields:
+		tuple[int, list[int]]: A row index and its candidate column indices.
+	"""
+	symmetric = embs_2 is None
+	targets = embs_1 if symmetric else embs_2
+	if kwargs.get("allow_subset", False):
+		for i in range(len(embs_1)):
+			columns = list(range(i + 1 if symmetric else len(targets)))
+			if columns:
+				yield i, columns
+		return
+
+	comparator = kwargs.get("comparator") or SpeciesComparator()
+	ignored_species = kwargs.get("ignored_species", ())
+	keys = []
+	for structures in (embs_1,) if symmetric else (embs_1, targets):
+		structure_keys = []
+		for structure in structures:
+			processed = Structure.from_sites(structure)
+			if ignored_species:
+				processed.remove_species(ignored_species)
+			structure_keys.append(comparator.get_hash(processed.composition))
+		keys.append(structure_keys)
+	keys_1 = keys[0]
+	keys_2 = keys_1 if symmetric else keys[1]
+	# At the tolerance boundary, equal Compositions can have different element hashes.
+	hash_safe = all(
+		not isinstance(key, Composition)
+		or all(abs(amount) > key.amount_tolerance for amount in key.values())
+		for key in chain(keys_1, keys_2)
+	)
+	groups: dict[int, list[int]] = {}
+	for j, key in enumerate(keys_2):
+		groups.setdefault(hash(key) if hash_safe else 0, []).append(j)
+	for i, key in enumerate(keys_1):
+		# Composition equality has a tolerance and is not transitive: check each key.
+		columns = [
+			j
+			for j in groups.get(hash(key) if hash_safe else 0, ())
+			if (not symmetric or j <= i) and key == keys_2[j]
+		]
+		if columns:
+			yield i, columns
 
 
 def _distance_matrix_d_smat(
@@ -408,7 +480,7 @@ def _distance_matrix_d_smat(
 	multiprocessing: bool = False,
 	n_processes: int | None = None,
 	**kwargs,
-):
+) -> np.ndarray:
 	"""Compute the distance matrix between two sets of embeddings based on d_smat.
 
 	If embs_2 is None, compute the distance matrix within embs_1.
@@ -424,15 +496,33 @@ def _distance_matrix_d_smat(
 	Returns:
 		np.ndarray: d_smat distance matrix.
 	"""
-	return _distance_matrix_template(
-		embs_1,
-		embs_2,
-		multiprocessing,
-		n_processes,
-		_worker_distance_matrix_d_smat,
-		_init_worker_distance_matrix_d_smat,
-		(kwargs,),
-	)
+	matcher = StructureMatcher(**kwargs)
+	symmetric = embs_2 is None
+	targets = embs_1 if symmetric else embs_2
+	d_mtx = np.ones((len(embs_1), len(targets)))
+	rows = _smat_candidate_rows(embs_1, embs_2, **kwargs)
+	if multiprocessing:
+		first = next(rows, None)
+		if first is None:
+			return d_mtx
+		with Pool(
+			processes=_set_n_processes(n_processes),
+			initializer=_init_worker_distance_matrix_d_smat,
+			initargs=(embs_1, targets, matcher),
+		) as pool:
+			for i, columns, values in pool.imap_unordered(
+				_worker_distance_matrix_d_smat, chain((first,), rows)
+			):
+				d_mtx[i, columns] = values
+				if symmetric:
+					d_mtx[columns, i] = values
+	else:
+		for task in rows:
+			i, columns, values = _smat_row(task, embs_1, targets, matcher)
+			d_mtx[i, columns] = values
+			if symmetric:
+				d_mtx[columns, i] = values
+	return d_mtx
 
 
 def _distance_matrix_d_comp(
@@ -915,6 +1005,13 @@ def distance_matrix(
 	Returns:
 		TYPE_D_MTX_RETURN: Distance matrix, the embeddings of xtals_1 (and xtals_2 if
 		xtals_2 is not None) and the computing time.
+
+	Notes:
+		For "smat", the dense matrix uses 0 for matches and 1 for mismatches.
+		Composition-incompatible pairs are skipped using the configured comparator
+		and ignored species; subset matching compares all pairs. Serial and parallel
+		calculations both honor args_dist and reuse a matcher. Parallel tasks contain
+		candidate row indices rather than a materialized list of all structure pairs.
 
 	Raises:
 		ValueError: If an unsupported distance metric is provided.

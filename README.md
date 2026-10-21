@@ -56,6 +56,23 @@ vsun, _, _ = evaluator.evaluate(xtals=gen_xtals)
 ```
 A more detailed tutorial notebook is provided [here](https://github.com/WMD-group/xtalmet/blob/main/examples/tutorial.ipynb).
 
+### StructureMatcher distance matrices
+
+`distance_matrix("smat", ...)` returns a dense matrix (match: `0`, mismatch: `1`).
+It checks composition-compatible candidates before calling StructureMatcher and
+reuses a configured matcher. `args_dist` applies in both serial and parallel
+execution. Candidate filtering respects the comparator and ignored species;
+subset matching falls back to all pairs. Parallel execution uses
+`multiprocessing=True, n_processes=...` and streams candidate rows to workers.
+The dense output still requires memory proportional to the number of pairs.
+
+Earlier serial matrix calculations ignored `args_dist`. If you used non-default
+StructureMatcher settings, such as `scale=False`, recompute those matrices and
+their U/N scores. Existing caches are not automatically invalidated: use
+`dir_intermediate=None` or a new cache directory to avoid reusing old
+`mtx_uni_smat.pkl.gz` and `mtx_nov_smat.pkl.gz` files. Preserve the old results for
+comparison. Cache file formats are unchanged.
+
 ## Acknowledgements
 Although we have argued that the progress on evaluation metrics is slower than that on generative models, we are not the sole contributors to this field. 
 Our work builds upon several influential studies. 
