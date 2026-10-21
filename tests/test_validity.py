@@ -7,6 +7,7 @@ import numpy as np
 import pytest
 
 from xtalmet.crystal import Crystal
+from xtalmet.evaluator import Evaluator
 from xtalmet.validity import SMACTValidator, StructureValidator, Validator
 
 
@@ -55,6 +56,98 @@ def test_StructureValidator(
 	assert len(scores) == len(gen_xtals)
 	assert all(0.0 <= score <= 1.0 for score in scores)
 	assert all(isinstance(score, float) for score in scores)
+
+
+@pytest.mark.parametrize("skew", [False, True])
+@pytest.mark.parametrize("threshold", [0.5, 0.6])
+@pytest.mark.parametrize("delta", [-1e-9, 0.0, 1e-9])
+def test_structure_periodic_self_distance(skew, threshold, delta):
+	"""Include self images, even when the shortest translation combines axes."""
+	distance = threshold + delta
+	lattice = (
+		[[2, 0, 0], [2, distance, 0], [0, 0, 2]] if skew else np.diag([distance, 2, 2])
+	)
+	xtal = Crystal(lattice, ["Si"], [[0, 0, 0]])
+	scores = StructureValidator(threshold_distance=threshold).validate([xtal])
+	np.testing.assert_array_equal(scores, [float(delta >= 0)])
+
+
+@pytest.mark.parametrize("across_boundary", [False, True])
+@pytest.mark.parametrize("distance", [0.0, 0.5 - 1e-9, 0.5, 0.5 + 1e-9, 1.0])
+def test_structure_distinct_sites(distance, across_boundary):
+	"""Reject close or overlapping distinct sites, including across cell edges."""
+	x = 4 - distance if across_boundary else distance
+	xtal = Crystal(
+		np.eye(3) * 4,
+		["Si", "Si"],
+		[[0, 0, 0], [x, 0, 0]],
+		coords_are_cartesian=True,
+	)
+	scores = StructureValidator().validate([xtal])
+	np.testing.assert_array_equal(scores, [float(distance >= 0.5)])
+
+
+@pytest.mark.parametrize("length, expected", [(0.25, 0.0), (0.5, 1.0), (1.0, 1.0)])
+def test_structure_volume_boundary(length, expected):
+	"""Keep the volume cutoff inclusive while checking periodic distances."""
+	xtal = Crystal(np.eye(3) * length, ["Si"], [[0, 0, 0]])
+	validator = StructureValidator(threshold_distance=0.1, threshold_volume=0.125)
+	np.testing.assert_array_equal(validator.validate([xtal]), [expected])
+
+
+@pytest.mark.parametrize("threshold", [0.0, -0.5])
+def test_structure_nonpositive_distance_threshold(threshold):
+	"""Nonpositive distance thresholds still allow overlap and enforce volume."""
+	xtals = [
+		Crystal(np.eye(3), ["Si", "Si"], [[0, 0, 0], [0, 0, 0]]),
+		Crystal(np.eye(3) * 0.25, ["Si"], [[0, 0, 0]]),
+	]
+	validator = StructureValidator(threshold_distance=threshold)
+	np.testing.assert_array_equal(validator.validate(xtals), [1.0, 0.0])
+
+
+@pytest.mark.parametrize("coordinate", [np.nan, np.inf, -np.inf])
+@pytest.mark.parametrize("threshold", [0.0, 0.5])
+def test_structure_nonfinite_coordinates(coordinate, threshold):
+	"""Invalid generated coordinates must not abort or pass a validation batch."""
+	valid = Crystal(np.eye(3) * 3, ["Si"], [[0, 0, 0]])
+	invalid = Crystal(np.eye(3) * 3, ["Si", "Si"], [[0, 0, 0], [coordinate, 0, 0]])
+	validator = StructureValidator(threshold_distance=threshold)
+	np.testing.assert_array_equal(
+		validator.validate([valid, invalid, valid]), [1.0, 0.0, 1.0]
+	)
+
+
+@pytest.mark.parametrize("threshold", [np.nan, np.inf, -np.inf])
+def test_structure_nonfinite_distance_threshold(threshold):
+	"""Nonfinite cutoffs must not enter native neighbor search or pass screening."""
+	xtal = Crystal(np.eye(3) * 3, ["Si"], [[0, 0, 0]])
+	validator = StructureValidator(threshold_distance=threshold)
+	np.testing.assert_array_equal(validator.validate([xtal]), [0.0])
+
+
+@pytest.mark.parametrize("threshold, expected", [(0.5, [1, 0, 1]), (0.6, [0, 0, 1])])
+@pytest.mark.parametrize("agg_func", ["prod", "ave"])
+def test_structure_validity_integration(threshold, expected, agg_func):
+	"""Propagate periodic validity and custom settings through both public callers."""
+	xtals = [
+		Crystal(np.diag([0.5, 2, 2]), ["Si"], [[0, 0, 0]]),
+		Crystal([[2, 0, 0], [2, 0.4, 0], [0, 0, 2]], ["Si"], [[0, 0, 0]]),
+		Crystal(np.eye(3) * 3, ["Si", "Si"], [[0, 0, 0], [0.5, 0.5, 0.5]]),
+	]
+	settings = {"structure": {"threshold_distance": threshold}}
+	validator = Validator(methods=["structure"], **settings)
+	by_method, _ = validator.validate(xtals, skip=[])
+	np.testing.assert_array_equal(by_method["structure"], expected)
+	assert by_method["structure"].dtype == np.dtype(float)
+
+	evaluator = Evaluator(
+		validity=["structure"], agg_func=agg_func, args_validity=settings
+	)
+	overall, scores, _ = evaluator.evaluate(xtals, dir_intermediate=None)
+	np.testing.assert_array_equal(scores, expected)
+	assert scores.dtype == np.dtype(float)
+	assert overall == pytest.approx(np.mean(expected))
 
 
 @pytest.mark.parametrize(

@@ -62,8 +62,11 @@ class StructureValidator(SingleValidator):
 		"""Initialize StructureValidator.
 
 		Args:
-			threshold_distance (float): Minimum allowed distance between atoms.
-			threshold_volume (float): Minimum allowed volume of the unit cell.
+			threshold_distance (float): Minimum allowed distance in angstroms between
+				atoms, including periodic images of the same atom. Finite nonpositive
+				values disable the distance check.
+			threshold_volume (float): Minimum allowed unit-cell volume in cubic
+				angstroms.
 
 		References:
 			- Xie et al., (2022). Crystal Diffusion Variational Autoencoder for Periodic
@@ -76,6 +79,10 @@ class StructureValidator(SingleValidator):
 	def validate(self, xtals: list[Crystal]) -> np.ndarray[float]:
 		"""Validate a list of crystals using structure-based method.
 
+		Distances include periodic images; only a site's pair with itself in the
+		same image is excluded. Distances and volumes equal to their thresholds pass.
+		Nonfinite Cartesian coordinates or distance thresholds yield a score of 0.0.
+
 		Args:
 			xtals (list[Crystal]): List of crystals to validate.
 
@@ -86,17 +93,18 @@ class StructureValidator(SingleValidator):
 		"""
 		scores = []
 		for xtal in xtals:
-			dist_mat = xtal.distance_matrix
-			dist_mat = dist_mat + np.diag(
-				np.ones(dist_mat.shape[0]) * (self.threshold_distance + 10.0)
+			valid = (
+				xtal.volume >= self.threshold_volume
+				and np.isfinite(self.threshold_distance)
+				and np.all(np.isfinite(xtal.cart_coords))
 			)
-			if (
-				dist_mat.min() >= self.threshold_distance
-				and xtal.volume >= self.threshold_volume
-			):
-				scores.append(1.0)
-			else:
-				scores.append(0.0)
+			if valid and self.threshold_distance > 0:
+				centers, neighbors, images, distances = xtal.get_neighbor_list(
+					self.threshold_distance, exclude_self=False
+				)
+				distinct = (centers != neighbors) | np.any(images != 0, axis=1)
+				valid = np.all(distances[distinct] >= self.threshold_distance)
+			scores.append(float(valid))
 		return np.array(scores, dtype=float)
 
 
