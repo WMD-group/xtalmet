@@ -56,33 +56,6 @@ vsun, _, _ = evaluator.evaluate(xtals=gen_xtals)
 ```
 A more detailed tutorial notebook is provided [here](https://github.com/WMD-group/xtalmet/blob/main/examples/tutorial.ipynb).
 
-### StructureMatcher distance matrices
-
-`distance_matrix("smat", ...)` returns a dense matrix (match: `0`, mismatch: `1`).
-It checks composition-compatible candidates before calling StructureMatcher and
-reuses a configured matcher. `args_dist` applies in both serial and parallel
-execution. Candidate filtering respects the comparator and ignored species;
-subset matching falls back to all pairs. Parallel execution uses
-`multiprocessing=True, n_processes=...` and streams candidate rows to workers.
-Participating structures are reduced once per input position in the parent
-process: ignored species are removed before Niggli reduction and optional
-primitive-cell reduction. Workers reuse these structures; volume scaling and
-supercell handling remain pairwise. Unequal reduced site counts skip matching
-when neither subset nor supercell matching is enabled. If reduction changes
-composition compatibility, the affected pair uses the original structures and
-normal matching. Inputs and returned embeddings remain unchanged.
-Sharing reductions helps when structures participate in many comparisons. With
-few candidate pairs, serial preparation in the parent can make parallel matrix
-calculations slower; more workers do not necessarily improve throughput.
-The dense output still requires memory proportional to the number of pairs.
-
-Earlier serial matrix calculations ignored `args_dist`. If you used non-default
-StructureMatcher settings, such as `scale=False`, recompute those matrices and
-their U/N scores. Existing caches are not automatically invalidated: use
-`dir_intermediate=None` or a new cache directory to avoid reusing old
-`mtx_uni_smat.pkl.gz` and `mtx_nov_smat.pkl.gz` files. Preserve the old results for
-comparison. Cache file formats are unchanged.
-
 ## Acknowledgements
 Although we have argued that the progress on evaluation metrics is slower than that on generative models, we are not the sole contributors to this field. 
 Our work builds upon several influential studies. 

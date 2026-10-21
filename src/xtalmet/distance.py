@@ -13,7 +13,7 @@ import numpy as np
 from ElMD import elmd
 from pymatgen.analysis.structure_matcher import SpeciesComparator, StructureMatcher
 from pymatgen.core import Composition, Structure
-from scipy.spatial.distance import squareform
+from scipy.spatial.distance import cdist, squareform
 
 from .constants import (
 	CONTINUOUS_UNNORMALIZED_DISTANCES,
@@ -251,19 +251,6 @@ def _d_elmd(emb_1: TYPE_EMB_ELMD, emb_2: TYPE_EMB_ELMD, **kwargs) -> float:
 	return elmd(emb_1, emb_2, **kwargs)
 
 
-def _row_func_magpie(emb: np.ndarray, embs_2: np.ndarray) -> np.ndarray:
-	"""Compute one row of the d_magpie distance matrix.
-
-	Args:
-		emb (np.ndarray): Single MAGPIE feature vector.
-		embs_2 (np.ndarray): 2D array of target MAGPIE feature vectors.
-
-	Returns:
-		np.ndarray: Euclidean distances from emb to each row of embs_2.
-	"""
-	return np.sqrt(np.sum((emb[np.newaxis, :] - embs_2) ** 2, axis=1))
-
-
 def _set_n_processes(n_processes: int | None = None) -> int:
 	"""Set the number of processes for multiprocessing.
 
@@ -288,7 +275,6 @@ def _distance_matrix_template(
 	d_func: Callable | None = None,
 	initializer: Callable | None = None,
 	initargs: tuple = (),
-	row_func: Callable | None = None,
 ) -> np.ndarray:
 	"""Template to compute the distance matrix between two sets of embeddings.
 
@@ -303,32 +289,15 @@ def _distance_matrix_template(
 		d_func (Callable | None): Distance function.
 		initializer (Callable | None): Initializer function for worker processes.
 		initargs (tuple): Arguments for the initializer function.
-		row_func (Callable | None): Row function ``(emb_i, embs_2_arr) -> np.ndarray``
-			computing all distances from one source embedding to every target.
-			When provided, uses row-wise computation instead of pairwise d_func.
 
 	Returns:
 		np.ndarray: Distance matrix.
 
 	Raises:
-		ValueError: If both d_func and row_func are None.
+		ValueError: If d_func is None.
 	"""
-	if d_func is None and row_func is None:
-		raise ValueError("Either d_func or row_func must be provided.")
-	if row_func is not None:
-		embs_2_local = embs_2 if embs_2 is not None else embs_1
-		embs_2_arr = np.array(embs_2_local)
-		if multiprocessing:
-			embs_1_arr = np.array(embs_1)
-			with Pool(
-				processes=_set_n_processes(n_processes),
-				initializer=_init_row_worker,
-				initargs=(row_func, embs_2_arr),
-			) as pool:
-				rows = pool.map(_row_worker, embs_1_arr)
-		else:
-			rows = [row_func(np.array(emb_i), embs_2_arr) for emb_i in embs_1]
-		return np.array(rows)
+	if d_func is None:
+		raise ValueError("d_func must be provided.")
 	given_two_sets = embs_2 is not None
 	if given_two_sets:
 		if multiprocessing:
@@ -649,35 +618,6 @@ def _distance_matrix_d_wyckoff(
 	)
 
 
-_global_row_func: Callable | None = None
-_global_embs_2_arr: np.ndarray | None = None
-
-
-def _init_row_worker(row_func: Callable, embs_2_arr: np.ndarray):
-	"""Initialize generic row-worker processes.
-
-	Args:
-		row_func (Callable): Row function ``(emb_i, embs_2) -> np.ndarray``.
-		embs_2_arr (np.ndarray): 2D array of all target embeddings.
-	"""
-	global _global_row_func, _global_embs_2_arr
-	_global_row_func = row_func
-	_global_embs_2_arr = embs_2_arr
-
-
-def _row_worker(emb_i: np.ndarray) -> np.ndarray:
-	"""Generic row-worker: compute one row of the distance matrix.
-
-	Args:
-		emb_i (np.ndarray): Single source embedding.
-
-	Returns:
-		np.ndarray: Distance row against all target embeddings.
-	"""
-	global _global_row_func, _global_embs_2_arr
-	return _global_row_func(emb_i, _global_embs_2_arr)
-
-
 def _distance_matrix_d_magpie(
 	embs_1: list[TYPE_EMB_MAGPIE],
 	embs_2: list[TYPE_EMB_MAGPIE] | None = None,
@@ -692,17 +632,15 @@ def _distance_matrix_d_magpie(
 	Args:
 		embs_1 (list[TYPE_EMB_MAGPIE]): Embeddings
 		embs_2 (list[TYPE_EMB_MAGPIE] | None): Embeddings or None. Default is None.
-		multiprocessing (bool): Whether to use multiprocessing. Default is False.
-		n_processes (int | None): Maximum number of processes for multiprocessing. If
-			multiprocessing is False, this argument will be ignored. Default is None.
+		multiprocessing (bool): Ignored; SciPy computes the matrix without a Python
+			worker pool. Default is False.
+		n_processes (int | None): Ignored; present for uniform interface.
 		**kwargs: Ignored; present for uniform interface.
 
 	Returns:
 		np.ndarray: d_magpie distance matrix.
 	"""
-	return _distance_matrix_template(
-		embs_1, embs_2, multiprocessing, n_processes, row_func=_row_func_magpie
-	)
+	return cdist(embs_1, embs_1 if embs_2 is None else embs_2, metric="euclidean")
 
 
 def _distance_matrix_d_pdd(
@@ -1090,6 +1028,14 @@ def distance_matrix(
 		incompatible fall back to normal matching of the original structures.
 		Input structures and returned embeddings are not replaced by reductions.
 
+		For "magpie", SciPy computes the dense Euclidean distance matrix without a
+		Python worker pool. Multiprocessing settings still apply to embedding
+		computation when structures are provided, but not to the matrix calculation.
+		Magpie normalization updates the final matrix in place, one row at a time,
+		to avoid additional full-size arrays. Dense output requires 8 bytes
+		per pair: about 2.24 GiB for a 10,000-by-30,000 float64 matrix, excluding
+		embeddings and other evaluation data.
+
 	Raises:
 		ValueError: If an unsupported distance metric is provided.
 
@@ -1171,7 +1117,11 @@ def distance_matrix(
 
 	# normalize distances if needed
 	if distance in CONTINUOUS_UNNORMALIZED_DISTANCES and normalize:
-		d_mtx = _normalize(d_mtx)
+		if distance == "magpie":
+			for row in d_mtx:
+				row /= 1 + row
+		else:
+			d_mtx = _normalize(d_mtx)
 
 	# return results
 	if not verbose:
