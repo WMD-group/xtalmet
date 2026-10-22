@@ -35,6 +35,10 @@ class SMACTValidator(SingleValidator):
 	def validate(self, xtals: list[Crystal]) -> np.ndarray[float]:
 		"""Validate a list of crystals using SMACT.
 
+		Uses SMACT 4 defaults: ICSD24 oxidation states with consensus 3,
+		commonality "low", and no mixed valence. Scores can differ from SMACT 3,
+		which used commonality "medium".
+
 		Args:
 			xtals (list[Crystal]): List of crystals to validate.
 

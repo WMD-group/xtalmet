@@ -6,13 +6,14 @@ readme = "README.md"
 authors = [
     { name = "Masahiro Negishi", email = "m.negishi25@imperial.ac.uk" }
 ]
-requires-python = ">=3.12"
+requires-python = ">=3.12,<3.14"
 dependencies = [
     "pymatgen>=2025.5.28",
     "torch>=2.7.0",
     "matminer>=0.9.3",
     "average-minimum-distance>=1.5.3",
-    "smact>=3.1.0",
+    "smact>=4.0.2",
+    "numba>=0.67.0",
     "mace-torch>=0.3.13",
     "huggingface_hub",
     "ElMD>=0.5.15"

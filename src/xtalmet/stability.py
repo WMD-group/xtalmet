@@ -11,6 +11,7 @@ from typing import Literal
 import numpy as np
 from huggingface_hub import hf_hub_download
 from mace.calculators import mace_mp
+from monty.json import MontyDecoder
 from pymatgen.analysis.phase_diagram import PatchedPhaseDiagram, PDEntry
 from pymatgen.entries.compatibility import MaterialsProject2020Compatibility
 from pymatgen.entries.computed_entries import ComputedEntry
@@ -18,6 +19,36 @@ from pymatgen.ext.matproj import MPRester
 
 from .constants import HF_VERSION
 from .crystal import Crystal
+
+
+def _decode_mp_entry(entry: dict) -> ComputedEntry:
+	"""Decode MP entries using module paths supported before and after the split."""
+
+	def legacy_mson(value: object) -> object:
+		if isinstance(value, list):
+			return [legacy_mson(item) for item in value]
+		if not isinstance(value, dict):
+			return value
+		value = {key: legacy_mson(item) for key, item in value.items()}
+		if value.get("@module") == "pymatgen.core.entries":
+			value["@module"] = "pymatgen.entries.computed_entries"
+		elif value.get("@module") == "pymatgen.analysis.compatibility":
+			value["@module"] = "pymatgen.entries.compatibility"
+		elif value.get("@module") == "pymatgen.analysis.compatibility.mixing_scheme":
+			value["@module"] = "pymatgen.entries.mixing_scheme"
+		elif value.get("@module") == "pymatgen.core.structure_matcher":
+			value["@module"] = "pymatgen.analysis.structure_matcher"
+		elif (
+			value.get("@module") == "emmet.core.vasp.calculation"
+			and value.get("@class") == "PotcarSpec"
+		):
+			# Compatibility checks expect POTCAR dictionaries, not emmet models.
+			value = {
+				key: item for key, item in value.items() if not key.startswith("@")
+			}
+		return value
+
+	return MontyDecoder().process_decoded(legacy_mson(entry))
 
 
 class StabilityCalculator:
@@ -38,7 +69,9 @@ class StabilityCalculator:
 				diagram to use. If "mp_250618" is specified, the diagram constructed
 				using this class from the MP entries on June 18, 2025, will be used. If
 				"mp" is specified, the diagram will be constructed on the spot. You can
-				also pass your own diagram or a path to it.
+				also pass your own diagram or a path to it. Live MP entries are checked
+				with MaterialsProject2020Compatibility; the diagram uses uncorrected
+				energies of the accepted GGA/GGA+U entries.
 			mace_model (str): The MACE model to use for energy prediction. Default is
 				"medium-mpa-0".
 			binary (bool): If True, compute binary stability scores (1 for stable, 0 for
@@ -69,10 +102,13 @@ class StabilityCalculator:
 		elif diagram == "mp":
 			MP_API_KEY = os.getenv("MP_API_KEY")
 			mpr = MPRester(MP_API_KEY)
-			response = mpr.request("materials/thermo/?_fields=entries&formula=")
+			response = mpr.request(
+				"materials/thermo/?_fields=entries&formula=", mp_decode=False
+			)
 			all_entries = []
 			for dct in response:
-				all_entries.extend(dct["entries"].values())
+				all_entries.extend(_decode_mp_entry(e) for e in dct["entries"].values())
+			del response
 			with warnings.catch_warnings():
 				warnings.filterwarnings(
 					"ignore", message="Failed to guess oxidation states.*"

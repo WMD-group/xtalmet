@@ -5,6 +5,7 @@ import pickle
 
 import numpy as np
 import pytest
+from pymatgen.core import Composition
 
 from xtalmet.crystal import Crystal
 from xtalmet.evaluator import Evaluator
@@ -28,6 +29,28 @@ def test_SMACTValidator(prepare_gen_xtals: list[Crystal]):
 	assert len(scores) == len(gen_xtals)
 	assert all(0.0 <= score <= 1.0 for score in scores)
 	assert all(isinstance(score, float) for score in scores)
+
+
+@pytest.mark.parametrize(
+	"formula, expected",
+	[("TiO", 1.0), ("NaCl", 1.0), ("NaCl2", 0.0), ("Fe3O4", 0.0)],
+)
+def test_smact_4_defaults(formula, expected):
+	"""Use low commonality and leave mixed valence disabled, including in V."""
+	species = [
+		str(element)
+		for element, count in Composition(formula).items()
+		for _ in range(int(count))
+	]
+	coordinates = np.arange(len(species))[:, None] * np.ones((1, 3)) / len(species)
+	xtal = Crystal(np.eye(3) * 10, species, coordinates)
+
+	np.testing.assert_array_equal(SMACTValidator().validate([xtal]), [expected])
+	overall, scores, _ = Evaluator(validity=["smact"]).evaluate(
+		[xtal], dir_intermediate=None
+	)
+	np.testing.assert_array_equal(scores, [expected])
+	assert overall == expected
 
 
 @pytest.mark.parametrize(
