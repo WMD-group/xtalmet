@@ -1,7 +1,6 @@
 """Test the Evaluator class."""
 
 import gzip
-import os
 import pickle
 from multiprocessing import cpu_count
 from typing import Literal
@@ -619,19 +618,19 @@ class TestEvaluator:
 		times_key = set()
 		if validity is not None and "smact" in validity:
 			for method in validity:
-				assert os.path.exists(os.path.join(tmpdir, f"val_{method}.pkl.gz"))
+				assert list(tmpdir.visit(f"val_{method}.pkl.gz"))
 				times_key.add(f"val_{method}")
 		if stability is not None:
-			assert os.path.exists(os.path.join(tmpdir, "ehull.pkl.gz"))
+			assert list(tmpdir.visit("ehull.pkl.gz"))
 			times_key.add("stab")
 		if uniqueness:
-			assert os.path.exists(os.path.join(tmpdir, f"emb_{distance}.pkl.gz"))
-			assert os.path.exists(os.path.join(tmpdir, f"mtx_uni_{distance}.pkl.gz"))
+			assert list(tmpdir.visit(f"emb_{distance}.pkl.gz"))
+			assert list(tmpdir.visit(f"mtx_uni_{distance}.pkl.gz"))
 			times_key.add("uni_emb")
 			times_key.add("uni_d_mtx")
 		if novelty:
-			assert os.path.exists(os.path.join(tmpdir, f"emb_{distance}.pkl.gz"))
-			assert os.path.exists(os.path.join(tmpdir, f"mtx_nov_{distance}.pkl.gz"))
+			assert list(tmpdir.visit(f"emb_{distance}.pkl.gz"))
+			assert list(tmpdir.visit(f"mtx_nov_{distance}.pkl.gz"))
 			times_key.add("nov_emb")
 			times_key.add("nov_d_mtx")
 		times_key.add("aggregation")

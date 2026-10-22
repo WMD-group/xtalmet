@@ -1,6 +1,8 @@
 """This module offers functions to compute the stability of crystal structures."""
 
 import gzip
+import hashlib
+import io
 import os
 import pickle
 import time
@@ -9,14 +11,16 @@ from pathlib import Path
 from typing import Literal
 
 import numpy as np
+import torch
 from huggingface_hub import hf_hub_download
 from mace.calculators import mace_mp
 from monty.json import MontyDecoder
-from pymatgen.analysis.phase_diagram import PatchedPhaseDiagram, PDEntry
+from pymatgen.analysis.phase_diagram import PatchedPhaseDiagram, PDEntry, PhaseDiagram
 from pymatgen.entries.compatibility import MaterialsProject2020Compatibility
 from pymatgen.entries.computed_entries import ComputedEntry
 from pymatgen.ext.matproj import MPRester
 
+from ._cache import _fingerprint
 from .constants import HF_VERSION
 from .crystal import Crystal
 
@@ -141,6 +145,89 @@ class StabilityCalculator:
 		self.binary = binary
 		self.threshold = threshold
 		self.intercept = intercept
+
+	def _cache_identity(self) -> dict:
+		"""Identify actual energy inputs independently of score calibration."""
+		if type(self.ppd_mp) is not PatchedPhaseDiagram or any(
+			type(pd) is not PhaseDiagram for pd in self.ppd_mp.pds.values()
+		):
+			raise TypeError("custom phase-diagram classes cannot be fingerprinted")
+		entry_ids = {}
+
+		def entry_id(entry):
+			if id(entry) not in entry_ids:
+				entry_ids[id(entry)] = _fingerprint(
+					(entry.composition.as_dict(), entry.energy)
+				)
+			return entry_ids[id(entry)]
+
+		calculator = self.calculator
+		if any(
+			not type(module).__module__.startswith(
+				(
+					"mace.modules.",
+					"e3nn.",
+					"torch.nn.modules.",
+					"torch.jit.",
+					"torch.fx.graph_module",
+				)
+			)
+			for model in calculator.models
+			for module in model.modules()
+		):
+			raise TypeError("custom model classes cannot be fingerprinted")
+		# MACE also uses non-tensor settings omitted from state_dict and repr.
+		with io.BytesIO() as checkpoint:
+			try:
+				torch.save(calculator.models, checkpoint)
+			except (RuntimeError, pickle.PicklingError, TypeError) as exc:
+				raise TypeError(
+					"model cannot be serialized for fingerprinting"
+				) from exc
+			models = hashlib.sha256(checkpoint.getbuffer()).hexdigest()
+		return {
+			"model": models,
+			"calculator": {
+				name: str(getattr(calculator, name))
+				for name in (
+					"head",
+					"model_type",
+					"device",
+					"energy_units_to_eV",
+					"length_units_to_A",
+				)
+			},
+			"diagram": _fingerprint(
+				sorted(entry_id(entry) for entry in self.ppd_mp.all_entries)
+			),
+			"elements": [str(element) for element in self.ppd_mp.elements],
+			"element_refs": {
+				str(element): entry_id(entry)
+				for element, entry in self.ppd_mp.el_refs.items()
+			},
+			"stable_entries": [
+				entry_id(entry) for entry in self.ppd_mp._stable_entries
+			],
+			"stable_spaces": [
+				sorted(str(element) for element in space)
+				for space in self.ppd_mp._stable_spaces
+			],
+			"patches": [
+				(
+					sorted(str(element) for element in space),
+					_fingerprint(
+						{
+							"elements": [str(element) for element in pd.elements],
+							"entries": [entry_id(entry) for entry in pd.qhull_entries],
+							"data": pd.qhull_data,
+							"facets": pd.facets,
+							"simplexes": [simplex.coords for simplex in pd.simplexes],
+						}
+					),
+				)
+				for space, pd in self.ppd_mp.pds.items()
+			],
+		}
 
 	def _ehull(self, xtals: list[Crystal]) -> np.ndarray[float]:
 		"""Compute energy above hull for a list of crystals.

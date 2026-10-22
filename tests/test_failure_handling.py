@@ -5,6 +5,12 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
+from xtalmet._cache import (
+	_canonical,
+	_embedding_settings,
+	_read_record,
+	_write_record,
+)
 from xtalmet.crystal import Crystal
 from xtalmet.distance import (
 	_compute_embeddings,
@@ -18,6 +24,27 @@ ERROR = _EmbeddingError(RuntimeError("embedding failed"))
 METRICS = ("smat", "comp", "wyckoff", "magpie", "pdd", "amd", "elmd", "elmd+amd")
 
 
+def embedding_args(metric):
+	"""Declare the two-neighbor dimensions used by these synthetic embeddings."""
+	if metric in ("amd", "pdd"):
+		return {"k": 2}
+	return {"amd": {"k": 2}} if metric == "elmd+amd" else {}
+
+
+def write_reference(path, metric, values):
+	"""Write a versioned reference fixture, including synthetic dimensions."""
+	_write_record(
+		path,
+		values,
+		{
+			"kind": "reference_embeddings",
+			"distance": metric,
+			"args_emb": _canonical(_embedding_settings(metric, embedding_args(metric))),
+			"count": len(values),
+		},
+	)
+
+
 def crystals(n):
 	"""Give each structure an identifiable lattice for mocked embedding failures."""
 	return [Crystal(np.eye(3) * (3 + i), ["Si"], [[0, 0, 0]]) for i in range(n)]
@@ -29,7 +56,7 @@ def embeddings(metric):
 		"smat": crystals(2),
 		"comp": [(("Si", 1),), (("O", 1),)],
 		"wyckoff": [(1, ("a",)), (2, ("b",))],
-		"magpie": [[1.0, 2.0], [3.0, 4.0]],
+		"magpie": [[1.0, 2.0] + [0.0] * 130, [3.0, 4.0] + [0.0] * 130],
 		"pdd": [np.array([[1.0, 1.0, 2.0]]), np.array([[1.0, 3.0, 4.0]])],
 		"amd": [np.array([1.0, 2.0]), np.array([3.0, 4.0])],
 		"elmd": ["Si", "O"],
@@ -137,7 +164,7 @@ def test_evaluator_failure_masks(metric, cache_mode, tmp_path, monkeypatch):
 	values = [ERROR, a, ERROR, b, a]
 	patch_embeddings(monkeypatch, values)
 	ref_path = tmp_path / "refs.pkl.gz"
-	Evaluator._write_pickle_gz(None, [ERROR, a], str(ref_path))
+	write_reference(ref_path, metric, [ERROR, a])
 	evaluator = Evaluator(
 		uniqueness=True,
 		novelty=True,
@@ -145,6 +172,7 @@ def test_evaluator_failure_masks(metric, cache_mode, tmp_path, monkeypatch):
 		ref_xtals=str(ref_path),
 		agg_func="ave",
 		weights={"uniqueness": 1, "novelty": 2},
+		args_emb=embedding_args(metric),
 		args_dist={"n_jobs": 1} if metric == "pdd" else {},
 	)
 	u = np.array([0, 1, 0, 1, 0], dtype=float)
@@ -157,10 +185,11 @@ def test_evaluator_failure_masks(metric, cache_mode, tmp_path, monkeypatch):
 	_, scores, _ = evaluator.evaluate(crystals(5), dir_intermediate=cache)
 	np.testing.assert_allclose(scores, (u + 2 * n) / 3)
 	if cache is not None:
-		matrix_path = tmp_path / "cache" / f"mtx_uni_{metric}.pkl.gz"
+		matrix_path = next((tmp_path / "cache").rglob(f"mtx_uni_{metric}.pkl.gz"))
+		embedding_path = next((tmp_path / "cache").rglob(f"emb_{metric}.pkl.gz"))
 		matrix_bytes = matrix_path.read_bytes()
 		if cache_mode == "matrix_only":
-			(tmp_path / "cache" / f"emb_{metric}.pkl.gz").unlink()
+			embedding_path.unlink()
 		else:
 			monkeypatch.setattr(
 				Crystal, "get_embedding", lambda *a, **k: pytest.fail("cache miss")
@@ -169,7 +198,7 @@ def test_evaluator_failure_masks(metric, cache_mode, tmp_path, monkeypatch):
 		np.testing.assert_allclose(cached, scores)
 		assert matrix_path.read_bytes() == matrix_bytes
 		assert times["uni_d_mtx"] == times["nov_d_mtx"] == 0
-		assert (tmp_path / "cache" / f"emb_{metric}.pkl.gz").is_file()
+		assert embedding_path.is_file()
 		assert (times["uni_emb"] > 0) == (cache_mode == "matrix_only")
 	else:
 		for value in (ERROR, a):
@@ -301,31 +330,34 @@ def test_nonfinite_evaluator_masks(metric, tmp_path, monkeypatch):
 	invalid = ("Si", [np.inf, 2.0]) if metric == "elmd+amd" else np.full_like(a, np.inf)
 	patch_embeddings(monkeypatch, [invalid, a, b])
 	path = tmp_path / "refs.pkl.gz"
-	Evaluator._write_pickle_gz(None, [invalid, a], str(path))
+	write_reference(path, metric, [invalid, a])
 	evaluator = Evaluator(
 		uniqueness=True,
 		novelty=True,
 		distance=metric,
 		ref_xtals=str(path),
 		agg_func="ave",
+		args_emb=embedding_args(metric),
 		args_dist={"n_jobs": 1} if metric == "pdd" else {},
 	)
 	d = distance(metric, a, b)
 	_, scores, _ = evaluator.evaluate(crystals(3))
 	np.testing.assert_allclose(scores, [0, d / 4, 3 * d / 4])
-	Evaluator._write_pickle_gz(None, [invalid], str(path))
+	write_reference(path, metric, [invalid])
 	with pytest.raises(ValueError, match="valid reference"):
-		Evaluator(novelty=True, distance=metric, ref_xtals=str(path))
+		Evaluator(
+			novelty=True,
+			distance=metric,
+			ref_xtals=str(path),
+			args_emb=embedding_args(metric),
+		)
 
 
 def test_smat_evaluator_failed_cache(tmp_path):
 	"""Binary StructureMatcher scores also use explicit cached embedding masks."""
 	a = crystals(1)[0]
 	b = Crystal(np.eye(3) * 3, ["O"], [[0, 0, 0]])
-	Evaluator._write_pickle_gz(None, [ERROR, a], str(tmp_path / "refs.pkl.gz"))
-	Evaluator._write_pickle_gz(
-		None, [ERROR, a, b, a], str(tmp_path / "emb_smat.pkl.gz")
-	)
+	write_reference(tmp_path / "refs.pkl.gz", "smat", [ERROR, a])
 	evaluator = Evaluator(
 		uniqueness=True,
 		novelty=True,
@@ -333,6 +365,9 @@ def test_smat_evaluator_failed_cache(tmp_path):
 		ref_xtals=str(tmp_path / "refs.pkl.gz"),
 		agg_func="ave",
 	)
+	evaluator.evaluate(crystals(4), str(tmp_path))
+	path = next(tmp_path.rglob("emb_smat.pkl.gz"))
+	_write_record(path, [ERROR, a, b, a], _read_record(path)["metadata"])
 	for _ in range(2):
 		_, scores, _ = evaluator.evaluate(crystals(4), str(tmp_path))
 		np.testing.assert_array_equal(scores, [0, 0.5, 1, 0])

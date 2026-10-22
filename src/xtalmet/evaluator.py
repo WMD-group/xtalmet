@@ -4,17 +4,31 @@ import gzip
 import os
 import pickle
 import time
+import warnings
+from copy import deepcopy
 from pathlib import Path
 from typing import Any, Literal
 
 import numpy as np
 from huggingface_hub import hf_hub_download
+from matminer.featurizers.composition.composite import ElementProperty
 from pymatgen.core import Structure
 
+from ._cache import (
+	CACHE_FORMAT_VERSION,
+	MP20_REFERENCE_REVISION,
+	_cache_path,
+	_canonical,
+	_embedding_settings,
+	_fingerprint,
+	_metadata,
+	_read_record,
+	_software_identity,
+	_write_record,
+)
 from .constants import (
 	BINARY_DISTANCES,
 	DIST_WO_EMB,
-	HF_VERSION,
 	SUPPORTED_DISTANCES,
 	SUPPORTED_VALIDITY,
 )
@@ -68,7 +82,12 @@ class Evaluator:
 				evaluation. This can be a list of crystal structures, dataset name, or a
 				path to the file containing the pre-computed embeddings of the reference
 				structures. If a dataset name is given, its training data will be
-				downloaded from Hugging Face. If novelty is False, this argument is
+				downloaded from a fixed Hugging Face revision. MP20 precomputed
+				embeddings are used only for default embedding settings; other settings
+				emit UserWarning and compute references from MP20 training structures
+				during initialization. File inputs require metadata written by
+				save_reference_embeddings() with matching distance and args_emb.
+				If novelty is False, this argument is
 				ignored. Default is None.
 			agg_func (Literal["prod", "ave"]): Aggregation function for combining V, S,
 				U, and N. "prod" means multiplication, and "ave" means (weighted)
@@ -81,8 +100,8 @@ class Evaluator:
 				active metric if None). Default is None.
 			multiprocessing (bool): Whether to use multiprocessing for computing the
 				embeddings of reference crystals. This argument is only effective when
-				novelty is True and ref_xtals is list[Crystal | Structure]. Default
-				is False.
+				novelty is True and ref_xtals is list[Crystal | Structure] or MP20
+				with non-default embedding settings. Default is False.
 			n_processes (int | None): Maximum number of processes to use for
 				multiprocessing. If None, the number of logical CPU cores - 1 will be
 				used. We recommend setting this argument to a smaller number than the
@@ -99,7 +118,8 @@ class Evaluator:
 
 		Raises:
 			ValueError: If novelty has an empty reference set or no valid reference
-				embeddings, or average aggregation has zero total enabled weight.
+				embeddings, a reference file has missing or incompatible metadata,
+				or average aggregation has zero total enabled weight.
 
 		Examples:
 			>>> # Evaluator for the conventional SUN metric against the MP20 dataset
@@ -338,15 +358,59 @@ class Evaluator:
 			return
 		if ref_xtals == "mp20":
 			print("Downloading MP-20 training data from Hugging Face...")
+			custom = _canonical(
+				_embedding_settings(distance, self.args_emb)
+			) != _canonical(_embedding_settings(distance, {}))
+			if custom:
+				warnings.warn(
+					f"Non-default args_emb for {distance}; computing MP20 reference "
+					"embeddings from training structures with the requested settings.",
+					UserWarning,
+					stacklevel=3,
+				)
 			path_embs_train = hf_hub_download(
 				repo_id="masahiro-negishi/xtalmet",
-				filename=f"mp20/train/train_{distance}.pkl.gz",
+				filename=f"mp20/train/train_{'smat' if custom else distance}.pkl.gz",
 				repo_type="dataset",
-				revision=HF_VERSION,
+				revision=MP20_REFERENCE_REVISION,
 			)
 			self.ref_xtals = self._read_pickle_gz(path_embs_train)
+			if custom:
+				self.ref_xtals = _compute_embeddings(
+					distance,
+					_to_crystal_list(self.ref_xtals),
+					multiprocessing,
+					n_processes,
+					**self.args_emb,
+				)
 		elif type(ref_xtals) is str:
-			self.ref_xtals = self._read_pickle_gz(ref_xtals)
+			try:
+				record = _read_record(ref_xtals)
+			except (
+				OSError,
+				EOFError,
+				pickle.UnpicklingError,
+				ValueError,
+				TypeError,
+			) as exc:
+				raise ValueError(
+					"Reference files require versioned embedding metadata. Recompute "
+					"from reference structures and use save_reference_embeddings()."
+				) from exc
+			self.ref_xtals = record["data"]
+			if not isinstance(self.ref_xtals, list):
+				raise ValueError("Reference embeddings must be a list.")
+			expected = {
+				"kind": "reference_embeddings",
+				"distance": distance,
+				"args_emb": _canonical(_embedding_settings(distance, self.args_emb)),
+				"count": len(self.ref_xtals),
+			}
+			if any(record["metadata"].get(k) != v for k, v in expected.items()):
+				raise ValueError(
+					"Reference embedding metadata does not match distance/args_emb."
+				)
+			self._check_reference_shapes()
 		else:
 			print("Preparing reference crystals for novelty evaluation...")
 			ref_xtals_raw = _to_crystal_list(ref_xtals)
@@ -363,6 +427,73 @@ class Evaluator:
 			)
 		if not _embedding_mask(distance, self.ref_xtals).any():
 			raise ValueError("Novelty requires at least one valid reference embedding.")
+		self._reference_distance = distance
+		self._reference_settings = deepcopy(
+			_embedding_settings(distance, self.args_emb)
+		)
+
+	def _check_reference_settings(self) -> None:
+		"""Do not relabel already-prepared references after configuration mutation."""
+		if self.distance != self._reference_distance or _canonical(
+			_embedding_settings(self.distance, self.args_emb)
+		) != _canonical(self._reference_settings):
+			raise ValueError(
+				"Reference embeddings were prepared with different distance/args_emb; create a new Evaluator."
+			)
+
+	def _check_reference_shapes(self) -> None:
+		"""Reject feature dimensions incompatible with the declared neighbor count."""
+		settings = _embedding_settings(self.distance, self.args_emb)
+		magpie_size = (
+			len(ElementProperty.from_preset("magpie", impute_nan=True).feature_labels())
+			if self.distance == "magpie"
+			else None
+		)
+		for emb, valid in zip(
+			self.ref_xtals, _embedding_mask(self.distance, self.ref_xtals), strict=True
+		):
+			if not valid:
+				continue
+			if self.distance == "elmd+amd":
+				shape, expected = np.shape(emb[1]), (settings["amd"]["k"],)
+			elif self.distance == "amd":
+				shape, expected = np.shape(emb), (settings["k"],)
+			elif self.distance == "pdd":
+				shape, expected = np.shape(emb), (len(emb), settings["k"] + 1)
+			elif self.distance == "magpie":
+				shape, expected = np.shape(emb), (magpie_size,)
+			else:
+				continue
+			if shape != expected:
+				raise ValueError("Reference embedding shape does not match args_emb.")
+
+	def save_reference_embeddings(self, path: str | Path) -> None:
+		"""Save prepared references with the metadata required for later reuse.
+
+		Args:
+			path (str | Path): Destination gzip-pickle file. Existing files are
+				replaced.
+
+		Raises:
+			ValueError: If novelty is disabled or feature shapes contradict args_emb.
+		"""
+		if not self.evaluate_novelty:
+			raise ValueError("No reference embeddings: novelty evaluation is disabled.")
+		self._check_reference_settings()
+		self._check_reference_shapes()
+		_write_record(
+			path,
+			self.ref_xtals,
+			{
+				"kind": "reference_embeddings",
+				"distance": self.distance,
+				"args_emb": _canonical(
+					_embedding_settings(self.distance, self.args_emb)
+				),
+				"count": len(self.ref_xtals),
+				"software": _software_identity(),
+			},
+		)
 
 	def _read_pickle_gz(self, path: str) -> Any:
 		"""Load data from a pkl.gz file.
@@ -388,25 +519,65 @@ class Evaluator:
 		with gzip.open(path, "wb") as f:
 			pickle.dump(data, f)
 
-	def _load_cached(self, dir_intermediate: str | None, filename: str) -> Any:
+	def _load_cached(
+		self,
+		dir_intermediate: str | None,
+		filename: str,
+		metadata: dict | None,
+		shape: tuple[int, ...] | None = None,
+		count: int | None = None,
+	) -> Any:
 		"""Load cached data from dir_intermediate/filename if it exists.
 
 		Args:
 			dir_intermediate (str | None): Directory to look in. If None, returns None.
 			filename (str): Filename within the directory.
+			metadata (dict | None): Required calculation identity, or None to skip IO.
+			shape (tuple[int, ...] | None): Expected array shape.
+			count (int | None): Expected embedding count.
 
 		Returns:
 			Any: Loaded data, or None if not available.
 		"""
-		if dir_intermediate is None:
+		if dir_intermediate is None or metadata is None:
 			return None
-		path = os.path.join(dir_intermediate, filename)
-		if os.path.exists(path):
-			return self._read_pickle_gz(path)
-		return None
+		path = _cache_path(dir_intermediate, filename, metadata)
+		if not path.exists():
+			return None
+		try:
+			record = _read_record(path)
+			data = record["data"]
+			if record["metadata"] != metadata:
+				raise ValueError("metadata mismatch")
+			if shape is not None and (
+				not isinstance(data, np.ndarray)
+				or data.shape != shape
+				or data.dtype.kind not in "fbiu"
+			):
+				raise ValueError("array shape/dtype mismatch")
+			if count is not None and (not isinstance(data, list) or len(data) != count):
+				raise ValueError("embedding count mismatch")
+		except (
+			OSError,
+			EOFError,
+			pickle.UnpicklingError,
+			ValueError,
+			TypeError,
+			ImportError,
+			AttributeError,
+		) as exc:
+			warnings.warn(
+				f"Ignoring invalid cache {path}: {exc}", UserWarning, stacklevel=2
+			)
+			return None
+		return data
 
 	def _save_cached(
-		self, dir_intermediate: str | None, filename: str, data: Any
+		self,
+		dir_intermediate: str | None,
+		filename: str,
+		data: Any,
+		metadata: dict | None,
 	) -> None:
 		"""Save data to dir_intermediate/filename.
 
@@ -414,38 +585,30 @@ class Evaluator:
 			dir_intermediate (str | None): Directory to save in. If None, no-op.
 			filename (str): Filename within the directory.
 			data (Any): Data to save.
+			metadata (dict | None): Calculation identity, or None to skip IO.
 		"""
-		if dir_intermediate is None:
+		if dir_intermediate is None or metadata is None:
 			return
-		self._write_pickle_gz(data, os.path.join(dir_intermediate, filename))
+		_write_record(_cache_path(dir_intermediate, filename, metadata), data, metadata)
 
-	def _d_mtx(
+	def _prepare_generated_embeddings(
 		self,
 		xtals: list[Crystal],
 		dir_intermediate: str | None,
 		multiprocessing: bool,
 		n_processes: int | None,
-		metric: Literal["uni", "nov"],
-	) -> tuple[np.ndarray, np.ndarray, np.ndarray, float, float]:
-		"""Load or compute distances and recover masks from the source embeddings.
-
-		Args:
-			xtals (list[Crystal]): List of crystal structures to compute distance matrix
-				for.
-			dir_intermediate (str | None): Directory to search for pre-computed
-				embeddings and distance matrix for faster computation.
-			multiprocessing (bool): Whether to use multiprocessing for distance matrix
-				computation.
-			n_processes (int | None): Maximum number of processes to use for
-				multiprocessing.
-			metric (Literal["uni", "nov"]): Metric type for distance matrix computation.
-
-		Returns:
-			tuple[np.ndarray, np.ndarray, np.ndarray, float, float]: Distance matrix,
-				generated and target validity masks, embedding time, and matrix time.
-		"""
+		context: dict | None,
+	) -> tuple[list, np.ndarray, float]:
+		"""Prepare generated embeddings once per evaluation, with or without disk IO."""
+		metadata = _metadata(
+			context,
+			args_emb=_embedding_settings(self.distance, self.args_emb),
+			distance=self.distance,
+		)
+		embs = self._load_cached(
+			dir_intermediate, f"emb_{self.distance}.pkl.gz", metadata, count=len(xtals)
+		)
 		t_emb = 0.0
-		embs = self._load_cached(dir_intermediate, f"emb_{self.distance}.pkl.gz")
 		if embs is None:
 			if self.distance in DIST_WO_EMB:
 				embs = xtals
@@ -455,16 +618,68 @@ class Evaluator:
 					self.distance, xtals, multiprocessing, n_processes, **self.args_emb
 				)
 				t_emb = time.time() - start
-			self._save_cached(dir_intermediate, f"emb_{self.distance}.pkl.gz", embs)
-		valid_gen = _embedding_mask(self.distance, embs)
+			self._save_cached(
+				dir_intermediate, f"emb_{self.distance}.pkl.gz", embs, metadata
+			)
+		return embs, _embedding_mask(self.distance, embs), t_emb
+
+	def _d_mtx(
+		self,
+		prepared: tuple[list, np.ndarray, float],
+		dir_intermediate: str | None,
+		multiprocessing: bool,
+		n_processes: int | None,
+		metric: Literal["uni", "nov"],
+		context: dict | None,
+	) -> tuple[np.ndarray, np.ndarray, np.ndarray, float, float]:
+		"""Load or compute distances and recover masks from the source embeddings.
+
+		Args:
+			prepared (tuple): Generated embeddings, validity mask, and embedding time.
+			dir_intermediate (str | None): Directory to search for pre-computed
+				embeddings and distance matrix for faster computation.
+			multiprocessing (bool): Whether to use multiprocessing for distance matrix
+				computation.
+			n_processes (int | None): Maximum number of processes to use for
+				multiprocessing.
+			metric (Literal["uni", "nov"]): Metric type for distance matrix computation.
+			context (dict | None): Input and software identity for disk caching.
+
+		Returns:
+			tuple[np.ndarray, np.ndarray, np.ndarray, float, float]: Distance matrix,
+				generated and target validity masks, embedding time, and matrix time.
+		"""
+		embs, valid_gen, t_emb = prepared
 		target = self.ref_xtals if metric == "nov" else None
 		valid_target = (
 			_embedding_mask(self.distance, target) if target is not None else valid_gen
 		)
 		if metric == "nov" and not valid_target.any():
 			raise ValueError("Novelty requires at least one valid reference embedding.")
+		args = (
+			self.args_dist.get("amd", {})
+			if self.distance == "elmd+amd"
+			else self.args_dist
+		)
+		metadata = (
+			_metadata(
+				None if "out" in args else context,
+				distance=self.distance,
+				args_emb=_embedding_settings(self.distance, self.args_emb),
+				args_dist=self.args_dist,
+				normalize=True,
+				metric=metric,
+				generated=_fingerprint(embs),
+				reference=_fingerprint(target) if target is not None else None,
+			)
+			if context is not None
+			else None
+		)
 		d_mtx = self._load_cached(
-			dir_intermediate, f"mtx_{metric}_{self.distance}.pkl.gz"
+			dir_intermediate,
+			f"mtx_{metric}_{self.distance}.pkl.gz",
+			metadata,
+			shape=(len(embs), len(target) if target is not None else len(embs)),
 		)
 		t_d_mtx = 0.0
 		if d_mtx is None:
@@ -482,7 +697,10 @@ class Evaluator:
 			d_mtx = result[0]
 			t_d_mtx = result[-1]["d_mtx"]
 			self._save_cached(
-				dir_intermediate, f"mtx_{metric}_{self.distance}.pkl.gz", d_mtx
+				dir_intermediate,
+				f"mtx_{metric}_{self.distance}.pkl.gz",
+				d_mtx,
+				metadata,
 			)
 		return d_mtx, valid_gen, valid_target, t_emb, t_d_mtx
 
@@ -491,6 +709,7 @@ class Evaluator:
 		xtals: list[Crystal],
 		n_samples: int,
 		dir_intermediate: str | None,
+		context: dict | None,
 	) -> tuple[np.ndarray, dict[str, float]]:
 		"""Compute validity scores.
 
@@ -498,13 +717,23 @@ class Evaluator:
 			xtals (list[Crystal]): Crystal structures to evaluate.
 			n_samples (int): Number of samples.
 			dir_intermediate (str | None): Directory for cached intermediate results.
+			context (dict | None): Input and software identity for disk caching.
 
 		Returns:
 			tuple[np.ndarray, dict[str, float]]: Validity scores and timing dict.
 		"""
 		dict_individual_scores_precomputed = {}
+		metadata = {
+			method: _metadata(context, method=method, settings=vars(validator))
+			for method, validator in self.validator.validators.items()
+		}
 		for method in self.validator.validators:
-			data = self._load_cached(dir_intermediate, f"val_{method}.pkl.gz")
+			data = self._load_cached(
+				dir_intermediate,
+				f"val_{method}.pkl.gz",
+				metadata[method],
+				shape=(n_samples,),
+			)
 			if data is not None:
 				dict_individual_scores_precomputed[method] = data
 
@@ -522,24 +751,40 @@ class Evaluator:
 		for method in dict_individual_scores_precomputed:
 			times[f"val_{method}"] = 0.0
 		for method, scores in dict_individual_scores.items():
-			self._save_cached(dir_intermediate, f"val_{method}.pkl.gz", scores)
+			self._save_cached(
+				dir_intermediate, f"val_{method}.pkl.gz", scores, metadata[method]
+			)
 		return validity_scores, times
 
 	def _evaluate_stability(
 		self,
 		xtals: list[Crystal],
 		dir_intermediate: str | None,
+		context: dict | None,
 	) -> tuple[np.ndarray, dict[str, float]]:
 		"""Compute stability scores.
 
 		Args:
 			xtals (list[Crystal]): Crystal structures to evaluate.
 			dir_intermediate (str | None): Directory for cached intermediate results.
+			context (dict | None): Input and software identity for disk caching.
 
 		Returns:
 			tuple[np.ndarray, dict[str, float]]: Stability scores and timing dict.
 		"""
-		e_above_hulls_precomputed = self._load_cached(dir_intermediate, "ehull.pkl.gz")
+		metadata = None
+		if context is not None:
+			try:
+				metadata = _metadata(
+					context, stability=self.stability_calculator._cache_identity()
+				)
+			except (TypeError, AttributeError) as exc:
+				warnings.warn(
+					f"Stability disk cache disabled: {exc}", UserWarning, stacklevel=2
+				)
+		e_above_hulls_precomputed = self._load_cached(
+			dir_intermediate, "ehull.pkl.gz", metadata, shape=(len(xtals),)
+		)
 		stability_scores, e_above_hulls, t_stab = (
 			self.stability_calculator.compute_stability_scores(
 				xtals=xtals,
@@ -547,35 +792,38 @@ class Evaluator:
 			)
 		)
 		if e_above_hulls_precomputed is None:
-			self._save_cached(dir_intermediate, "ehull.pkl.gz", e_above_hulls)
+			self._save_cached(dir_intermediate, "ehull.pkl.gz", e_above_hulls, metadata)
 		return stability_scores, {"stab": t_stab}
 
 	def _evaluate_uniqueness(
 		self,
-		xtals: list[Crystal],
+		prepared: tuple[list, np.ndarray, float],
 		n_samples: int,
 		dir_intermediate: str | None,
 		multiprocessing: bool,
 		n_processes: int | None,
+		context: dict | None,
 	) -> tuple[np.ndarray, dict[str, float]]:
 		"""Compute uniqueness scores.
 
 		Args:
-			xtals (list[Crystal]): Crystal structures to evaluate.
+			prepared (tuple): Generated embeddings, validity mask, and embedding time.
 			n_samples (int): Number of samples.
 			dir_intermediate (str | None): Directory for cached intermediate results.
 			multiprocessing (bool): Whether to use multiprocessing.
 			n_processes (int | None): Maximum number of processes.
+			context (dict | None): Input and software identity for disk caching.
 
 		Returns:
 			tuple[np.ndarray, dict[str, float]]: Uniqueness scores and timing dict.
 		"""
 		d_mtx_uni, valid_gen, _, t_emb, t_d_mtx = self._d_mtx(
-			xtals=xtals,
+			prepared=prepared,
 			dir_intermediate=dir_intermediate,
 			multiprocessing=multiprocessing,
 			n_processes=n_processes,
 			metric="uni",
+			context=context,
 		)
 		uniqueness_scores = np.zeros(n_samples, dtype=float)
 		if self.distance in BINARY_DISTANCES:
@@ -588,30 +836,33 @@ class Evaluator:
 
 	def _evaluate_novelty(
 		self,
-		xtals: list[Crystal],
+		prepared: tuple[list, np.ndarray, float],
 		n_samples: int,
 		dir_intermediate: str | None,
 		multiprocessing: bool,
 		n_processes: int | None,
+		context: dict | None,
 	) -> tuple[np.ndarray, dict[str, float]]:
 		"""Compute novelty scores.
 
 		Args:
-			xtals (list[Crystal]): Crystal structures to evaluate.
+			prepared (tuple): Generated embeddings, validity mask, and embedding time.
 			n_samples (int): Number of samples.
 			dir_intermediate (str | None): Directory for cached intermediate results.
 			multiprocessing (bool): Whether to use multiprocessing.
 			n_processes (int | None): Maximum number of processes.
+			context (dict | None): Input and software identity for disk caching.
 
 		Returns:
 			tuple[np.ndarray, dict[str, float]]: Novelty scores and timing dict.
 		"""
 		d_mtx_nov, valid_gen, valid_ref, t_emb, t_d_mtx = self._d_mtx(
-			xtals=xtals,
+			prepared=prepared,
 			dir_intermediate=dir_intermediate,
 			multiprocessing=multiprocessing,
 			n_processes=n_processes,
 			metric="nov",
+			context=context,
 		)
 		novelty_scores = np.zeros(n_samples, dtype=float)
 		for i in np.flatnonzero(valid_gen):
@@ -634,21 +885,26 @@ class Evaluator:
 		of zero, without changing V/S. Binary U compares only earlier valid samples;
 		N compares only valid references. Continuous U counts failed pairs as zero
 		while retaining the total-sample denominator n - 1. Continuous N takes the
-		minimum over valid references. Cached matrices still require embeddings to
-		recover these masks; missing embeddings are computed and cached separately.
+		minimum over valid references. Generated embeddings and their masks are
+		prepared once per call and shared by U/N, even without a disk cache.
+		Cached matrices still require embeddings; missing embeddings are recomputed.
 
 		Args:
 			xtals (list[Crystal  |  Structure]): List of crystal structures to be
 				evaluated.
 			dir_intermediate (str | None): Directory to search for pre-computed
 				intermediate results, such as validity scores, energy above hulls,
-				embeddings, and distance matrices. If pre-computed files do not exist in
-				the directory, they will be computed and saved to the directory for
-				future use. If set to None, no files will be loaded or saved. It is
+				embeddings, and distance matrices. Versioned records are stored under
+				cache/format-1/<identity>/ within this directory. Reuse requires
+				matching
+				ordered inputs, relevant settings, references, model/phase data, and
+				software identity. Old unversioned files are ignored and preserved.
+				Invalid records are recomputed. If None, no files are loaded or saved.
+				It is
 				recommended to set this argument when evaluating the same large set of
 				crystal structures multiple times, for example trying different
-				aggregation functions. The intermediate results can be shared as long as
-				the same set of crystals is evaluated. Default is None.
+				aggregation functions. Different conditions retain separate artifacts.
+				Default is None.
 			multiprocessing (bool): Whether to use multiprocessing for embedding and
 				distance matrix computation. This argument is only effective when
 				uniqueness or novelty evaluation is enabled. Default is False.
@@ -665,7 +921,8 @@ class Evaluator:
 
 		Raises:
 			ValueError: If xtals is empty, continuous uniqueness has fewer than two
-				samples, or novelty has no valid reference embeddings.
+				samples, novelty has no valid reference embeddings, or distance/args_emb
+				were changed after preparing references.
 
 		Examples:
 			>>> # Evaluate the conventional SUN metric using the StructureMatcher
@@ -890,9 +1147,22 @@ class Evaluator:
 			)
 		xtals = _to_crystal_list(xtals)
 		n_samples = len(xtals)
+		if self.evaluate_novelty:
+			self._check_reference_settings()
 
 		if dir_intermediate is not None:
 			os.makedirs(dir_intermediate, exist_ok=True)
+		context = None
+		if dir_intermediate is not None:
+			try:
+				context = {
+					"cache_format_version": CACHE_FORMAT_VERSION,
+					"inputs": _fingerprint(xtals),
+					"count": n_samples,
+					"software": _software_identity(),
+				}
+			except TypeError as exc:
+				warnings.warn(f"Disk cache disabled: {exc}", UserWarning, stacklevel=2)
 
 		times: dict[str, float] = {}
 
@@ -903,23 +1173,41 @@ class Evaluator:
 
 		if self.evaluate_validity:
 			validity_scores, v_t = self._evaluate_validity(
-				xtals, n_samples, dir_intermediate
+				xtals, n_samples, dir_intermediate, context
 			)
 			times.update(v_t)
 
 		if self.evaluate_stability:
-			stability_scores, s_t = self._evaluate_stability(xtals, dir_intermediate)
+			stability_scores, s_t = self._evaluate_stability(
+				xtals, dir_intermediate, context
+			)
 			times.update(s_t)
+
+		if self.evaluate_uniqueness or self.evaluate_novelty:
+			prepared = self._prepare_generated_embeddings(
+				xtals, dir_intermediate, multiprocessing, n_processes, context
+			)
 
 		if self.evaluate_uniqueness:
 			uniqueness_scores, u_t = self._evaluate_uniqueness(
-				xtals, n_samples, dir_intermediate, multiprocessing, n_processes
+				prepared,
+				n_samples,
+				dir_intermediate,
+				multiprocessing,
+				n_processes,
+				context,
 			)
 			times.update(u_t)
+			prepared = (prepared[0], prepared[1], 0.0)
 
 		if self.evaluate_novelty:
 			novelty_scores, n_t = self._evaluate_novelty(
-				xtals, n_samples, dir_intermediate, multiprocessing, n_processes
+				prepared,
+				n_samples,
+				dir_intermediate,
+				multiprocessing,
+				n_processes,
+				context,
 			)
 			times.update(n_t)
 
