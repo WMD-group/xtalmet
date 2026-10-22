@@ -1,59 +1,142 @@
+"""Build committed main/tag documentation without changing the source checkout.
+
+Run ``uv run --locked python docs/build_docs.py`` from the repository root, or
+``uv run --locked python build_docs.py`` from docs. All versions must build before
+HTML is copied to docs/build/html; unrelated files in that directory are retained.
+"""
+
 import os
 import shutil
 import subprocess
+import sys
+from itertools import chain
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import yaml
 
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-src_path = os.path.join(project_root, "src")
-os.environ["PYTHONPATH"] = src_path + os.pathsep + os.environ.get("PYTHONPATH", "")
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
-# a single build step, which keeps conf.py and versions.yaml at the main branch
-# in generall we use environment variables to pass values to conf.py, see below
-# and runs the build as we did locally
-def build_doc(version, tag):
-	os.environ["current_version"] = version
-	subprocess.run("git checkout -f " + tag, shell=True)
-	subprocess.run("git checkout main -- source/conf.py", shell=True)
-	subprocess.run("git checkout main -- source/versions.yaml", shell=True)
-	subprocess.run("git checkout main -- source/_templates/", shell=True)
-	api_dir = "source/api"
-	if os.path.exists(api_dir):
-		shutil.rmtree(api_dir)
+def resolve_ref(ref: str) -> str:
+	"""Resolve a local Git reference to a commit without checking it out."""
+	return subprocess.check_output(
+		["git", "rev-parse", "--verify", "--end-of-options", f"{ref}^{{commit}}"],
+		cwd=PROJECT_ROOT,
+		text=True,
+	).strip()
+
+
+def checkout(destination: Path, commit: str) -> None:
+	"""Create a detached checkout in a temporary local clone."""
 	subprocess.run(
-		"sphinx-apidoc -o source/api/ -f -T --remove-old -e -M -t source/_templates/apidoc/module.rst.jinja ../src/xtalmet/",
-		shell=True,
+		[
+			"git",
+			"clone",
+			"--shared",
+			"--no-checkout",
+			"--quiet",
+			str(PROJECT_ROOT),
+			str(destination),
+		],
+		check=True,
 	)
-	subprocess.run("sphinx-build -M html source _build_tag", shell=True)
+	subprocess.run(
+		["git", "checkout", "--detach", "--quiet", commit],
+		cwd=destination,
+		check=True,
+	)
 
 
-# a move dir method because we run multiple builds and bring the html folders to a
-# location which we then push to github pages
-def move_dir(src, dst):
-	subprocess.run(["mkdir", "-p", dst])
-	subprocess.run("mv " + src + "* " + dst, shell=True)
+def build_doc(version: str, checkout_path: Path) -> Path:
+	"""Generate API pages and HTML using only this checkout's package source."""
+	env = os.environ.copy()
+	env.update(
+		build_all_docs="True",
+		pages_root="https://wmd-group.github.io/xtalmet",
+		current_version=version,
+		PYTHONPATH=str(checkout_path / "src") + os.pathsep + env.get("PYTHONPATH", ""),
+	)
+	docs_path = checkout_path / "docs"
+	api_path = docs_path / "source/api"
+	if api_path.exists():
+		shutil.rmtree(api_path)
+	subprocess.run(
+		[
+			sys.executable,
+			"-m",
+			"sphinx.ext.apidoc",
+			"-o",
+			"source/api",
+			"-f",
+			"-T",
+			"--remove-old",
+			"-e",
+			"-M",
+			"-t",
+			"source/_templates/apidoc",
+			"../src/xtalmet",
+		],
+		cwd=docs_path,
+		env=env,
+		check=True,
+	)
+	subprocess.run(
+		[sys.executable, "-m", "sphinx", "-M", "html", "source", "_build_tag"],
+		cwd=docs_path,
+		env=env,
+		check=True,
+	)
+	return docs_path / "_build_tag/html"
 
 
-# to separate a single local build from all builds we have a flag, see conf.py
-os.environ["build_all_docs"] = str(True)
-os.environ["pages_root"] = "https://wmd-group.github.io/xtalmet"
+def main() -> None:
+	"""Build all configured versions in isolation, then copy successful output."""
+	main_commit = resolve_ref("refs/heads/main")
+	with TemporaryDirectory(prefix="xtalmet-docs-") as temporary:
+		workspace = Path(temporary)
+		main_checkout = workspace / "main"
+		checkout(main_checkout, main_commit)
+		common_source = main_checkout / "docs/source"
+		with (common_source / "versions.yaml").open() as yaml_file:
+			versions = yaml.safe_load(yaml_file)
+		builds = []
+		for version, details in versions.items():
+			if (
+				not isinstance(version, str)
+				or version in {"", ".", ".."}
+				or Path(version).name != version
+				or "\\" in version
+			):
+				raise ValueError(
+					f"Version must be a single directory name: {version!r}"
+				)
+			builds.append((version, resolve_ref(details["tag"])))
 
-# manually the main branch build in the current supported languages
-subprocess.run("git checkout -f main", shell=True)
-build_doc("latest", "main")
-move_dir("./_build_tag/html/", "./build/html/")
+		html = workspace / "html"
+		shutil.copytree(build_doc("latest", main_checkout), html)
+		for index, (version, commit) in enumerate(builds):
+			tag_checkout = workspace / f"tag-{index}"
+			checkout(tag_checkout, commit)
+			tag_source = tag_checkout / "docs/source"
+			for name in ("conf.py", "versions.yaml"):
+				shutil.copy2(common_source / name, tag_source / name)
+			tag_templates = tag_source / "_templates"
+			if tag_templates.exists():
+				shutil.rmtree(tag_templates)
+			shutil.copytree(common_source / "_templates", tag_templates)
+			shutil.copytree(build_doc(version, tag_checkout), html / version)
+		output = PROJECT_ROOT / "docs/build/html"
+		for destination in chain(
+			(output, *output.parents),
+			(output / path.relative_to(html) for path in html.rglob("*")),
+		):
+			if destination.is_symlink():
+				raise ValueError(
+					f"Refusing to write through output symlink: {destination}"
+				)
+		shutil.copytree(html, output, dirs_exist_ok=True)
 
-# reading the yaml file
-with open("source/versions.yaml") as yaml_file:
-	docs = yaml.safe_load(yaml_file)
 
-# and looping over all values to call our build with version, language and its tag
-for version, details in docs.items():
-	tag = details.get("tag", "")
-	build_doc(version, tag)
-	move_dir("./_build_tag/html/", "./build/html/" + version + "/")
-
-# finally we clean up
-subprocess.run("rm -rf _build_tag", shell=True)
-subprocess.run("git checkout -f main", shell=True)
+if __name__ == "__main__":
+	main()

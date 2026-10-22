@@ -68,11 +68,12 @@ its dependencies change. Do not treat other test files as automatically offline
 or lightweight. Separate pre-existing failures, regressions, and unrun checks.
 Do not claim a check passed unless it actually ran and passed.
 
-**Docs build safety:** `docs/build_docs.py` force-checks out `main` and tags,
-replaces documentation sources, and deletes generated directories. Run it only
-inside a disposable clone with the required branches, tags, and dependencies,
-never in the user's working tree. It builds committed versions, so it does not
-validate uncommitted documentation changes. The deployment workflow is
+**Docs build safety:** `uv run --locked python docs/build_docs.py` builds committed
+local `main` and the configured tags in temporary clones. It does not switch the
+source checkout's branch or change its inputs. All versions must build before
+output is copied to `docs/build/html/`; unrelated output files are retained.
+The local refs and documentation dependencies must already exist. This command
+does not validate uncommitted documentation changes. The deployment workflow is
 `.github/workflows/sphinx.yml`.
 
 ## Scientific and API constraints
