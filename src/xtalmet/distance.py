@@ -17,6 +17,7 @@ from pymatgen.core import Composition, Structure
 from scipy.spatial.distance import cdist, squareform
 
 from .constants import (
+	CONTINUOUS_DISTANCES,
 	CONTINUOUS_UNNORMALIZED_DISTANCES,
 	DIST_WO_EMB,
 	ELMD_AMD_COEF_AMD,
@@ -43,6 +44,12 @@ def _embedding_is_valid(distance: str, embedding: object) -> bool:
 	"""Identify embedding failures without inferring them from pairwise results."""
 	if isinstance(embedding, _EmbeddingError):
 		return False
+	if distance == "smat":
+		return bool(
+			np.isfinite(embedding.lattice.matrix).all()
+			and np.isfinite(embedding.frac_coords).all()
+			and np.isfinite(embedding.cart_coords).all()
+		)
 	if distance == "elmd+amd":
 		return _embedding_is_valid("elmd", embedding[0]) and _embedding_is_valid(
 			"amd", embedding[1]
@@ -79,11 +86,19 @@ def _resolve_elmd_amd_coefs(args_dist: dict) -> tuple[float, float]:
 
 	Returns:
 		tuple[float, float]: Normalized (coef_elmd, coef_amd).
+
+	Raises:
+		ValueError: If coefficients are nonfinite, negative, or lack a finite
+			positive sum.
 	"""
 	if "coefs" in args_dist:
 		coefs = args_dist["coefs"]
 		coef_elmd, coef_amd = coefs["elmd"], coefs["amd"]
+		if not all(np.isfinite(c) and c >= 0 for c in (coef_elmd, coef_amd)):
+			raise ValueError("Blending coefficients must be finite and non-negative.")
 		total = coef_elmd + coef_amd
+		if not np.isfinite(total) or total <= 0:
+			raise ValueError("Blending coefficients require a finite positive sum.")
 		return coef_elmd / total, coef_amd / total
 	return ELMD_AMD_COEF_ELMD, ELMD_AMD_COEF_AMD
 
@@ -907,8 +922,10 @@ def distance(
 ) -> float | tuple[float, TYPE_EMB_ALL, TYPE_EMB_ALL]:
 	"""Compute the distance between two crystals.
 
-	Failed embeddings, including nonfinite numerical features, yield NaN. For
-	"elmd+amd", failure of either component invalidates the whole embedding.
+	Failed embeddings, nonfinite smat geometry and nonfinite backend distances
+	yield NaN. For "elmd+amd", failure of either component invalidates the whole
+	embedding. Blending coefficients must be finite and non-negative with a finite
+	positive sum.
 
 	Args:
 		distance (str): The distance metric to use. Currently supported metrics are
@@ -937,12 +954,14 @@ def distance(
 		the computing time.
 
 	Raises:
-		ValueError: If an unsupported distance metric is provided.
+		ValueError: If a distance metric or blending coefficients are invalid.
 
 	.. _tutorial notebook: https://github.com/WMD-group/xtalmet/blob/main/examples/tutorial.ipynb
 	"""
 	if distance not in _DIST_FUNCS and distance != "elmd+amd":
 		raise ValueError(f"Unsupported distance metric: {distance}")
+	if distance == "elmd+amd":
+		_resolve_elmd_amd_coefs(kwargs.get("args_dist", {}))
 	# conversions from Structure to Crystal
 	xtal_1 = _to_crystal(xtal_1)
 	xtal_2 = _to_crystal(xtal_2)
@@ -983,7 +1002,10 @@ def distance(
 
 	# normalize distance if needed
 	if distance in CONTINUOUS_UNNORMALIZED_DISTANCES and normalize:
-		d = _normalize(d)
+		with np.errstate(invalid="ignore", divide="ignore"):
+			d = _normalize(d)
+	if not np.isfinite(d):
+		d = float("nan")
 
 	# return results
 	if not verbose:
@@ -1054,8 +1076,13 @@ def distance_matrix(
 		When failures occur, this temporarily holds both matrices in memory. All-valid
 		inputs do not allocate a restoration matrix. Verbose embeddings retain input
 		order and failures. AMD's "out" buffer retains raw, unnormalized distances.
+		Nonfinite backend distances are returned as NaN, including for normalize=False.
+		When raw AMD output shares an "out" buffer, replacing nonfinite distances
+		requires a copy; the caller-owned buffer keeps its raw backend values.
 
 		For "smat", the dense matrix uses 0 for matches and 1 for mismatches.
+		Structures with nonfinite lattice vectors or coordinates are excluded before
+		native matching and produce NaN rows and columns.
 		Composition-incompatible pairs are skipped using the configured comparator
 		and ignored species; subset matching compares all pairs. Serial and parallel
 		calculations both honor args_dist and reuse a matcher. Parallel tasks contain
@@ -1103,7 +1130,8 @@ def distance_matrix(
 		pairs in the parent process.
 
 	Raises:
-		ValueError: If a distance metric is unsupported or an input set is empty.
+		ValueError: If a distance metric or blending coefficients are invalid, or
+			an input set is empty.
 
 	.. _tutorial notebook: https://github.com/WMD-group/xtalmet/blob/main/examples/tutorial.ipynb
 	"""
@@ -1111,6 +1139,8 @@ def distance_matrix(
 		raise ValueError(f"Unsupported distance metric: {distance}")
 	if len(xtals_1) == 0 or (xtals_2 is not None and len(xtals_2) == 0):
 		raise ValueError("Distance matrix input sets must contain at least one input.")
+	if distance == "elmd+amd":
+		_resolve_elmd_amd_coefs(kwargs.get("args_dist", {}))
 	given_two_sets = xtals_2 is not None
 	times = {}
 
@@ -1252,8 +1282,18 @@ def distance_matrix(
 		amd_out = amd_args.get("out") if distance == "amd" else None
 		if amd_out is not None and np.shares_memory(d_mtx, amd_out):
 			d_mtx = d_mtx.copy()
-		for row in d_mtx:
-			row /= 1 + row
+		with np.errstate(invalid="ignore", divide="ignore"):
+			for row in d_mtx:
+				row /= 1 + row
+	if distance in CONTINUOUS_DISTANCES:
+		for i, row in enumerate(d_mtx):
+			invalid = ~np.isfinite(row)
+			if invalid.any():
+				# Keep caller-owned AMD output raw, including backend failures.
+				amd_out = amd_args.get("out") if distance == "amd" else None
+				if amd_out is not None and np.shares_memory(d_mtx, amd_out):
+					d_mtx = d_mtx.copy()
+				d_mtx[i, invalid] = np.nan
 
 	# return results
 	if not verbose:

@@ -2,6 +2,7 @@
 
 import warnings
 from collections.abc import Sequence
+from functools import cache
 
 import amd
 import numpy as np
@@ -25,6 +26,12 @@ from .constants import (
 	TYPE_EMB_PDD,
 	TYPE_EMB_WYCKOFF,
 )
+
+
+@cache
+def _magpie_featurizer() -> ElementProperty:
+	"""Load the default elemental tables once per process."""
+	return ElementProperty.from_preset("magpie", impute_nan=True)
 
 
 class Crystal(Structure):
@@ -182,6 +189,7 @@ class Crystal(Structure):
 		"""Get the magpie embedding of the crystal.
 
 		Embedding for d_magpie. Not influenced by oxidation states.
+		Default elemental tables are shared by structures within each process.
 
 		Returns:
 			TYPE_EMB_MAGPIE: Magpie feature vector of the crystal.
@@ -191,9 +199,10 @@ class Crystal(Structure):
 			  predicting properties of inorganic materials. npj Computational Materials,
 			  2(1), 1-7. https://doi.org/10.1038/npjcompumats.2016.28
 		"""
-		if not hasattr(self, "featurizer"):
-			self.featurizer = ElementProperty.from_preset("magpie", impute_nan=True)
-		feature = self.featurizer.featurize(self.composition)
+		featurizer = (
+			self.featurizer if hasattr(self, "featurizer") else _magpie_featurizer()
+		)
+		feature = featurizer.featurize(self.composition)
 		return [float(x) for x in feature]
 
 	def _get_emb_d_pdd(self, k: int = 100, **kwargs) -> TYPE_EMB_PDD:

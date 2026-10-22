@@ -33,8 +33,13 @@ from .constants import (
 	SUPPORTED_VALIDITY,
 )
 from .crystal import Crystal, _to_crystal_list
-from .distance import _compute_embeddings, _embedding_mask, distance_matrix
-from .stability import StabilityCalculator
+from .distance import (
+	_compute_embeddings,
+	_embedding_mask,
+	_resolve_elmd_amd_coefs,
+	distance_matrix,
+)
+from .stability import StabilityCalculator, _validate_calibration
 from .validity import Validator
 
 
@@ -97,7 +102,9 @@ class Evaluator:
 				Enabled components must have a positive total weight; weights for
 				disabled components do not contribute to this total.
 				For "prod", weights are exponents (not normalized; default 1.0 per
-				active metric if None). Default is None.
+				active metric if None). All supplied weights must be finite and
+				non-negative. The enabled weight sum for "ave" must also be finite.
+				Default is None.
 			multiprocessing (bool): Whether to use multiprocessing for computing the
 				embeddings of reference crystals. This argument is only effective when
 				novelty is True and ref_xtals is list[Crystal | Structure] or MP20
@@ -249,8 +256,8 @@ class Evaluator:
 			for key in weights:
 				if key not in ["validity", "stability", "uniqueness", "novelty"]:
 					raise ValueError(f"Unsupported weight key: {key}.")
-				if weights[key] < 0.0:
-					raise ValueError("Weights must be non-negative.")
+				if not np.isfinite(weights[key]) or weights[key] < 0.0:
+					raise ValueError("Weights must be finite and non-negative.")
 		if not (validity is not None or stability is not None or uniqueness or novelty):
 			raise ValueError(
 				"At least one of validity, stability, uniqueness, or novelty must be specified."
@@ -270,6 +277,17 @@ class Evaluator:
 		self.distance = distance if uniqueness or novelty else None
 		self.args_emb = kwargs.get("args_emb", {})
 		self.args_dist = kwargs.get("args_dist", {})
+		if self.distance == "elmd+amd":
+			_resolve_elmd_amd_coefs(self.args_dist)
+		if stability is not None:
+			_validate_calibration(
+				stability == "binary",
+				**{
+					key: value
+					for key, value in kwargs.get("args_stability", {}).items()
+					if key in ("threshold", "intercept")
+				},
+			)
 
 		self._prepare_ref_xtals(
 			ref_xtals, distance, multiprocessing, n_processes, **kwargs
@@ -323,9 +341,9 @@ class Evaluator:
 			)
 		else:  # "ave"
 			total_weight = sum(self.weights.values())
-			if total_weight == 0:
+			if not np.isfinite(total_weight) or total_weight <= 0:
 				raise ValueError(
-					"Average aggregation requires a positive enabled weight sum."
+					"Average aggregation requires a finite positive enabled weight sum."
 				)
 			self.weights = {k: v / total_weight for k, v in self.weights.items()}
 			w = self.weights
@@ -831,7 +849,8 @@ class Evaluator:
 				uniqueness_scores[i] = np.all(d_mtx_uni[i, :i][valid_gen[:i]] != 0)
 		else:
 			for i in np.flatnonzero(valid_gen):
-				uniqueness_scores[i] = np.sum(d_mtx_uni[i, valid_gen]) / (n_samples - 1)
+				row = d_mtx_uni[i, valid_gen]
+				uniqueness_scores[i] = np.sum(row[np.isfinite(row)]) / (n_samples - 1)
 		return uniqueness_scores, {"uni_emb": t_emb, "uni_d_mtx": t_d_mtx}
 
 	def _evaluate_novelty(
@@ -867,6 +886,10 @@ class Evaluator:
 		novelty_scores = np.zeros(n_samples, dtype=float)
 		for i in np.flatnonzero(valid_gen):
 			row = d_mtx_nov[i, valid_ref]
+			if self.distance not in BINARY_DISTANCES:
+				row = row[np.isfinite(row)]
+				if not row.size:
+					continue
 			novelty_scores[i] = (
 				np.all(row != 0) if self.distance in BINARY_DISTANCES else np.min(row)
 			)
@@ -888,6 +911,9 @@ class Evaluator:
 		minimum over valid references. Generated embeddings and their masks are
 		prepared once per call and shared by U/N, even without a disk cache.
 		Cached matrices still require embeddings; missing embeddings are recomputed.
+		Nonfinite smat geometry is a failed embedding. Nonfinite continuous pair
+		distances contribute zero to U, retaining n - 1; N uses only finite distances
+		and is zero if no finite comparison remains for a generated sample.
 
 		Args:
 			xtals (list[Crystal  |  Structure]): List of crystal structures to be

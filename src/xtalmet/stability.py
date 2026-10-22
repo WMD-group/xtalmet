@@ -24,6 +24,22 @@ from ._cache import _fingerprint
 from .constants import HF_VERSION
 from .crystal import Crystal
 
+_DEFAULT_THRESHOLD = 0.1
+_DEFAULT_INTERCEPT = 0.4289
+
+
+def _validate_calibration(
+	binary: bool,
+	threshold: float | None = _DEFAULT_THRESHOLD,
+	intercept: float | None = _DEFAULT_INTERCEPT,
+) -> None:
+	"""Reject invalid active calibration before preparing models or references."""
+	if binary:
+		if threshold is None or not np.isfinite(threshold):
+			raise ValueError("Stability threshold must be finite.")
+	elif intercept is None or not np.isfinite(intercept) or intercept <= 0:
+		raise ValueError("Stability intercept must be finite and positive.")
+
 
 def _decode_mp_entry(entry: dict) -> ComputedEntry:
 	"""Decode MP entries using module paths supported before and after the split."""
@@ -63,8 +79,8 @@ class StabilityCalculator:
 		diagram: Literal["mp_250618", "mp"] | PatchedPhaseDiagram | str = "mp_250618",
 		mace_model: str = "medium-mpa-0",
 		binary=True,
-		threshold: float = 0.1,
-		intercept: float = 0.4289,
+		threshold: float = _DEFAULT_THRESHOLD,
+		intercept: float = _DEFAULT_INTERCEPT,
 	) -> None:
 		"""Initialize StabilityCalculator.
 
@@ -82,12 +98,17 @@ class StabilityCalculator:
 				unstable). If False, compute continuous stability scores between 0 and
 				1. Default is True.
 			threshold (float): Energy above hull threshold for stability in eV/atom.
-				Only used if binary is True. Default is 0.1 eV/atom.
+				Must be finite when binary is True. Default is 0.1 eV/atom.
 			intercept (float): Intercept for linear scaling of stability scores in
 				eV/atom. Only used if binary is False. Default is 0.4289 eV/atom, which
 				is the 99.9th percentile of the energy above hull values for the MP20
 				test data.
+
+		Raises:
+			ValueError: If the active threshold is nonfinite, or the active intercept
+				is nonfinite or nonpositive. Unused calibration arguments are ignored.
 		"""
+		_validate_calibration(binary, threshold, intercept)
 		# load or construct a phase diagram
 		if isinstance(diagram, PatchedPhaseDiagram):
 			ppd_mp = diagram
@@ -232,20 +253,33 @@ class StabilityCalculator:
 	def _ehull(self, xtals: list[Crystal]) -> np.ndarray[float]:
 		"""Compute energy above hull for a list of crystals.
 
+		Hull queries use elemental composition, ignoring oxidation-state labels
+		without mutating the input structure. Nonfinite geometry, model energies or
+		hull energies produce NaN. Finite negative hull energies remain valid.
+
 		Args:
 		    xtals (list[Crystal]): List of crystals to compute energy above hull for.
 
 		Returns:
 		   np.ndarray[float]: Array of energy above hull for each crystal.
 		"""
-		e_above_hulls = np.zeros(len(xtals), dtype=float)
+		e_above_hulls = np.full(len(xtals), np.nan)
 		for idx, xtal in enumerate(xtals):
 			try:
+				if not (
+					np.isfinite(xtal.lattice.matrix).all()
+					and np.isfinite(xtal.cart_coords).all()
+				):
+					continue
 				mace_energy = self.calculator.get_potential_energy(xtal.get_ase_atoms())
-				gen_entry = ComputedEntry(xtal.get_composition_pymatgen(), mace_energy)
-				e_above_hulls[idx] = self.ppd_mp.get_e_above_hull(
-					gen_entry, allow_negative=True
+				if not np.isfinite(mace_energy):
+					continue
+				gen_entry = ComputedEntry(
+					xtal.get_composition_pymatgen().element_composition, mace_energy
 				)
+				ehull = self.ppd_mp.get_e_above_hull(gen_entry, allow_negative=True)
+				if np.isfinite(ehull):
+					e_above_hulls[idx] = ehull
 			except ValueError:
 				e_above_hulls[idx] = np.nan
 		return e_above_hulls
@@ -256,6 +290,10 @@ class StabilityCalculator:
 		e_above_hulls_precomputed: np.ndarray[float] | None = None,
 	) -> tuple[np.ndarray[float], np.ndarray[float], float]:
 		"""Compute stability scores for a list of crystals.
+
+		NaN and infinite energies receive zero stability, including precomputed
+		energies. Finite negative energies receive stability one. Precomputed
+		arrays are returned unchanged.
 
 		Args:
 			xtals (list[Crystal]): List of crystals to compute stability scores for.
@@ -272,14 +310,12 @@ class StabilityCalculator:
 		else:
 			e_above_hulls = e_above_hulls_precomputed
 		stability_scores = np.zeros(len(xtals), dtype=float)
+		finite = np.isfinite(e_above_hulls)
 		if self.binary:
-			stability_scores[e_above_hulls <= self.threshold] = (
-				1.0  # nan <= threshold is False
-			)
+			stability_scores[finite & (e_above_hulls <= self.threshold)] = 1.0
 		else:
-			isnan = np.isnan(e_above_hulls)
-			stability_scores[~isnan] = np.clip(
-				1 - e_above_hulls[~isnan] / self.intercept, 0, 1
+			stability_scores[finite] = np.clip(
+				1 - e_above_hulls[finite] / self.intercept, 0, 1
 			)
 		end_time = time.time()
 		return stability_scores, e_above_hulls, end_time - start_time
