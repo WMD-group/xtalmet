@@ -5,6 +5,13 @@ our paper, "Continuous SUN (Stable, Unique, and Novel) Metric for Generative
 Modeling of Inorganic Crystals," accepted by IOPscience Machine Learning: Science and
 Technology.
 
+Use the `iop-mlst` version below or the pre-computed results for paper
+reproduction. The visualization and revision scripts read the original plain
+embedding and matrix files. The current `main` Evaluator writes validated records
+under `cache/format-1/<identity>/`; these cannot be read directly by those scripts.
+Its validity and failure-handling changes can also change scores. See the
+[current tutorial](../tutorial.ipynb) for evaluating with the current API.
+
 1. **Set up the environment**
 
     ```bash

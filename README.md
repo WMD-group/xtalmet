@@ -13,8 +13,8 @@ It also allows you to evaluate a set of crystals based on Validity, Stability, U
 The uniqueness and novelty evaluations depend on the selected distance function. 
 
 - Documentation: https://wmd-group.github.io/xtalmet/
-- Tutorial: https://github.com/WMD-group/xtalmet/examples
-- Code to reproduce results in our papers: https://github.com/WMD-group/xtalmet/examples
+- Tutorial: https://github.com/WMD-group/xtalmet/blob/main/examples/tutorial.ipynb
+- Code to reproduce results in our papers: https://github.com/WMD-group/xtalmet/tree/main/examples
 
 > **Note**: This package is under active development. Please ensure that the version of the package you are using matches the version of the documentation you are referring to.
 
@@ -31,7 +31,7 @@ Additionally, we introduce a method for continuously measuring the stability of 
 [2] Claudio Zeni et al. A generative model for inorganic materials design. Nature 2025.
 
 ## Installation
-The latest stable version can be installed via pip:
+Python 3.12 or 3.13 is required. Install via pip:
 ```bash
 pip install xtalmet
 ```

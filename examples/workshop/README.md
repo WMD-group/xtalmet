@@ -1,6 +1,9 @@
 # Reproducing paper experiments
 Below, we outline the steps to reproduce the experimental results in our paper, "Continuous Uniqueness and Novelty Metrics for Generative Modeling of Inorganic Crystals," presented at the NeurIPS 2025 AI4Mat workshop.
 
+Use the `v0.1.1` version below for these scripts; they call the API from that
+release. See the [current tutorial](../tutorial.ipynb) for the current API.
+
 1. **Set up the environment**
 
     ```bash

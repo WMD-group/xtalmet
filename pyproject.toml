@@ -23,7 +23,7 @@ license = { file = "LICENSE" }
 
 [project.urls]
 Repository = "https://github.com/WMD-group/xtalmet/"
-Documentation = "https://wmd-group.github.io/xtalmets/"
+Documentation = "https://wmd-group.github.io/xtalmet/"
 
 [dependency-groups]
 dev = [

@@ -7,14 +7,6 @@ xtalmet can be installed via pip. It is recommended to use a virtual environment
 
    (.venv) $ pip install xtalmet
 
-At the moment (Nov 18th, 2025), the above command will install version 0.1.0.
-However, we recommend installing the pre-release version, 1.0.0a4, since it has many improvements over version 0.1.0. 
-You can install version 1.0.0a4 with the following command:
-
-.. code-block:: console
-
-   (.venv) $ pip install --pre xtalmet
-
 Compatibility
 -------------
 
@@ -45,6 +37,10 @@ The following configurations were checked on Linux x86_64:
      - 2.7.0 / 2.8.0 (CPU)
      - 2.3.3
      - 1.16.2
+   * - 3.12.3
+     - 2.8.0+cu128 (CPU / CUDA 12.8)
+     - 2.3.3
+     - 1.16.2
    * - 3.13.16
      - 2.14.1 (CPU / CUDA 12.6)
      - 2.5.3
@@ -54,6 +50,19 @@ These checks used SMACT 4.0.2 and pymatgen 2025.10.7, including all eight
 distances and MACE-based VSUN evaluation with ``medium-mpa-0`` and ``mh-1``.
 The tested versions describe verification results; the dependency ranges
 remain those in ``pyproject.toml``.
+
+The configurations above were checked at different implementation stages.
+The final-source CPU suite on October 22, 2026 had 808 passes and one live-MP-API
+skip. A separate CPU/CUDA comparison used Python 3.12.3, Torch 2.8.0+cu128,
+10 generated and 10 reference structures, both MACE models and all eight
+distances on an NVIDIA RTX 4000 Ada Generation. Hull
+energies and VSUN scores agreed within ``rtol=atol=1e-10``.
+
+A focused final-source CPU check with Python 3.13.16, Torch 2.14.1+cpu,
+NumPy 2.5.3 and SciPy 1.18.1 passed 388 regression tests. The same small VSUN
+comparison with both models and all eight distances matched the Python 3.12 CPU
+results exactly. The full Python 3.13 suite and Torch 2.7.0 were not rerun on the
+final source.
 
 Materials Project entry decoding and phase-diagram regression tests also passed
 with pymatgen 2026.9.24 and pymatgen-core 2026.10.16. The live MP loader handles
