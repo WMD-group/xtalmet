@@ -20,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 project = "xtalmet"
 copyright = "2026, Masahiro Negishi"
 author = "Masahiro Negishi"
-release = "1.0.0"
+release = "2.0.0a1"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
