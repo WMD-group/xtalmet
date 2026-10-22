@@ -61,7 +61,7 @@ def docs_repo(tmp_path):
 		'templates_path = ["_templates"]\n'
 		'html_theme = "basic"\n'
 		'html_title = "CONFIG_MARKER"\n'
-		'html_context = {"current_version": os.environ.get("current_version"),\n'
+		'html_context = {"current_version": os.environ.get("CURRENT_VERSION"),\n'
 		'"versions": list(yaml.safe_load(Path("versions.yaml").read_text()))}\n'
 	)
 	for marker in ("TAG", "MAIN"):
@@ -242,7 +242,7 @@ def test_tag_failure_keeps_previous_html_and_cleans_clones(
 			workspaces.append(Path(args[-1]).parent)
 		if (
 			args[:3] == [sys.executable, "-m", failed_module]
-			and kwargs["env"]["current_version"] == "0.1"
+			and kwargs["env"]["CURRENT_VERSION"] == "0.1"
 		):
 			assert kwargs["check"] is True
 			raise subprocess.CalledProcessError(23, args)

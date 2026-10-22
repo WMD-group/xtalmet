@@ -52,9 +52,9 @@ def build_doc(version: str, checkout_path: Path) -> Path:
 	"""Generate API pages and HTML using only this checkout's package source."""
 	env = os.environ.copy()
 	env.update(
-		build_all_docs="True",
-		pages_root="https://wmd-group.github.io/xtalmet",
-		current_version=version,
+		BUILD_ALL_DOCS="True",
+		PAGES_ROOT="https://wmd-group.github.io/xtalmet",
+		CURRENT_VERSION=version,
 		PYTHONPATH=str(checkout_path / "src") + os.pathsep + env.get("PYTHONPATH", ""),
 	)
 	docs_path = checkout_path / "docs"

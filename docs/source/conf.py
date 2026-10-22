@@ -1,12 +1,16 @@
-# Configuration file for the Sphinx documentation builder.
+"""Configure the Sphinx documentation builder."""
+
 #
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
 ## -- For autosummary -------------------------------------------------------
 
+import os
 import sys
 from pathlib import Path
+
+import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
@@ -46,18 +50,14 @@ exclude_patterns = []
 html_theme = "sphinx_rtd_theme"
 html_show_sourcelink = False
 
-import os
-
-import yaml
-
-# get the environment variable build_all_docs and pages_root
-build_all_docs = os.environ.get("build_all_docs")
-pages_root = os.environ.get("pages_root", "")
+# get the environment variable BUILD_ALL_DOCS and PAGES_ROOT
+build_all_docs = os.environ.get("BUILD_ALL_DOCS")
+pages_root = os.environ.get("PAGES_ROOT", "")
 
 # if not there, we dont call this
 if build_all_docs is not None:
 	# we get the current language and version
-	current_version = os.environ.get("current_version")
+	current_version = os.environ.get("CURRENT_VERSION")
 
 	# we set the html_context wit current language and version
 	# and empty languages and versions for now
@@ -72,5 +72,5 @@ if build_all_docs is not None:
 	with open("versions.yaml") as yaml_file:
 		docs = yaml.safe_load(yaml_file)
 
-	for version, details in docs.items():
+	for version in docs:
 		html_context["versions"].append([version, pages_root + "/" + version])
