@@ -4,13 +4,14 @@ import functools
 import time
 import warnings
 from collections.abc import Callable, Iterator
-from itertools import chain
+from itertools import chain, islice
 from multiprocessing import Pool, cpu_count
 from typing import Literal, overload
 
 import amd
 import numpy as np
-from ElMD import elmd
+from ElMD import ElMD, elmd
+from joblib import Parallel, delayed, effective_n_jobs, parallel_config
 from pymatgen.analysis.structure_matcher import SpeciesComparator, StructureMatcher
 from pymatgen.core import Composition, Structure
 from scipy.spatial.distance import cdist, squareform
@@ -263,84 +264,6 @@ def _set_n_processes(n_processes: int | None = None) -> int:
 		return max(min(n_processes, cpu_count() - 1), 1)
 
 
-def _distance_matrix_template(
-	embs_1: list,
-	embs_2: list | None = None,
-	multiprocessing: bool = False,
-	n_processes: int | None = None,
-	d_func: Callable | None = None,
-	initializer: Callable | None = None,
-	initargs: tuple = (),
-) -> np.ndarray:
-	"""Template to compute the distance matrix between two sets of embeddings.
-
-	If embs_2 is None, compute the distance matrix within embs_1.
-
-	Args:
-		embs_1 (list): Embeddings
-		embs_2 (list | None): Embeddings or None. Default is None.
-		multiprocessing (bool): Whether to use multiprocessing. Default is False.
-		n_processes (int | None): Maximum number of processes for multiprocessing. If
-			multiprocessing is False, this argument will be ignored. Default is None.
-		d_func (Callable | None): Distance function.
-		initializer (Callable | None): Initializer function for worker processes.
-		initargs (tuple): Arguments for the initializer function.
-
-	Returns:
-		np.ndarray: Distance matrix.
-
-	Raises:
-		ValueError: If d_func is None.
-	"""
-	if d_func is None:
-		raise ValueError("d_func must be provided.")
-	given_two_sets = embs_2 is not None
-	if given_two_sets:
-		if multiprocessing:
-			with Pool(
-				processes=_set_n_processes(n_processes),
-				initializer=initializer,
-				initargs=initargs,
-			) as pool:
-				results = pool.starmap(
-					d_func,
-					((emb_i, emb_j) for emb_i in embs_1 for emb_j in embs_2),
-				)
-				d_mtx = np.array(results).reshape(len(embs_1), len(embs_2))
-		else:
-			d_mtx = np.zeros((len(embs_1), len(embs_2)))
-			for i, emb_i in enumerate(embs_1):
-				for j, emb_j in enumerate(embs_2):
-					d_mtx[i, j] = d_func(emb_i, emb_j)
-	else:
-		if multiprocessing:
-			with Pool(
-				processes=_set_n_processes(n_processes),
-				initializer=initializer,
-				initargs=initargs,
-			) as pool:
-				results = pool.starmap(
-					d_func,
-					(
-						(embs_1[i], embs_1[j])
-						for i in range(len(embs_1))
-						for j in range(i + 1)
-					),
-				)
-				d_mtx = np.zeros((len(embs_1), len(embs_1)))
-				for i in range(len(embs_1)):
-					for j in range(i + 1):
-						d_mtx[i, j] = results[i * (i + 1) // 2 + j]
-						d_mtx[j, i] = d_mtx[i, j]
-		else:
-			d_mtx = np.zeros((len(embs_1), len(embs_1)))
-			for i, emb_i in enumerate(embs_1):
-				for j, emb_j in enumerate(embs_1[: i + 1]):
-					d_mtx[i, j] = d_func(emb_i, emb_j)
-					d_mtx[j, i] = d_mtx[i, j]
-	return d_mtx
-
-
 _smat_worker_args: tuple = ()
 
 
@@ -560,6 +483,25 @@ def _distance_matrix_d_smat(
 	return d_mtx
 
 
+def _distance_matrix_exact(embs_1: list, embs_2: list | None) -> np.ndarray:
+	"""Fill a dense binary matrix from groups of identical tuple embeddings."""
+	groups_1: dict[tuple, list[int]] = {}
+	for i, embedding in enumerate(embs_1):
+		groups_1.setdefault(embedding, []).append(i)
+	groups_2 = groups_1
+	if embs_2 is not None:
+		groups_2 = {}
+		for j, embedding in enumerate(embs_2):
+			groups_2.setdefault(embedding, []).append(j)
+	targets = embs_1 if embs_2 is None else embs_2
+	matrix = np.ones((len(embs_1), len(targets)))
+	for embedding, rows in groups_1.items():
+		columns = groups_2.get(embedding)
+		if columns:
+			matrix[np.ix_(rows, columns)] = 0.0
+	return matrix
+
+
 def _distance_matrix_d_comp(
 	embs_1: list[TYPE_EMB_COMP],
 	embs_2: list[TYPE_EMB_COMP] | None = None,
@@ -582,9 +524,7 @@ def _distance_matrix_d_comp(
 	Returns:
 		np.ndarray: d_comp distance matrix.
 	"""
-	return _distance_matrix_template(
-		embs_1, embs_2, multiprocessing, n_processes, _d_comp
-	)
+	return _distance_matrix_exact(embs_1, embs_2)
 
 
 def _distance_matrix_d_wyckoff(
@@ -609,9 +549,7 @@ def _distance_matrix_d_wyckoff(
 	Returns:
 		np.ndarray: d_wyckoff distance matrix.
 	"""
-	return _distance_matrix_template(
-		embs_1, embs_2, multiprocessing, n_processes, _d_wyckoff
-	)
+	return _distance_matrix_exact(embs_1, embs_2)
 
 
 def _distance_matrix_d_magpie(
@@ -639,6 +577,15 @@ def _distance_matrix_d_magpie(
 	return cdist(embs_1, embs_1 if embs_2 is None else embs_2, metric="euclidean")
 
 
+def _pdd_block(embs_1, embs_2, diagonal, kwargs):
+	"""Evaluate a small PDD block without starting an inner worker pool."""
+	if diagonal:
+		if len(embs_1) < 2:
+			return np.zeros((len(embs_1), len(embs_1)))
+		return squareform(amd.PDD_pdist(embs_1, n_jobs=1, **kwargs))
+	return amd.PDD_cdist(embs_1, embs_2, n_jobs=1, **kwargs)
+
+
 def _distance_matrix_d_pdd(
 	embs_1: list[TYPE_EMB_PDD],
 	embs_2: list[TYPE_EMB_PDD] | None = None,
@@ -663,12 +610,54 @@ def _distance_matrix_d_pdd(
 	"""
 	if multiprocessing and "n_jobs" not in kwargs:
 		kwargs["n_jobs"] = _set_n_processes(n_processes)
-
-	if embs_2 is None:
-		if len(embs_1) < 2:
-			return np.zeros((len(embs_1), len(embs_1)))
-		return squareform(amd.PDD_pdist(embs_1, **kwargs))
-	return amd.PDD_cdist(embs_1, embs_2, **kwargs)
+	symmetric = embs_2 is None
+	if symmetric and len(embs_1) < 2:
+		return np.zeros((len(embs_1), len(embs_1)))
+	targets = embs_1 if symmetric else embs_2
+	n_jobs = kwargs.pop("n_jobs", None)
+	backend = kwargs.pop("backend", "multiprocessing")
+	verbose = kwargs.pop("verbose", False)
+	# Preserve AMD's different negative-n_jobs behavior for pdist and cdist.
+	parallel = n_jobs is not None and (
+		n_jobs > 1 if symmetric else n_jobs not in (0, 1)
+	)
+	if not parallel:
+		n_jobs, backend = 1, "sequential"
+	matrix = np.empty((len(embs_1), len(targets)))
+	tasks = (
+		(i, j)
+		for i in range(0, len(embs_1), 128)
+		for j in range(i if symmetric else 0, len(targets), 128)
+	)
+	completed = 0
+	config = {"n_jobs": n_jobs}
+	if backend is not None:
+		config["backend"] = backend
+	with parallel_config(**config):
+		window = 2 * effective_n_jobs()
+		with Parallel() as executor:
+			while batch := tuple(islice(tasks, window)):
+				blocks = executor(
+					delayed(_pdd_block)(
+						embs_1[i : i + 128],
+						targets[j : j + 128],
+						symmetric and i == j,
+						kwargs,
+					)
+					for i, j in batch
+				)
+				for (i, j), block in zip(batch, blocks, strict=True):
+					n, m = block.shape
+					matrix[i : i + n, j : j + m] = block
+					if symmetric and i != j:
+						matrix[j : j + m, i : i + n] = block.T
+					completed += n * (n - 1) // 2 if symmetric and i == j else n * m
+				del block, blocks
+				if verbose:
+					print(f"Compared {completed} PDD pairs", end="\r", flush=True)
+	if verbose:
+		print()
+	return matrix
 
 
 def _distance_matrix_d_amd(
@@ -709,6 +698,31 @@ def _distance_matrix_d_amd(
 	return amd.AMD_cdist(embs_1, embs_2, **kwargs)
 
 
+_elmd_worker_args: tuple = ()
+
+
+def _init_worker_distance_matrix_d_elmd(embs_1, targets, kwargs):
+	"""Keep parsed ElMD inputs and distance settings in each worker."""
+	global _elmd_worker_args
+	_elmd_worker_args = embs_1, targets, kwargs
+
+
+def _elmd_block(task, embs_1, targets, kwargs):
+	"""Compute a bounded section of a row in the original comparison direction."""
+	i, start, stop = task
+	values = np.fromiter(
+		(_d_elmd(embs_1[i], targets[j], **kwargs) for j in range(start, stop)),
+		dtype=float,
+		count=stop - start,
+	)
+	return i, start, values
+
+
+def _worker_distance_matrix_d_elmd(task):
+	"""Compute an ElMD block using inputs initialized once per worker."""
+	return _elmd_block(task, *_elmd_worker_args)
+
+
 def _distance_matrix_d_elmd(
 	embs_1: list[TYPE_EMB_ELMD],
 	embs_2: list[TYPE_EMB_ELMD] | None = None,
@@ -731,13 +745,48 @@ def _distance_matrix_d_elmd(
 	Returns:
 		np.ndarray: d_elmd distance matrix.
 	"""
-	return _distance_matrix_template(
-		embs_1,
-		embs_2,
-		multiprocessing,
-		n_processes,
-		functools.partial(_d_elmd, **kwargs),
+	symmetric = embs_2 is None
+	targets = embs_1 if symmetric else embs_2
+	parsed = {
+		formula: ElMD(formula, metric=kwargs.get("metric", "mod_petti"))
+		for formula in dict.fromkeys(
+			emb for emb in chain(embs_1, targets) if isinstance(emb, str)
+		)
+	}
+	sources = [parsed[emb] if isinstance(emb, str) else emb for emb in embs_1]
+	targets = (
+		sources
+		if symmetric
+		else [parsed[emb] if isinstance(emb, str) else emb for emb in targets]
 	)
+	matrix = np.empty((len(sources), len(targets)))
+	tasks = (
+		(i, start, min(start + 1024, i + 1 if symmetric else len(targets)))
+		for i in range(len(sources))
+		for start in range(0, i + 1 if symmetric else len(targets), 1024)
+	)
+	if multiprocessing:
+		n_workers = _set_n_processes(n_processes)
+		with Pool(
+			processes=n_workers,
+			initializer=_init_worker_distance_matrix_d_elmd,
+			initargs=(sources, targets, kwargs),
+		) as pool:
+			while batch := tuple(islice(tasks, 2 * n_workers)):
+				for i, start, values in pool.imap_unordered(
+					_worker_distance_matrix_d_elmd, batch
+				):
+					matrix[i, start : start + len(values)] = values
+					if symmetric:
+						matrix[start : start + len(values), i] = values
+				del values
+	else:
+		for task in tasks:
+			i, start, values = _elmd_block(task, sources, targets, kwargs)
+			matrix[i, start : start + len(values)] = values
+			if symmetric:
+				matrix[start : start + len(values), i] = values
+	return matrix
 
 
 def _compute_embedding_worker(xtal: Crystal, distance: str, **kwargs) -> TYPE_EMB_ALL:
@@ -1022,10 +1071,36 @@ def distance_matrix(
 		For "magpie", SciPy computes the dense Euclidean distance matrix without a
 		Python worker pool. Multiprocessing settings still apply to embedding
 		computation when structures are provided, but not to the matrix calculation.
-		Magpie normalization updates the final matrix in place, one row at a time,
-		to avoid additional full-size arrays. Dense output requires 8 bytes
+		Continuous normalization updates the final matrix in place, one row at a
+		time, copying first if it shares AMD's caller-owned raw "out" buffer.
+		"elmd+amd" reuses its internal ElMD matrix for rowwise blending and leaves
+		the raw AMD component, including a supplied "out" buffer, unchanged.
+		These operations avoid additional full-size arithmetic arrays. The two raw
+		component matrices still coexist during blending. Dense output requires 8 bytes
 		per pair: about 2.24 GiB for a 10,000-by-30,000 float64 matrix, excluding
 		embeddings and other evaluation data.
+
+		For "comp" and "wyckoff", identical tuple embeddings are grouped and their
+		matching positions are filled with zero in a dense matrix of ones. No
+		pairwise Python comparisons or matrix worker pools are used. Multiprocessing
+		settings still apply to embedding computation. Evaluator also retains dense
+		matrices when computing only U/N scores, with or without disk caching.
+
+		For "elmd" (also the ElMD component of "elmd+amd"), each distinct formula
+		is parsed once per matrix call using the requested metric. Parsed objects
+		are initialized once per worker, while tasks contain only indices of row
+		sections of at most 1,024 columns. At most twice the worker count of tasks
+		and results are retained per batch; no complete pair or result list is built.
+
+		For "pdd", 128-by-128 blocks are dispatched to the requested joblib backend
+		in batches of at most twice its effective worker count. Workers compute
+		blocks serially without nested pools; diagonal blocks use a small condensed
+		array, and off-diagonal blocks are mirrored for a single input set. Explicit
+		args_dist["n_jobs"] takes precedence over multiprocessing/n_processes.
+		An explicit backend=None inherits joblib's active backend.
+		The AMD backend's existing n_jobs semantics are retained, including negative
+		values selecting parallel cdist but serial pdist. verbose reports completed
+		pairs in the parent process.
 
 	Raises:
 		ValueError: If a distance metric is unsupported or an input set is empty.
@@ -1138,7 +1213,11 @@ def distance_matrix(
 			n_processes,
 			**args_dist.get("amd", {}),
 		)
-		d_mtx = _blend_elmd_amd_distance(d_mtx_elmd_unnorm, d_mtx_amd_unnorm, args_dist)
+		coef_elmd, coef_amd = _resolve_elmd_amd_coefs(args_dist)
+		for row, amd_row in zip(d_mtx_elmd_unnorm, d_mtx_amd_unnorm, strict=True):
+			row[:] = coef_elmd * _normalize(row) + coef_amd * _normalize(amd_row)
+		d_mtx = d_mtx_elmd_unnorm
+		del row, amd_row, d_mtx_elmd_unnorm, d_mtx_amd_unnorm
 	elif distance in _DIST_MTX_FUNCS:
 		d_mtx = _DIST_MTX_FUNCS[distance](
 			valids_1,
@@ -1170,11 +1249,11 @@ def distance_matrix(
 
 	# normalize distances if needed
 	if distance in CONTINUOUS_UNNORMALIZED_DISTANCES and normalize:
-		if distance == "magpie":
-			for row in d_mtx:
-				row /= 1 + row
-		else:
-			d_mtx = _normalize(d_mtx)
+		amd_out = amd_args.get("out") if distance == "amd" else None
+		if amd_out is not None and np.shares_memory(d_mtx, amd_out):
+			d_mtx = d_mtx.copy()
+		for row in d_mtx:
+			row /= 1 + row
 
 	# return results
 	if not verbose:

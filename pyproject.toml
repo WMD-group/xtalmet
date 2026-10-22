@@ -12,6 +12,7 @@ dependencies = [
     "torch>=2.7.0",
     "matminer>=0.9.3",
     "average-minimum-distance>=1.5.3",
+    "joblib>=1.3",
     "smact>=4.0.2",
     "numba>=0.67.0",
     "mace-torch>=0.3.13",
