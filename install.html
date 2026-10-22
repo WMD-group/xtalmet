@@ -82,12 +82,6 @@
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp gp-VirtualEnv">(.venv)</span> <span class="gp">$ </span>pip<span class="w"> </span>install<span class="w"> </span>xtalmet
 </pre></div>
 </div>
-<p>At the moment (Nov 18th, 2025), the above command will install version 0.1.0.
-However, we recommend installing the pre-release version, 1.0.0a4, since it has many improvements over version 0.1.0.
-You can install version 1.0.0a4 with the following command:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp gp-VirtualEnv">(.venv)</span> <span class="gp">$ </span>pip<span class="w"> </span>install<span class="w"> </span>--pre<span class="w"> </span>xtalmet
-</pre></div>
-</div>
 <section id="compatibility">
 <h2>Compatibility<a class="headerlink" href="#compatibility" title="Link to this heading"></a></h2>
 <p>Python 3.12 and 3.13 are supported. The package requires Torch &gt;=2.7.0;
@@ -115,7 +109,12 @@ ranges are declared in <code class="docutils literal notranslate"><span class="p
 <td><p>2.3.3</p></td>
 <td><p>1.16.2</p></td>
 </tr>
-<tr class="row-odd"><td><p>3.13.16</p></td>
+<tr class="row-odd"><td><p>3.12.3</p></td>
+<td><p>2.8.0+cu128 (CPU / CUDA 12.8)</p></td>
+<td><p>2.3.3</p></td>
+<td><p>1.16.2</p></td>
+</tr>
+<tr class="row-even"><td><p>3.13.16</p></td>
 <td><p>2.14.1 (CPU / CUDA 12.6)</p></td>
 <td><p>2.5.3</p></td>
 <td><p>1.18.1</p></td>
@@ -126,6 +125,17 @@ ranges are declared in <code class="docutils literal notranslate"><span class="p
 distances and MACE-based VSUN evaluation with <code class="docutils literal notranslate"><span class="pre">medium-mpa-0</span></code> and <code class="docutils literal notranslate"><span class="pre">mh-1</span></code>.
 The tested versions describe verification results; the dependency ranges
 remain those in <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code>.</p>
+<p>The configurations above were checked at different implementation stages.
+The final-source CPU suite on October 22, 2026 had 808 passes and one live-MP-API
+skip. A separate CPU/CUDA comparison used Python 3.12.3, Torch 2.8.0+cu128,
+10 generated and 10 reference structures, both MACE models and all eight
+distances on an NVIDIA RTX 4000 Ada Generation. Hull
+energies and VSUN scores agreed within <code class="docutils literal notranslate"><span class="pre">rtol=atol=1e-10</span></code>.</p>
+<p>A focused final-source CPU check with Python 3.13.16, Torch 2.14.1+cpu,
+NumPy 2.5.3 and SciPy 1.18.1 passed 388 regression tests. The same small VSUN
+comparison with both models and all eight distances matched the Python 3.12 CPU
+results exactly. The full Python 3.13 suite and Torch 2.7.0 were not rerun on the
+final source.</p>
 <p>Materials Project entry decoding and phase-diagram regression tests also passed
 with pymatgen 2026.9.24 and pymatgen-core 2026.10.16. The live MP loader handles
 entry serialization from before and after the pymatgen-core split.</p>
